@@ -1,4 +1,4 @@
-# Ghiro - Copyright (C) 2013-2016 Ghiro Developers.
+# Ghiro - Copyright (C) 2013-2015 Ghiro Developers.
 # This file is part of Ghiro.
 # See the file 'docs/LICENSE.txt' for license terms.
 
@@ -10,9 +10,7 @@ from dateutil import parser
 from bson.objectid import InvalidId
 from lib.db import get_file
 
-from django.core.exceptions import ObjectDoesNotExist
-
-from analyses.models import AnalysisMetadataDescription, Analysis
+from analyses.models import AnalysisMetadataDescription
 
 register = template.Library()
  
@@ -94,19 +92,6 @@ def get_metadata_description(key):
         return data.description
 
 @register.filter
-def get_analysis(anal_id):
-    """Get analysis object from id.
-    @param anal_id: analysis id
-    @return: Analysis object
-    """
-    try:
-        analysis = Analysis.objects.get(pk=anal_id)
-    except ObjectDoesNotExist:
-        return None
-    else:
-        return analysis
-
-@register.filter
 def to_base64(image_id):
     """Return a base64 representation for an image to be used in html img tag.
     @param image_id: mongo gridfs id
@@ -124,8 +109,9 @@ def to_strings(image_id):
     """
     data = get_file(image_id).read()
     # This strings extraction code comes form Cuckoo Sandbox.
-    strings = re.findall("[\x1f-\x7e]{6,}", data)
-    strings += [str(ws.decode("utf-16le")) for ws in re.findall("(?:[\x1f-\x7e][\x00]){6,}", data)]
+    # Use bytes patterns for Python 3
+    strings = [s.decode('ascii', errors='ignore') for s in re.findall(b"[\x1f-\x7e]{6,}", data)]
+    strings += [ws.decode("utf-16le", errors='ignore') for ws in re.findall(b"(?:[\x1f-\x7e][\x00]){6,}", data)]
     return strings
 
 @register.filter

@@ -1,14 +1,15 @@
-# Ghiro - Copyright (C) 2013-2016 Ghiro Developers.
+# Ghiro - Copyright (C) 2013-2015 Ghiro Developers.
 # This file is part of Ghiro.
 # See the file 'docs/LICENSE.txt' for license terms.
 
-from django.conf.urls import patterns, include, url
+from django.urls import include, re_path
+from analyses import views as analyses_views
 
-urlpatterns = patterns("",
-    url(r"^$", "analyses.views.dashboard"),
-    (r"^users/", include("users.urls")),
-    (r"^analyses/", include("analyses.urls")),
-    (r"^hashes/", include("hashes.urls")),
-    (r"^system/", include("system.urls")),
-    (r"^api/", include("api.urls")),
-)
+urlpatterns = [
+    re_path(r"^$", analyses_views.dashboard),
+    re_path(r"^users/", include("users.urls")),
+    re_path(r"^analyses/", include("analyses.urls")),
+    re_path(r"^hashes/", include("hashes.urls")),
+    re_path(r"^manage/", include("manage.urls")),
+    re_path(r"^api/", include("api.urls")),
+]

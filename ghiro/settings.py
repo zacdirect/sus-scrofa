@@ -1,4 +1,4 @@
-# Ghiro - Copyright (C) 2013-2016 Ghiro Developers.
+# Ghiro - Copyright (C) 2013-2015 Ghiro Developers.
 # This file is part of Ghiro.
 # See the file 'docs/LICENSE.txt' for license terms.
 
@@ -8,10 +8,12 @@ from django.conf import global_settings
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
+ALLOWED_HOSTS = ['*']
+
 SITE_ID = 1
 
 # Actual Ghiro release.
-GHIRO_VERSION = "0.3-dev"
+GHIRO_VERSION = "0.2.1"
 
 # If you set this to False, Django will make some optimizations so as not
 # to load the internationalization machinery.
@@ -23,10 +25,10 @@ USE_L10N = True
 
 # Disabled time zone, using local time instead.
 USE_TZ = False
-TIME_ZONE = None
+TIME_ZONE = 'UTC'
 
-# Project directory.
-PROJECT_DIR = os.getcwd()
+# Default primary key field type (Django 3.2+)
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/var/www/example.com/media/"
@@ -41,7 +43,7 @@ MEDIA_URL = ''
 # Don't put anything in this directory yourself; store your static files
 # in apps' "static/" subdirectories and in STATICFILES_DIRS.
 # Example: "/var/www/example.com/static/"
-# STATIC_ROOT = os.path.join(PROJECT_DIR, 'static')
+STATIC_ROOT = ''
 
 # URL prefix for static files.
 # Example: "http://example.com/static/", "http://static.example.com/"
@@ -66,31 +68,36 @@ FILE_UPLOAD_HANDLERS = ("django.core.files.uploadhandler.TemporaryFileUploadHand
 # Unique secret key generator.
 # Secret key will be placed in secret_key.py file.
 try:
-    from ghiro.secret_key import *
+    from ghiro.secret_key import SECRET_KEY
 except ImportError:
     SETTINGS_DIR=os.path.abspath(os.path.dirname(__file__))
     # Using the same generation schema of Django startproject.
     from django.utils.crypto import get_random_string
-    key = get_random_string(50, "abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)")
+    SECRET_KEY = get_random_string(50, "abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)")
     # Write secret_key.py
     with open(os.path.join(SETTINGS_DIR, "secret_key.py"), "w") as file:
-        file.write("SECRET_KEY = \"{0}\"".format(key))
-    # Reload key.
-    from ghiro.secret_key import *
+        file.write("SECRET_KEY = \"{0}\"\n".format(SECRET_KEY))
 
-# List of callables that know how to import templates from various sources.
-TEMPLATE_LOADERS = (
-    'django.template.loaders.filesystem.Loader',
-    'django.template.loaders.app_directories.Loader',
-#     'django.template.loaders.eggs.Loader',
-)
-
-TEMPLATE_CONTEXT_PROCESSORS = global_settings.TEMPLATE_CONTEXT_PROCESSORS + [
-    "django.core.context_processors.request",
-    ]
+# Templates configuration for Django 1.11+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': ['templates'],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.static',
+            ],
+        },
+    },
+]
 
 INTERNAL_IPS = ('127.0.0.1',)
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     #'debug_toolbar.middleware.DebugToolbarMiddleware',
@@ -107,10 +114,6 @@ ROOT_URLCONF = 'ghiro.urls'
 # Python dotted path to the WSGI application used by Django's runserver.
 WSGI_APPLICATION = 'ghiro.wsgi.application'
 
-TEMPLATE_DIRS = (
-    "templates",
-)
-
 INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -122,26 +125,8 @@ INSTALLED_APPS = (
     "users",
     "analyses",
     "hashes",
-    "system",
-    "api",
+    "manage",
 )
-
-# Hack to import local settings.
-try:
-    LOCAL_SETTINGS
-except NameError:
-    try:
-        from .local_settings import *
-    except ImportError:
-        pass
-
-#
-# Logging.
-#
-
-# Create log dir.
-if not os.path.exists(LOG_DIR):
-    os.mkdir(LOG_DIR)
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
@@ -160,9 +145,6 @@ LOGGING = {
         },
         'management_command': {
             'format': "%(asctime)s [%(levelname)s] %(name)s - %(message)s"
-        },
-        'audit_formatter': {
-            'format': "%(asctime)s %(message)s"
         },
     },
     'filters': {
@@ -186,24 +168,6 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'management_command',
             },
-        # Image processing log file.
-        'processing_file': {
-            'level': 'DEBUG',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': os.path.join(LOG_DIR, LOG_PROCESSING_NAME),
-            'maxBytes': LOG_PROCESSING_SIZE,
-            'backupCount': LOG_PROCESSING_NUM,
-            'formatter': 'management_command'
-        },
-        # Audit log file, it keeps logs of all users actions.
-        'audit_file': {
-            'level': 'DEBUG',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': os.path.join(LOG_DIR, LOG_AUDIT_NAME),
-            'maxBytes': LOG_AUDIT_SIZE,
-            'backupCount': LOG_AUDIT_NUM,
-            'formatter': 'audit_formatter'
-        },
     },
     'loggers': {
         'django.request': {
@@ -212,19 +176,15 @@ LOGGING = {
             'propagate': True,
         },
         'lib': {
-            'handlers': ['processing', 'processing_file'],
+            'handlers': ['processing'],
             'level': 'DEBUG',
             'propagate': False,
             },
         'plugins': {
-            'handlers': ['processing', 'processing_file'],
+            'handlers': ['processing'],
             'level': 'DEBUG',
             'propagate': False,
             },
-        'audit': {
-            'handlers': ['audit_file'],
-            'level': 'DEBUG',
-        },
     }
 }
 
@@ -235,13 +195,11 @@ LOGIN_URL = "/users/login/"
 LOGOUT_URL = "/users/logout/"
 LOGIN_REDIRECT_URL = "/"
 
-# Custom context processors.
-TEMPLATE_CONTEXT_PROCESSORS += ("analyses.context_processors.dashboard_data",
-                                "analyses.context_processors.ghiro_release")
-
-# Create log directory.
-if not os.path.exists(LOG_DIR):
+# Hack to import local settings.
+try:
+    LOCAL_SETTINGS
+except NameError:
     try:
-        os.mkdir(LOG_DIR)
-    except Exception as e:
-        print("Unable to create log directory: %s" % e)
+        from .local_settings import *
+    except ImportError:
+        pass

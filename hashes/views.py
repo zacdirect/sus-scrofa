@@ -1,13 +1,12 @@
-# Ghiro - Copyright (C) 2013-2016 Ghiro Developers.
+# Ghiro - Copyright (C) 2013-2015 Ghiro Developers.
 # This file is part of Ghiro.
 # See the file 'docs/LICENSE.txt' for license terms.
 
-from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_safe
-from django.shortcuts import render_to_response, get_object_or_404
+from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 import hashes.forms as forms
 from hashes.models import List, Hash
@@ -24,9 +23,8 @@ def list_hashes(request):
     # Set sidebar active tab.
     request.session["sidebar_active"] = "side-hashes"
 
-    return render_to_response("hashes/index.html",
-                              {"my_lists": my_lists, "public_lists": public_lists},
-                              context_instance=RequestContext(request))
+    return render(request, "hashes/index.html",
+                              {"my_lists": my_lists, "public_lists": public_lists})
 
 @login_required
 def new_hashes(request):
@@ -49,13 +47,12 @@ def new_hashes(request):
                          "Created new hash list %s" % list.name,
                          request)
 
-            return HttpResponseRedirect(reverse("hashes.views.show_hashes", args=(list.id,)))
+            return HttpResponseRedirect(reverse("show_hashes", args=(list.id,)))
     else:
         form = forms.ListForm()
 
-    return render_to_response("hashes/new.html",
-                              {"form": form},
-                              context_instance=RequestContext(request))
+    return render(request, "hashes/new.html",
+                              {"form": form})
 
 @require_safe
 @login_required
@@ -64,13 +61,11 @@ def show_hashes(request, list_id):
 
     # Security check.
     if request.user != hash_list.owner:
-        return render_to_response("error.html",
-                                  {"error": "You are not authorized to show this."},
-                                  context_instance=RequestContext(request))
+        return render(request, "error.html",
+                                  {"error": "You are not authorized to show this."})
 
-    return render_to_response("hashes/show.html",
-                              {"hash_list": hash_list},
-                              context_instance=RequestContext(request))
+    return render(request, "hashes/show.html",
+                              {"hash_list": hash_list})
 
 @require_safe
 @login_required
@@ -79,9 +74,8 @@ def delete_hashes(request, list_id):
 
     # Security check.
     if request.user != hash_list.owner:
-        return render_to_response("error.html",
-                                  {"error": "You are not authorized to delete this."},
-                                  context_instance=RequestContext(request))
+        return render(request, "error.html",
+                                  {"error": "You are not authorized to delete this."})
 
     hash_list.delete()
 
@@ -90,4 +84,4 @@ def delete_hashes(request, list_id):
                  "Deleted hash list %s" % hash_list.name,
                  request)
 
-    return HttpResponseRedirect(reverse("hashes.views.list_hashes"))
+    return HttpResponseRedirect(reverse("list_hashes"))

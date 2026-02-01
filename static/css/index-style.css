@@ -39,7 +39,7 @@ i.icon-bg-dark {
 }
 .cbp-af-header {
     background: none repeat scroll 0 0 #333333;
-    height: 80px;
+    height: 60px;
     left: 0;
     padding: 20px 0;
     position: fixed;
@@ -65,16 +65,17 @@ i.icon-bg-dark {
     position: absolute;
     top: 0px;
 }
-.btn-primary, .alert-danger {
-    margin-top: 7px;
+footer {
+    color: #fff;
+}
+footer.footer {
+    background: #333333;
 }
 .footer {
     position: fixed;
     bottom: 0;
     left: 0;
     width: 100%;
-    background: #333333;
-    color: #fff;
 }
 .footer a{
     color: #cbcbcb;

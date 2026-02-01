@@ -1,31 +1,29 @@
 {% extends "base.html" %}
 
 {% block content %}
-
-    <div class="crumbs">
-        <ol class="breadcrumb hidden-xs">
-            <li>
-                <span class="glyphicon glyphicon-home gi-0x"></span><a href="/">Dashboard</a>
-            </li>
-            <li class="active">
-                Hashes
-            </li>
-        </ol>
-    </div>
-</div>
-
-    <div class="content">
-        <div class="page-h1">
-            <h1>Hashes <small>hashes list management</small></h1>
+<div class="span11">
+    <div class="content content-large">
+        <div class="content-header">
+            <h2><i class="icon-table"> </i> Hashes <small>hashes list management</small></h2>
         </div>
-        <div class="col-md-12">
-            <div class="wdgt">
+        <div class="content-breadcrumb">
+            <ul class="breadcrumb">
+                <li>
+                    <a href="/"><i class="icon-home"> </i> Dashboard</a><span class="divider">&rsaquo;</span>
+                </li>
+                <li class="active">
+                    Hashes
+                </li>
+            </ul>
+        </div>
+        <div class="content-body">
+            <div class="box-header corner-top">
                 <div class="header-control pull-right">
-                    <a href="{% url "hashes.views.new_hashes" %}"  type="button" class="btn btn-success pull-right" title="Add list" data-tooltip="tooltip" data-placement="left">
-                        <span class="glyphicon glyphicon-plus"></span>
+                    <a href="{% url "new_hashes" %}" class="btn btn-success tool" title="Add list">
+                        <i class="icon-plus"> </i>
                     </a>
                 </div>
-                <ul class="nav nav-pills nav-primary" id="cases_tab">
+                <ul class="nav nav-pills" id="cases_tab">
                     <li class="active">
                         <a href="#my" data-toggle="tab">My</a>
                     </li>
@@ -35,106 +33,119 @@
                 </ul>
                 <div class="tab-content">
                     <div class="tab-pane active" id="my">
-                        <div class="box">
-                            <table class="table datatables">
-                                <thead>
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Cipher</th>
-                                        <th>Created at</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for list in my_lists %}
-                                        <tr>
-                                            <td><a href="{% url "hashes.views.show_hashes" list.id %}">{{ list.name }}</a></td>
-                                            <td>{{ list.get_cipher_display }}</td>
-                                            <td>{{ list.created_at }}</td>
-                                            <td>
-                                                <div class="btn-group">
-                                                    {% if request.user == list.owner or request.user.is_superuser %}
-                                                        <a class="btn btn-danger btn-trash" data-tooltip="tooltip"  title="Delete" href="#trash" role="button" data-toggle="modal" id="{% url "hashes.views.delete_hashes" list.id %}">
-                                                            <span class="glyphicon glyphicon-trash"></span>
-                                                        </a>
-                                                    {% else %}
-                                                        <a class="btn btn-danger" title="You are not authorized to delete this" disabled="disabled">
-                                                            <span class="glyphicon glyphicon-trash"></span>
-                                                        </a>
-                                                    {% endif %}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                        <div class="row-fluid">
+                            <div class="span12">
+                                <div class="box corner-all">
+                                    <div class="box-body">
+                                        <table class="table table-bordered table-striped responsive datatables">
+                                            <thead>
+                                                <tr>
+                                                    <th>Name</th>
+                                                    <th>Cipher</th>
+                                                    <th>Created at</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for list in my_lists %}
+                                                <tr>
+                                                    <td><a href="{% url "show_hashes" list.id %}">{{ list.name }}</a></td>
+                                                    <td>{{ list.get_cipher_display }}</td>
+                                                    <td>{{ list.created_at }}</td>
+                                                    <td>
+                                                    <div class="btn-group">
+                                                        {% if request.user == list.owner or request.user.is_superuser %}
+                                                            <a class="btn btn-danger btn-trash tool" href="#trash" role="button" data-toggle="modal" id="{% url "delete_hashes" list.id %}" title="Delete list">
+                                                                <i class="icon-trash"> </i>
+                                                            </a>
+                                                        {% else %}
+                                                            <a class="btn btn-danger tool" title="You are not authorized to delete this" disabled="disabled">
+                                                                <i class="icon-trash"> </i>
+                                                            </a>
+                                                        {% endif %}
+                                                    </div></td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="tab-pane" id="all">
-                        <div class="box">
-                           <table class="table datatables">
-                                <thead>
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Cipher</th>
-                                        <th>Created at</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for list in public_lists %}
-                                    <tr>
-                                        <td><a href="{% url "hashes.views.show_hashes" list.id %}">{{ list.name }}</a></td>
-                                        <td>{{ list.get_cipher_display }}</td>
-                                        <td>{{ list.created_at }}</td>
-                                        <td>
-                                            <div class="btn-group">
-                                                <a class="btn btn-danger btn-trash tool" href="#trash" role="button" data-toggle="modal" id="" title="Delete hash">
-                                                    <span class="glyphicon glyphicon-trash"></span>
-                                                </a>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                        {% endfor %}
-                                </tbody>
-                            </table>
+                        <div class="row-fluid">
+                            <div class="span12">
+                                <div class="box corner-all">
+                                    <div class="box-body">
+                                       <table class="table table-bordered table-striped responsive datatables">
+                                            <thead>
+                                                <tr>
+                                                    <th>Name</th>
+                                                    <th>Cipher</th>
+                                                    <th>Created at</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for list in public_lists %}
+                                                <tr>
+                                                    <td><a href="{% url "show_hashes" list.id %}">{{ list.name }}</a></td>
+                                                    <td>{{ list.get_cipher_display }}</td>
+                                                    <td>{{ list.created_at }}</td>
+                                                    <td>
+                                                    <div class="btn-group">
+                                                        <a class="btn btn-danger btn-trash tool" href="#trash" role="button" data-toggle="modal" id="" title="Delete hash">
+                                                            <i class="icon-trash"></i>
+                                                        </a>
+                                                    </div></td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <div class="modal fade" id="trash" tabindex="-1" role="dialog">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                    <h4 class="modal-title" id="myModalLabel">Delete hash list</h4>
-                </div>
-                <div class="modal-body">
-                    This <b>permanently</b> deletes the selected hash list.
-                    Are you sure continue?
-                </div>
-                <div class="modal-footer">
-                    <a type="button" class="btn btn-danger" id="id">Delete</a>
-                    <a type="button" class="btn btn-default" data-dismiss="modal">Cancel</a>
-                </div>
-            </div>
-        </div>
+<div id="trash" class="modal hide fade" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+            ×
+        </button>
+        <h3>Delete hash list</h3>
     </div>
+    <div class="modal-body">
+        <p>
+            This <b>permanently</b> deletes the selected hash list.
+            Are you sure continue?
+        </p>
+    </div>
+    <div class="modal-footer">
+        <a class="btn btn-danger" id="id">
+            Delete
+        </a>
+        <button class="btn" data-dismiss="modal" aria-hidden="true">
+            Cancel
+        </button>
+    </div>
+</div>
 
-    <script type="text/javascript">
-        $('.datatables').dataTable({
-            "sPaginationType": "bs_normal",
-            "sDom": '<"row view-filter"<"col-sm-12"<"clearfix">>>t<"row view-pager"<"col-sm-12"<"text-right"p>>>',
-            "aaSorting": [[ 2, "desc" ]]
-        });
+<script type="text/javascript">
+$('.datatables').dataTable({
+"sDom" : '<"top">t<"bottom"lp><"clear">',
+"aaSorting" : [[2, "desc"]]
+});
 
-        $('.btn-trash').click(function(){
-            var id = $(this).attr("id");
-            $("#id").attr({href: id});
-        });
-    </script>
-
+$('.btn-trash').click(function(){
+    var id = $(this).attr("id");
+    $("#id").attr({href: id});
+});
+</script>
 {%  endblock %}

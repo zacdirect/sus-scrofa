@@ -14,7 +14,7 @@ Requirements
 Ghiro has the following requirements:
 
     * MongoDB: you need to run a MongoDB database (at least release 2.0)
-    * Python: that's how we roll (it is required Python 2.7, although Ghiro is written to work also in Python 3 some third party libraries aren't)
+    * Python: that's how we roll (only Python 2.x, at least release 2.7)
     * Python-magic: for MIME extraction
     * Python 2.x bindings for gobject-introspection libraries, required by Gexiv2
     * Gexiv2: for metadata extraction (at least release 0.6.1)
@@ -25,19 +25,15 @@ Ghiro has the following requirements:
     * Chardet: for text encoding detection
     * Pdfkit: used for PDF report generation (at least release 0.4)
     * Wkhtmltopdf: used by pdfkit
-    * Requests: used for HTTP requests
-    * NudePy: used for nude detection
-    * ImageHash: to calculate perceptual image hash
 
-If you choose MySQL or PostgreSQL as database you have to install their additional drivers.
+If you choose MySQL or PostgrSQL as database you have to install their additional drivers.
 
 Ghiro web application is tested and working on the following browsers:
 
-    * Internet Explorer 11
-    * Mozilla Firefox starting from 35
-    * Google Chrome starting from 39
-    * Opera starting from 26
-    * Safari 8 and 9
+    * Internet Explorer 8, Internet Explorer 9, Internet Explorer 10
+    * Mozilla Firefox 24
+    * Opera 17
+    * Safari 7
     * IOS 7 for Ipad and Iphone
 
 Getting started
@@ -70,7 +66,7 @@ Install required libraries with the following commands
 
     apt-get install python-pip build-essential python-dev python-gi
     apt-get install libgexiv2-2 gir1.2-gexiv2-0.10 wkhtmltopdf
-    apt-get install libtiff5-dev libjpeg-dev zlib1g-dev libfreetype6-dev
+    apt-get install libtiff4-dev libjpeg8-dev zlib1g-dev libfreetype6-dev
     apt-get install liblcms2-dev libwebp-dev tcl8.5-dev tk8.5-dev python-tk
 
 
@@ -96,30 +92,29 @@ localhost). If you need to change this see the configuration chapter below.
 First of all you need to create an empty database with the following command
 (inside Ghiro's root)::
 
-    python manage.py migrate
+    python manage.py syncdb
 
-Create a superuser for administration, you should provide an username and a
-password, use the following command (inside Ghiro's root)::
-
-    python manage.py createsuperuser
+You will be asked to create a superuser for administration, choose *yes* and
+fill all the required fields.
 
 Running
 -------
 
 To start the web interface run the following command (inside Ghiro's root)::
 
-    python manage.py runserver
+    python manage runserver
 
 A web server running Ghiro will be available on http://127.0.0.1:8000/
 If you need to listen expose Ghiro to all addresses or change the port (in this
 example is 9000) run the following command (inside Ghiro's root)::
 
-    python manage.py runserver 0.0.0.0:9000
+    python manage runserver 0.0.0.0:9000
 
-To start processing images you have to start the processing daemon, run the
+To start processing images you have to start the processing deamon, run the
 following command (inside Ghiro's root)::
 
     python manage.py process
+
 
 Configuration
 =============
@@ -136,49 +131,13 @@ Following is the default *ghiro/local_settings.py* file:
 .. literalinclude:: ../../../ghiro/local_settings.py
 
 If you change the configuration after the first setup, before editing this file
-you have to stop both Ghiro's web interface and processing daemon, you may
+you have to stop both Ghiro's web interface and processing deamon, you may
 restart them after the edit.
 
 If you changed any setting related to the database configuration you have to
 re-build your database with the command (inside Ghiro's root)::
 
     python manage.py syncdb
-
-Logging
--------
-
-Ghiro provides several types of logging divided in the following categories:
-
- * Audit logging: tracks all users actions for audit purposes.
- * Processing logging: logs all steps of image analysis, this helps debugging stuff.
-
-You can change the behavior of logging editing `ghiro/local_settings.py`:
-
-    * LOG_DIR: log directory. Here is where Ghiro puts all logs.
-
-Audit log
-^^^^^^^^^
-
-The audit log contains all users actions (i.e. case creation, image analysis
-actions) to keep track of user activity.
-By default it is located in `audit.log` in the Ghiro log directory.
-You can change the behavior of this log editing `ghiro/local_settings.py`:
-
-    * LOG_AUDIT_NAME: audit log file name.
-    * LOG_AUDIT_SIZE: audit log maximum size.
-    * LOG_AUDIT_NUM: how many copies of audit log keep while rotating logs.
-
-Processing log
-^^^^^^^^^^^^^^
-
-The processing log contains image analysis logs, it is of great help when
-debugging Ghiro or trying to understand what happen under the hood.
-By default it is located in `processing.log` in the Ghiro log directory.
-You can change the behavior of this log editing `ghiro/local_settings.py`:
-
-    * LOG_PROCESSING_NAME: processing log file name.
-    * LOG_PROCESSING_SIZE: processing log maximum size.
-    * LOG_PROCESSING_NUM: how many copies of processing log keep while rotating logs.
 
 Running Ghiro as service
 ========================
@@ -246,8 +205,8 @@ Create the file ghiro.conf in /etc/init/ with the following content::
     start on started mysql
     stop on shutdown
     script
-        exec start-stop-daemon --start -d /var/www/ghiro \
-            --exec /usr/bin/python manage.py process
+            chdir /var/www/ghiro/
+            exec /usr/bin/python manage.py process
     end script
 
 To stop the processor use the following command (run as root or with sudo)::

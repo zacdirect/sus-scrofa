@@ -1,19 +1,15 @@
-# Ghiro - Copyright (C) 2013-2016 Ghiro Developers.
+# Ghiro - Copyright (C) 2013-2015 Ghiro Developers.
 # This file is part of Ghiro.
 # See the file 'docs/LICENSE.txt' for license terms.
 
+from io import BytesIO, StringIO
 import tempfile
-import magic
-# Deal with Python 3.
-try:
-    from StringIO import StringIO
-except ImportError:
-    # Hack for python 3, binary files should be opened in binary mode and
-    # threatened with BytesIO.
-    from io import BytesIO as StringIO
+import logging
+import logging.handlers
 
 from PIL import Image
-from pymongo.errors import InvalidId
+
+from analyses.models import AnalysisMetadataDescription
 from lib.db import save_file, get_file
 
 
@@ -91,22 +87,35 @@ def to_unicode(str):
     return result
 
 def str2file(text_data):
-    strIO = StringIO()
+    strIO = BytesIO()
     strIO.write(text_data)
     strIO.seek(0)
     return strIO
 
-def str2temp_file(text_data, delete=True):
-    tmp = tempfile.NamedTemporaryFile(prefix="ghiro-", delete=delete)
+def str2temp_file(text_data):
+    tmp = tempfile.NamedTemporaryFile(prefix="ghiro-")
     tmp.write(text_data)
     return tmp
+
+def add_metadata_description(key, description):
+    """Adds key metadata description to lookup table.
+    @param key: fully qualified metadata key
+    @param description: key description
+    """
+    # Skip if no description is provided.
+    if description:
+        try:
+            AnalysisMetadataDescription.objects.get(key=key.lower())
+        except AnalysisMetadataDescription.DoesNotExist:
+            obj = AnalysisMetadataDescription(key=key.lower(), description=description)
+            obj.save()
 
 def str2image(data):
     """Converts binary data to PIL Image object.
     @param data: binarydata
     @return: PIL Image object
     """
-    output = StringIO()
+    output = BytesIO()
     output.write(data)
     output.seek(0)
     return Image.open(output)
@@ -116,7 +125,7 @@ def image2str(img):
     @param img: PIL Image object
     @return:  binary data
     """
-    f = StringIO()
+    f = BytesIO()
     img.save(f, "JPEG")
     return f.getvalue()
 
@@ -127,12 +136,7 @@ def create_thumb(file_path):
     """
     try:
         thumb = Image.open(file_path)
-
-        # Check if conversion to RGBA is needed (i.e. for PNG files).
-        if thumb.mode is not "RGBA":
-            thumb = thumb.convert("RGBA")
-
-        thumb.thumbnail([200, 150], Image.ANTIALIAS)
+        thumb.thumbnail([200, 150], Image.Resampling.LANCZOS)
         return save_file(data=image2str(thumb), content_type="image/jpeg")
     except:
         return None
@@ -179,36 +183,22 @@ def import_is_available(module_name):
     @return: import status
     """
     try:
-        __import__(module_name, globals(), locals(), ["dummy"], )
+        __import__(module_name, globals(), locals(), ["dummy"], 0)
         return True
     except ImportError:
         return False
 
 def deps_check():
     """Check for all dependencies."""
-    # TODO: move the dict to a configuration file.
     deps = [{"name": "Django", "module": "django"},
             {"name": "GExiv2", "module": "gi.repository.GExiv2"},
-            {"name": "ImageHash", "module": "imagehash"},
-            {"name": "NudePy", "module": "nude"},
             {"name": "Pillow", "module": "PIL"},
             {"name": "Pdfkit", "module": "pdfkit"},
             {"name": "Pymongo", "module": "pymongo"},
-            {"name": "Chardet", "module": "chardet"},
-            {"name": "Python Dateutil", "module": "dateutil"},
-            {"name": "Python Magic", "module": "magic"},
-            {"name": "Python Requests", "module": "requests"}
+            {"name": "Chardet", "module": "chardet"}
             ]
 
     for dep in deps:
         dep["available"] = import_is_available(dep["module"])
 
     return deps
-
-def get_content_type_from_file(file_path):
-    """Returns content type of a file.
-    @param file_path: file path
-    @return: content type
-    """
-    mime = magic.Magic(mime=True)
-    return mime.from_file(file_path).decode("utf-8")

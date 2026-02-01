@@ -1,4 +1,4 @@
-# Ghiro - Copyright (C) 2013-2016 Ghiro Developers.
+# Ghiro - Copyright (C) 2013-2015 Ghiro Developers.
 # This file is part of Ghiro.
 # See the file 'docs/LICENSE.txt' for license terms.
 
@@ -24,27 +24,6 @@ class List(models.Model):
     owner = models.ForeignKey(Profile, null=False, blank=False, on_delete=models.CASCADE, db_index=True, editable=False, related_name="owned_hashes")
     created_at = models.DateTimeField(auto_now_add=True, editable=False, db_index=True)
     matches = models.ManyToManyField(Analysis, blank=True)
-
-    def is_owner(self, user):
-        """Checks if an user is the owner of this object.
-        @param user: user instance
-        @return: boolean permission
-        """
-        return user == self.owner
-
-    def can_read(self, user):
-        """Checks if an user is allowed to read this object.
-        @param user: user instance
-        @return: boolean permission
-        """
-        return user.is_superuser or self.is_owner(user) or self.public
-
-    def can_write(self, user):
-        """Checks if an user is allowed to write (create, edit, delete) this object.
-        @param user: user instance
-        @return: boolean permission
-        """
-        return user.is_superuser or self.is_owner(user)
 
 class Hash(models.Model):
     """Hashes."""

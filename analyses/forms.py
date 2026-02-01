@@ -1,8 +1,9 @@
-# Ghiro - Copyright (C) 2013-2016 Ghiro Developers.
+# Ghiro - Copyright (C) 2013-2015 Ghiro Developers.
 # This file is part of Ghiro.
 # See the file 'docs/LICENSE.txt' for license terms.
 
 import os
+import magic
 
 from django import forms
 from django.conf import settings
@@ -11,18 +12,19 @@ from django.core.validators import URLValidator
 
 from analyses.models import Case, Analysis, Comment
 from ghiro.common import check_allowed_content
-from lib.utils import get_content_type_from_file
 
 class CaseForm(forms.ModelForm):
     """Case form."""
     class Meta:
         model = Case
         fields = "__all__"
+        fields = "__all__"
 
 class CommentForm(forms.ModelForm):
     """Comment form."""
     class Meta:
         model = Comment
+        fields = "__all__"
         fields = "__all__"
 
 class UploadImageForm(forms.ModelForm):
@@ -31,16 +33,19 @@ class UploadImageForm(forms.ModelForm):
 
     class Meta:
         model = Analysis
+        fields = "__all__"
+        fields = "__all__"
         fields = ["image"]
 
     def clean_image(self):
         image = self.cleaned_data.get("image", False)
         if image:
             # File check.
-            if image._size > settings.MAX_FILE_UPLOAD:
+            if image.size > settings.MAX_FILE_UPLOAD:
                 raise ValidationError("Image file too large")
             # Type check.
-            file_type = get_content_type_from_file(image.temporary_file_path())
+            mime = magic.Magic(mime=True)
+            file_type = mime.from_file(image.temporary_file_path())
             if not check_allowed_content(file_type):
                 raise ValidationError("Image type not supported.")
         else:
