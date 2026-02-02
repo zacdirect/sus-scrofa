@@ -7,20 +7,8 @@ from django.views.decorators.http import require_safe
 from django.shortcuts import render
 from django.http import HttpResponse
 
-from ghiro.common import check_version
 from lib.utils import deps_check
 
-
-@require_safe
-@login_required
-def update_check(request):
-    """Checks for new version available."""
-    try:
-        new_version = check_version()
-    except Exception:
-        new_version = False
-
-    return HttpResponse(new_version)
 
 @require_safe
 @login_required

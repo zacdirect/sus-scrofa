@@ -45,7 +45,6 @@ URL_MAPPING = {
     'hashes.views.delete_hashes': 'delete_hashes',
     # manage app
     'manage.views.dependencies_list': 'dependencies_list',
-    'manage.views.update_check': 'update_check',
     # auth
     'django.contrib.auth.views.logout': 'logout',
     'django.contrib.auth.views.login': 'login',

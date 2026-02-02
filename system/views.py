@@ -8,20 +8,8 @@ from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.http import HttpResponse
 
-from ghiro.common import check_version
 from lib.utils import deps_check
 
-
-@require_safe
-@login_required
-def update_check(request):
-    """Checks for new version available."""
-    try:
-        new_version = check_version()
-    except Exception:
-        new_version = False
-
-    return HttpResponse(new_version)
 
 @require_safe
 @login_required

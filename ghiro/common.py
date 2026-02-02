@@ -10,7 +10,6 @@ from django.contrib.auth.signals import user_logged_in, user_logged_out
 from django.conf import settings
 
 from users.models import Activity
-from manage.models import UpdateCheck
 
 
 def log_activity(category, message, request, user=None):
@@ -57,44 +56,5 @@ def check_allowed_content(content_type):
     """
     if content_type in settings.ALLOWED_EXT:
         return True
-    else:
-        return False
-
-def check_version():
-    """Checks version of Ghiro."""
-
-    # Do i have to check?
-    if UpdateCheck.should_check() and settings.UPDATE_CHECK:
-
-        # Create new check entry.
-        check = UpdateCheck.objects.create()
-
-        # Format request.
-        url = "http://update.getghiro.org/update/check/"
-        data = urllib.urlencode({"version": settings.GHIRO_VERSION})
-        headers = {"User-Agent": "Ghiro update client"}
-        try:
-            request = urllib2.Request(url, data=data, headers=headers)
-            response = urllib2.urlopen(request, timeout=60).read()
-        except (urllib2.URLError, urllib2.HTTPError) as e:
-            check.state = "E"
-            check.save()
-            raise Exception("Unable to establish connection: %s" % e)
-
-        try:
-            data = json.loads(response)
-        except ValueError as e:
-            check.state = "E"
-            check.save()
-            raise Exception("Invalid response: %s" % e)
-
-        if data["new_release"]:
-            check.state = "A"
-            check.save()
-            return True
-        else:
-            check.state = "N"
-            check.save()
-            return False
     else:
         return False

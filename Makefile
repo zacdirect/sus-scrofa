@@ -14,8 +14,8 @@ PIP := $(VENV)/pip
 MANAGE := $(PYTHON) manage.py
 SYSTEM_PYTHON := python3.13
 
-# Check if venv exists
-VENV_EXISTS := $(shell test -d $(VENV_DIR) && echo 1 || echo 0)
+# Check if venv exists and is functional
+VENV_EXISTS := $(shell test -f $(VENV_DIR)/bin/pip && echo 1 || echo 0)
 
 help:
 	@echo "$(GREEN)Ghiro Development Commands$(NC)"
@@ -77,17 +77,17 @@ install: venv
 	@echo "$(GREEN)Installing Python dependencies...$(NC)"
 	@echo ""
 	@echo "$(YELLOW)Upgrading pip...$(NC)"
-	@$(PIP) install --upgrade pip setuptools wheel
+	@$(VENV)/pip install --upgrade pip setuptools wheel
 	@echo ""
 	@echo "$(YELLOW)Installing requirements...$(NC)"
-	@$(PIP) install -r requirements.txt
+	@$(VENV)/pip install -r requirements.txt
 	@echo ""
 	@echo "$(YELLOW)Installing PyGObject (for EXIF support)...$(NC)"
-	@$(PIP) install PyGObject || (echo "$(RED)PyGObject installation failed. Make sure you have:$(NC)" && \
+	@$(VENV)/pip install PyGObject || (echo "$(RED)PyGObject installation failed. Make sure you have:$(NC)" && \
 		echo "  sudo apt-get install build-essential libcairo2-dev libgirepository-2.0-dev pkg-config python3.13-dev" && exit 1)
 	@echo ""
 	@echo "$(YELLOW)Verifying GExiv2 access from venv...$(NC)"
-	@$(PYTHON) -c "from gi.repository import GExiv2; print('  ✓ GExiv2 version:', GExiv2.get_version())" 2>/dev/null || \
+	@$(VENV)/python -c "from gi.repository import GExiv2; print('  ✓ GExiv2 version:', GExiv2.get_version())" 2>/dev/null || \
 		(echo "$(RED)  ✗ Cannot import GExiv2. Make sure gir1.2-gexiv2-0.10 is installed:$(NC)" && \
 		echo "    sudo apt-get install gir1.2-gexiv2-0.10" && exit 1)
 	@echo ""

@@ -5,6 +5,5 @@
 from django.conf.urls import patterns, url
 
 urlpatterns = patterns("",
-    url(r"^update/check/", "system.views.update_check"),
     url(r"^dependencies/$", "system.views.dependencies_list"),
 )

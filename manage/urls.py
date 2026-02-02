@@ -6,6 +6,5 @@ from django.urls import re_path
 from . import views
 
 urlpatterns = [
-    re_path(r"^update/check/", views.update_check, name="update_check"),
     re_path(r"^dependencies/$", views.dependencies_list, name="dependencies_list"),
 ]

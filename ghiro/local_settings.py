@@ -65,7 +65,3 @@ DEBUG = True
 # When DEBUG is True or when running tests, host validation is disabled; any
 # host will be accepted. Thus it's usually only necessary to set it in production.
 ALLOWED_HOSTS = ["*"]
-
-# Automatically checks once a day for updates.
-# Set it to False to disable update check.
-UPDATE_CHECK = True
