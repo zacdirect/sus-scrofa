@@ -4,82 +4,92 @@
     <div class="wdgt-header">AI Generation Detection
         <span class="pull-right">
             {% if analysis.report.ai_detection.likely_ai %}
-                <span class="label label-important">Likely AI Generated</span>
+                <span class="label label-important">AI Generated</span>
             {% else %}
-                <span class="label label-success">Likely Authentic</span>
+                <span class="label label-success">Authentic</span>
             {% endif %}
         </span>
     </div>
     <div class="wdgt-body">
-        {% if analysis.report.ai_detection %}
+        {% if analysis.report.ai_detection.error %}
+            <div class="alert alert-warning">
+                <strong>Analysis Not Available:</strong> {{ analysis.report.ai_detection.error }}
+                <br><small>See AI_DETECTION_SETUP.md for installation instructions.</small>
+            </div>
+        {% elif analysis.report.ai_detection.enabled %}
             <div class="row-fluid">
                 <div class="span6">
                     <h4>AI Probability Score</h4>
-                    <div class="progress progress-striped {% if analysis.report.ai_detection.ai_probability > 60 %}progress-danger{% elif analysis.report.ai_detection.ai_probability > 40 %}progress-warning{% else %}progress-success{% endif %}" 
+                    <div class="progress progress-striped {% if analysis.report.ai_detection.ai_probability > 85 %}progress-danger{% elif analysis.report.ai_detection.ai_probability > 70 %}progress-warning{% else %}progress-success{% endif %}" 
                          style="height: 30px; margin-bottom: 20px;">
                         <div class="bar" style="width: {{ analysis.report.ai_detection.ai_probability }}%; line-height: 30px; font-size: 16px;">
                             {{ analysis.report.ai_detection.ai_probability|floatformat:1 }}%
                         </div>
                     </div>
                     
-                    <h4>Detailed Metrics</h4>
+                    <p class="muted">
+                        <small>
+                            <strong>Confidence:</strong>
+                            <span class="label {% if analysis.report.ai_detection.confidence == 'very_high' or analysis.report.ai_detection.confidence == 'high' %}label-important{% elif analysis.report.ai_detection.confidence == 'medium' %}label-warning{% else %}label-info{% endif %}">
+                                {{ analysis.report.ai_detection.confidence|upper }}
+                            </span>
+                        </small>
+                    </p>
+                    
+                    <h4>Technical Details</h4>
                     <table class="table table-striped table-condensed">
                         <tr>
-                            <td><strong>Gradient Smoothness:</strong></td>
-                            <td>
-                                <small>CV: {{ analysis.report.ai_detection.gradient_cv|floatformat:2 }}</small>
-                            </td>
+                            <td><strong>Model:</strong></td>
+                            <td><small>{{ analysis.report.ai_detection.model }}</small></td>
                         </tr>
                         <tr>
-                            <td><strong>Gradient Entropy:</strong></td>
-                            <td>
-                                <small>{{ analysis.report.ai_detection.gradient_entropy|floatformat:2 }}</small>
-                            </td>
+                            <td><strong>Score:</strong></td>
+                            <td><small>{{ analysis.report.ai_detection.logit|floatformat:3 }}</small></td>
                         </tr>
                         <tr>
-                            <td><strong>Noise Uniformity:</strong></td>
-                            <td>
-                                <small>{{ analysis.report.ai_detection.noise_uniformity|floatformat:2 }}</small>
-                            </td>
+                            <td><strong>Method:</strong></td>
+                            <td><small>Spectral Learning (Frequency Domain)</small></td>
                         </tr>
                         <tr>
-                            <td><strong>Metadata Score:</strong></td>
-                            <td>
-                                <small>{{ analysis.report.ai_detection.metadata_score }}</small>
-                            </td>
+                            <td><strong>Paper:</strong></td>
+                            <td><small>{{ analysis.report.ai_detection.paper }}</small></td>
                         </tr>
                     </table>
                 </div>
                 <div class="span6">
-                    <h4>Evidence</h4>
+                    <h4>Assessment</h4>
+                    <div class="alert {% if analysis.report.ai_detection.likely_ai %}alert-error{% else %}alert-info{% endif %}" style="margin-top: 0;">
+                        <p><strong>{{ analysis.report.ai_detection.interpretation }}</strong></p>
+                    </div>
+                    
                     {% if analysis.report.ai_detection.evidence %}
+                        <h4>Evidence</h4>
                         <ul class="unstyled">
                             {% for item in analysis.report.ai_detection.evidence %}
-                            <li style="margin-bottom: 10px;">
-                                <i class="icon-warning-sign"></i> {{ item }}
+                            <li style="margin-bottom: 8px;">
+                                <i class="icon-{% if analysis.report.ai_detection.likely_ai %}warning-sign{% else %}ok{% endif %}"></i> {{ item }}
                             </li>
                             {% endfor %}
                         </ul>
-                    {% else %}
-                        <p class="muted">No significant AI indicators detected.</p>
                     {% endif %}
                     
-                    <div class="alert {% if analysis.report.ai_detection.likely_ai %}alert-error{% else %}alert-info{% endif %}" style="margin-top: 20px;">
-                        <strong>Assessment:</strong>
-                        {% if analysis.report.ai_detection.ai_probability > 80 %}
-                            <p>Very high probability this image is AI-generated. Multiple strong indicators present.</p>
-                        {% elif analysis.report.ai_detection.ai_probability > 60 %}
-                            <p>High probability of AI generation. Several indicators detected.</p>
-                        {% elif analysis.report.ai_detection.ai_probability > 40 %}
-                            <p>Moderate AI probability. Some characteristics suggest possible AI generation.</p>
-                        {% else %}
-                            <p>Low AI probability. Image characteristics are consistent with authentic photography.</p>
-                        {% endif %}
-                    </div>
+                    <p class="muted" style="margin-top: 20px;">
+                        <small>
+                            <strong>About SPAI:</strong><br>
+                            State-of-the-art spectral learning detector (CVPR 2025) trained on 
+                            {{ analysis.report.ai_detection.training }}.
+                            Works on any image resolution using frequency domain analysis.
+                            <br><br>
+                            <em>Developed by CERTH/University of Amsterdam</em>
+                        </small>
+                    </p>
                 </div>
             </div>
         {% else %}
-            <p class="muted">AI detection analysis not available.</p>
+            <div class="alert alert-info">
+                <p>AI detection analysis not available. SPAI may not be installed.</p>
+                <small>See <code>AI_DETECTION_SETUP.md</code> for installation instructions.</small>
+            </div>
         {% endif %}
     </div>
 </div>

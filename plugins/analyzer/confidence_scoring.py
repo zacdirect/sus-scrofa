@@ -4,13 +4,13 @@
 
 import logging
 
-from lib.analyzer.base import BaseProcessingModule
+from lib.analyzer.base import BaseAnalyzerModule
 from lib.forensics.confidence import calculate_manipulation_confidence
 
 logger = logging.getLogger(__name__)
 
 
-class ConfidenceScoringProcessing(BaseProcessingModule):
+class ConfidenceScoringProcessing(BaseAnalyzerModule):
     """Aggregates all detection results into confidence scores."""
 
     name = "Confidence Scoring"

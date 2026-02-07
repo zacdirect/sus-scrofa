@@ -15,8 +15,8 @@
             <div class="row-fluid">
                 <div class="span6">
                     <h4>FFT Magnitude Spectrum</h4>
-                    <a href="{% url "analyses.views.image" analysis.report.frequency_analysis.fft_image_id %}" class="fancybox">
-                        <img src="{% url "analyses.views.image" analysis.report.frequency_analysis.fft_image_id %}" 
+                    <a href="{% url 'image' analysis.report.frequency_analysis.fft_image_id %}" class="fancybox">
+                        <img src="{% url 'image' analysis.report.frequency_analysis.fft_image_id %}" 
                              style="max-width: 100%;" 
                              alt="FFT Spectrum" />
                     </a>

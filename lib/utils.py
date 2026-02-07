@@ -159,18 +159,21 @@ def hexdump(image_id, length=8):
 
     hex_dump = []
 
-    # Deal with unicode.
-    if isinstance(src, unicode):
+    # Deal with unicode (Python 3: str is unicode).
+    if isinstance(src, str):
         digits = 4
+        # Convert string to bytes for consistent handling
+        src = src.encode('latin-1', errors='replace')
     else:
         digits = 2
 
     # Create hex view.
-    for i in xrange(0, len(src), length):
+    for i in range(0, len(src), length):
         line = {}
         s = src[i:i+length]
-        hexa = b" ".join(["%0*X" % (digits, ord(x)) for x in s])
-        text = b"".join([x if 0x20 <= ord(x) < 0x7F else b"." for x in s])
+        # In Python 3, iterating bytes yields integers, not characters
+        hexa = b" ".join(["%0*X" % (digits, x) for x in s])
+        text = b"".join([bytes([x]) if 0x20 <= x < 0x7F else b"." for x in s])
         line["address"] = b"%04X" % i
         line["hex"] = b"%-*s" % (length*(digits + 1), hexa)
         line["text"] = text

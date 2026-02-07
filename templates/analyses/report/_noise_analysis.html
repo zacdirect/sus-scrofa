@@ -15,8 +15,8 @@
             <div class="row-fluid">
                 <div class="span6">
                     <h4>Variance Heatmap</h4>
-                    <a href="{% url "analyses.views.image" analysis.report.noise_analysis.variance_map_id %}" class="fancybox">
-                        <img src="{% url "analyses.views.image" analysis.report.noise_analysis.variance_map_id %}" 
+                    <a href="{% url 'image' analysis.report.noise_analysis.variance_map_id %}" class="fancybox">
+                        <img src="{% url 'image' analysis.report.noise_analysis.variance_map_id %}" 
                              style="max-width: 100%;" 
                              alt="Noise Variance Map" />
                     </a>

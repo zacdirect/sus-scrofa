@@ -1,4 +1,4 @@
-.PHONY: help start stop status logs clean mongodb web processor dev run setup install check-deps venv reset-db fresh
+.PHONY: help start stop status logs clean mongodb web processor dev run setup install check-deps venv reset-db fresh ai-setup ai-verify ai-clean
 
 # Colors for output
 RED := \033[0;31m
@@ -27,6 +27,11 @@ help:
 	@echo "  make install     - Install Python dependencies"
 	@echo "  make check-deps  - Check system dependencies"
 	@echo "  make mongodb     - Start MongoDB container (Podman)"
+	@echo ""
+	@echo "$(YELLOW)AI Detection (Optional):$(NC)"
+	@echo "  make ai-setup    - Setup AI detection module (SPAI)"
+	@echo "  make ai-verify   - Verify AI detection installation"
+	@echo "  make ai-clean    - Remove AI detection environment"
 	@echo ""
 	@echo "$(YELLOW)Development:$(NC)"
 	@echo "  make run         - Quick start (MongoDB + Web + Processor)"
@@ -251,11 +256,6 @@ reset-db: stop
 	@echo ""
 	@echo "$(YELLOW)Running migrations to recreate database...$(NC)"
 	@$(MAKE) migrate
-	@echo ""
-	@echo "$(GREEN)✓ Database reset complete$(NC)"
-	@echo ""
-	@echo "Next step: make superuser"
-
 fresh: reset-db
 	@echo ""
 	@echo "$(GREEN)Database reset complete!$(NC)"
@@ -263,6 +263,35 @@ fresh: reset-db
 	@echo "Next steps:"
 	@echo "  1. Create superuser: make superuser"
 	@echo "  2. Start development: make dev"
+	@echo ""
+	@echo "$(YELLOW)Tip: To also clear MongoDB analysis data:$(NC)"
+	@echo "  podman rm -f ghiro-mongodb"
+	@echo "  podman volume rm ghiro-mongodb-data"
+	@echo ""
+
+# AI Detection Setup
+ai-setup:
+	@echo "$(GREEN)Setting up AI detection module...$(NC)"
+	@echo ""
+	@cd ai_detection && $(MAKE) setup
+	@echo ""
+	@echo "$(GREEN)========================================$(NC)"
+	@echo "$(GREEN)✓ AI detection ready!$(NC)"
+	@echo "$(GREEN)========================================$(NC)"
+	@echo ""
+	@echo "The AI detection plugin will now be available for image analysis."
+	@echo ""
+	@echo "Verify installation:"
+	@echo "  make ai-verify"
+
+ai-verify:
+	@echo "$(GREEN)Verifying AI detection module...$(NC)"
+	@cd ai_detection && $(MAKE) verify
+
+ai-clean:
+	@echo "$(YELLOW)Cleaning AI detection module...$(NC)"
+	@cd ai_detection && $(MAKE) clean
+	@echo "$(GREEN)✓ AI detection cleaned$(NC)" 2. Start development: make dev"
 	@echo ""
 	@echo "$(YELLOW)Tip: To also clear MongoDB analysis data:$(NC)"
 	@echo "  podman rm -f ghiro-mongodb"

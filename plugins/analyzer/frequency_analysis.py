@@ -6,7 +6,7 @@ import logging
 import numpy as np
 from scipy.fft import fft2, fftshift
 
-from lib.analyzer.base import BaseProcessingModule
+from lib.analyzer.base import BaseAnalyzerModule
 from lib.utils import str2image, image2str
 from lib.db import save_file
 from lib.forensics.filters import get_luminance, normalize_array
@@ -20,7 +20,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-class FrequencyAnalysisProcessing(BaseProcessingModule):
+class FrequencyAnalysisProcessing(BaseAnalyzerModule):
     """Analyzes frequency domain for manipulation artifacts."""
 
     name = "Frequency Domain Analysis"
