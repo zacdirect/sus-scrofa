@@ -27,8 +27,8 @@ USE_L10N = True
 USE_TZ = False
 TIME_ZONE = 'UTC'
 
-# Default primary key field type (Django 3.2+)
-DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+# Default primary key field type (Django 4.2+)
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/var/www/example.com/media/"

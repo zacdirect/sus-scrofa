@@ -1,0 +1,85 @@
+{% load analyses_tags %}
+
+<div class="box">
+    <div class="wdgt-header">AI Generation Detection
+        <span class="pull-right">
+            {% if analysis.report.ai_detection.likely_ai %}
+                <span class="label label-important">Likely AI Generated</span>
+            {% else %}
+                <span class="label label-success">Likely Authentic</span>
+            {% endif %}
+        </span>
+    </div>
+    <div class="wdgt-body">
+        {% if analysis.report.ai_detection %}
+            <div class="row-fluid">
+                <div class="span6">
+                    <h4>AI Probability Score</h4>
+                    <div class="progress progress-striped {% if analysis.report.ai_detection.ai_probability > 60 %}progress-danger{% elif analysis.report.ai_detection.ai_probability > 40 %}progress-warning{% else %}progress-success{% endif %}" 
+                         style="height: 30px; margin-bottom: 20px;">
+                        <div class="bar" style="width: {{ analysis.report.ai_detection.ai_probability }}%; line-height: 30px; font-size: 16px;">
+                            {{ analysis.report.ai_detection.ai_probability|floatformat:1 }}%
+                        </div>
+                    </div>
+                    
+                    <h4>Detailed Metrics</h4>
+                    <table class="table table-striped table-condensed">
+                        <tr>
+                            <td><strong>Gradient Smoothness:</strong></td>
+                            <td>
+                                <small>CV: {{ analysis.report.ai_detection.gradient_cv|floatformat:2 }}</small>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Gradient Entropy:</strong></td>
+                            <td>
+                                <small>{{ analysis.report.ai_detection.gradient_entropy|floatformat:2 }}</small>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Noise Uniformity:</strong></td>
+                            <td>
+                                <small>{{ analysis.report.ai_detection.noise_uniformity|floatformat:2 }}</small>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Metadata Score:</strong></td>
+                            <td>
+                                <small>{{ analysis.report.ai_detection.metadata_score }}</small>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="span6">
+                    <h4>Evidence</h4>
+                    {% if analysis.report.ai_detection.evidence %}
+                        <ul class="unstyled">
+                            {% for item in analysis.report.ai_detection.evidence %}
+                            <li style="margin-bottom: 10px;">
+                                <i class="icon-warning-sign"></i> {{ item }}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="muted">No significant AI indicators detected.</p>
+                    {% endif %}
+                    
+                    <div class="alert {% if analysis.report.ai_detection.likely_ai %}alert-error{% else %}alert-info{% endif %}" style="margin-top: 20px;">
+                        <strong>Assessment:</strong>
+                        {% if analysis.report.ai_detection.ai_probability > 80 %}
+                            <p>Very high probability this image is AI-generated. Multiple strong indicators present.</p>
+                        {% elif analysis.report.ai_detection.ai_probability > 60 %}
+                            <p>High probability of AI generation. Several indicators detected.</p>
+                        {% elif analysis.report.ai_detection.ai_probability > 40 %}
+                            <p>Moderate AI probability. Some characteristics suggest possible AI generation.</p>
+                        {% else %}
+                            <p>Low AI probability. Image characteristics are consistent with authentic photography.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <p class="muted">AI detection analysis not available.</p>
+        {% endif %}
+    </div>
+</div>

@@ -51,7 +51,7 @@ class Migration(migrations.Migration):
                 ('state', models.CharField(default=b'O', max_length=1, editable=False, db_index=True, choices=[(b'O', b'Open'), (b'C', b'Closed')])),
                 ('created_at', models.DateTimeField(auto_now_add=True, db_index=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
-                ('owner', models.ForeignKey(related_name='owned_cases', editable=False, to=settings.AUTH_USER_MODEL)),
+                ('owner', models.ForeignKey(related_name='owned_cases', editable=False, to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)),
                 ('users', models.ManyToManyField(related_name='cases', db_index=True, to=settings.AUTH_USER_MODEL, blank=True)),
             ],
             options={
@@ -65,16 +65,16 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('message', models.TextField()),
                 ('created_at', models.DateTimeField(auto_now_add=True, db_index=True)),
-                ('analysis', models.ForeignKey(related_name='comments', editable=False, to='analyses.Analysis')),
-                ('owner', models.ForeignKey(related_name='owned_comments', editable=False, to=settings.AUTH_USER_MODEL)),
+                ('analysis', models.ForeignKey(related_name='comments', editable=False, to='analyses.Analysis', on_delete=models.CASCADE)),
+                ('owner', models.ForeignKey(related_name='owned_comments', editable=False, to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)),
             ],
         ),
         migrations.CreateModel(
             name='Favorite',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('analysis', models.ForeignKey(related_name='favorites', editable=False, to='analyses.Analysis')),
-                ('owner', models.ForeignKey(related_name='owned_favorites', editable=False, to=settings.AUTH_USER_MODEL)),
+                ('analysis', models.ForeignKey(related_name='favorites', editable=False, to='analyses.Analysis', on_delete=models.CASCADE)),
+                ('owner', models.ForeignKey(related_name='owned_favorites', editable=False, to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)),
             ],
         ),
         migrations.CreateModel(
@@ -84,7 +84,7 @@ class Migration(migrations.Migration):
                 ('text', models.CharField(max_length=255)),
                 ('created_at', models.DateTimeField(auto_now_add=True, db_index=True)),
                 ('analysis', models.ManyToManyField(to='analyses.Analysis')),
-                ('owner', models.ForeignKey(related_name='owned_tags', editable=False, to=settings.AUTH_USER_MODEL)),
+                ('owner', models.ForeignKey(related_name='owned_tags', editable=False, to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)),
             ],
         ),
         migrations.AddField(
@@ -95,6 +95,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='analysis',
             name='owner',
-            field=models.ForeignKey(related_name='owned_images', editable=False, to=settings.AUTH_USER_MODEL),
+            field=models.ForeignKey(related_name='owned_images', editable=False, to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE),
         ),
     ]

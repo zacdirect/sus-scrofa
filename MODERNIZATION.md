@@ -1,10 +1,91 @@
 # Ghiro 0.2.1 Modernization Guide
 
 ## Overview
-This document details the complete modernization of Ghiro 0.2.1 from Python 2.7/Django 1.6.7 (last updated 2015) to Python 3.13/Django 3.2.25 LTS in 2026 - spanning nearly 10 years of framework evolution.
+This document details the complete modernization of Ghiro 0.2.1 from Python 2.7/Django 1.6.7 (last updated 2015) to **Python 3.13/Django 4.2.17 LTS** in 2026 - spanning nearly 10 years of framework evolution.
 
 ## Summary of Changes
 Successfully modernized a 10-year-old forensic image analysis application to work with modern Python and Django versions, maintaining full functionality including EXIF metadata extraction.
+
+### Upgrade Path
+1. **Phase 1**: Python 2.7/Django 1.6.7 → Python 3.13/Django 3.2.25 (January 2026)
+2. **Phase 2**: Django 3.2.25 → Django 4.2.17 LTS (February 2026) - **Python 3.13 compatible**
+
+---
+
+## Django 4.2 LTS Upgrade (February 2026)
+
+### Motivation
+Django 3.2.25 used the `cgi` module which was removed in Python 3.13, causing `ModuleNotFoundError: No module named 'cgi'`. Django 4.2 is the first LTS version fully compatible with Python 3.13.
+
+### Changes Required
+
+#### 1. Requirements Update
+```python
+# requirements.txt
+Django==4.2.17  # Upgraded from 3.2.25
+```
+
+#### 2. Settings Configuration
+```python
+# ghiro/settings.py
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'  # Changed from AutoField
+```
+
+#### 3. Migration Files - ForeignKey on_delete Parameter
+Django 2.0+ requires explicit `on_delete` parameter for all ForeignKey fields. Updated all migration files:
+
+**users/migrations/0001_initial.py**:
+```python
+# Added on_delete=models.SET_NULL
+('user', models.ForeignKey(..., on_delete=models.SET_NULL))
+```
+
+**analyses/migrations/0001_initial.py** (5 ForeignKeys):
+```python
+# Added on_delete=models.CASCADE to:
+- Case.owner
+- Comment.analysis, Comment.owner
+- Favorite.analysis, Favorite.owner  
+- Tag.owner
+- Analysis.owner
+```
+
+**hashes/migrations/0001_initial.py** (2 ForeignKeys):
+```python
+# Added on_delete=models.CASCADE to:
+- List.owner
+- Hash.list
+```
+
+#### 4. Migration Strategy
+Since database tables already existed from Django 3.2:
+```bash
+python manage.py migrate --fake-initial
+```
+
+### Verification
+```bash
+# Django version check
+python -c "import django; print(django.get_version())"
+# Output: 4.2.17
+
+# System check (no issues)
+python manage.py check
+# Output: System check identified no issues (0 silenced).
+
+# Server start test
+make run
+# ✓ Web Server: http://localhost:8000
+# ✓ Image Processor: Running
+# ✓ MongoDB: Running
+```
+
+### Benefits of Django 4.2 LTS
+- ✅ **Python 3.13 compatible** - No more `cgi` module errors
+- ✅ **Long-term support** - Security updates until April 2026
+- ✅ **Better performance** - Improved query optimization
+- ✅ **Modern features** - Async support, improved admin interface
+- ✅ **BigAutoField** - Better scalability for large databases
 
 ---
 
@@ -265,10 +346,14 @@ Updated all Python `reverse()` calls from old-style view paths to new-style URL 
 
 ### After (2026)
 - Python 3.13.7
-- Django 3.2.25 LTS
+- **Django 4.2.17 LTS** (upgraded from 3.2.25)
 - pymongo 4.16.0
 - Pillow 12.1.0
 - PyGObject 3.54.5
+- NumPy 2.4.2 (new)
+- SciPy 1.17.0 (new)
+- OpenCV 4.13.0 (new)
+- scikit-image 0.26.0 (new)
 - Modern virtual environment setup
 
 ---
@@ -310,7 +395,7 @@ Updated all Python `reverse()` calls from old-style view paths to new-style URL 
 
 ## Future Recommendations
 
-1. **Consider Django 4.2 LTS**: The next LTS release offers more modern features and longer support
+1. **✅ COMPLETED: Django 4.2 LTS Upgrade** - Now running Django 4.2.17 with full Python 3.13 support
 
 2. **Replace MongoDB Lazy Loading**: Consider using Django's database connection management for more consistent patterns
 
@@ -328,8 +413,10 @@ Updated all Python `reverse()` calls from old-style view paths to new-style URL 
 
 ## Conclusion
 
-After nearly 10 years without updates, Ghiro has been successfully modernized to work with Python 3.13 and Django 3.2 LTS. All core functionality remains intact, including the critical EXIF metadata extraction feature. The application is now ready for continued use and future enhancements on modern infrastructure.
+After nearly 10 years without updates, Ghiro has been successfully modernized to work with **Python 3.13 and Django 4.2 LTS**. All core functionality remains intact, including the critical EXIF metadata extraction feature. The application is now ready for continued use and future enhancements on modern infrastructure.
 
-**Total Effort**: ~50+ file modifications, 3 automated refactoring scripts, system dependency installation, and comprehensive testing.
+**Total Effort**: 
+- Phase 1 (Django 3.2): ~50+ file modifications, 3 automated refactoring scripts, system dependency installation
+- Phase 2 (Django 4.2): Migration file updates (8 ForeignKeys), requirements upgrade, settings adjustment
 
-**Result**: Fully functional forensic image analysis platform on modern Python/Django stack.
+**Result**: Fully functional forensic image analysis platform on modern Python/Django stack with Python 3.13 compatibility.

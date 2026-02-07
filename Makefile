@@ -1,4 +1,4 @@
-.PHONY: help start stop status logs clean mongodb web processor dev setup install check-deps venv reset-db fresh
+.PHONY: help start stop status logs clean mongodb web processor dev run setup install check-deps venv reset-db fresh
 
 # Colors for output
 RED := \033[0;31m
@@ -29,7 +29,8 @@ help:
 	@echo "  make mongodb     - Start MongoDB container (Podman)"
 	@echo ""
 	@echo "$(YELLOW)Development:$(NC)"
-	@echo "  make dev         - Start MongoDB + Web Server + Image Processor"
+	@echo "  make run         - Quick start (MongoDB + Web + Processor)"
+	@echo "  make dev         - Same as 'make run'"
 	@echo "  make web         - Start web server only"
 	@echo "  make processor   - Start image processor only"
 	@echo ""
@@ -91,17 +92,26 @@ install: venv
 		(echo "$(RED)  ✗ Cannot import GExiv2. Make sure gir1.2-gexiv2-0.10 is installed:$(NC)" && \
 		echo "    sudo apt-get install gir1.2-gexiv2-0.10" && exit 1)
 	@echo ""
+	@echo "$(YELLOW)Verifying scientific computing libraries...$(NC)"
+	@$(VENV)/python -c "import numpy, scipy, cv2, skimage; print('  ✓ NumPy, SciPy, OpenCV, scikit-image')" 2>/dev/null || \
+		(echo "$(RED)  ✗ Scientific libraries not found. Run 'make install' again.$(NC)" && exit 1)
+	@echo ""
 	@echo "$(GREEN)✓ All dependencies installed$(NC)"
 
-setup: check-deps install mongodb migrate
+setup: check-deps install mongodb
+	@echo ""
+	@echo "$(YELLOW)Running database migrations...$(NC)"
+	@$(MAKE) migrate
 	@echo ""
 	@echo "$(GREEN)========================================$(NC)"
 	@echo "$(GREEN)✓ Setup complete!$(NC)"
 	@echo "$(GREEN)========================================$(NC)"
 	@echo ""
-	@echo "Next steps:"
-	@echo "  1. Create superuser: make superuser"
-	@echo "  2. Start development: make dev"
+	@echo "$(YELLOW)Important: Create a superuser account$(NC)"
+	@echo "  Run: make superuser"
+	@echo ""
+	@echo "Then start the application:"
+	@echo "  Run: make run"
 	@echo ""
 
 mongodb:
@@ -139,10 +149,19 @@ processor: venv
 	@echo "$(GREEN)Starting Ghiro image processor...$(NC)"
 	@$(MANAGE) process
 
-dev: venv mongodb
+run: venv mongodb
 	@if [ $(VENV_EXISTS) -eq 0 ]; then \
 		echo "$(RED)Virtual environment not found. Run 'make setup' first.$(NC)"; \
 		exit 1; \
+	fi
+	@if ! test -f db.sqlite; then \
+		echo "$(YELLOW)Database not found. Running migrations...$(NC)"; \
+		$(MAKE) migrate; \
+		echo ""; \
+		echo "$(YELLOW)⚠ Don't forget to create a superuser:$(NC)"; \
+		echo "  Press Ctrl+C, then run: make superuser"; \
+		echo ""; \
+		sleep 3; \
 	fi
 	@echo "$(GREEN)Starting Ghiro in development mode...$(NC)"
 	@echo "$(YELLOW)Press Ctrl+C to stop all services$(NC)"
@@ -157,7 +176,9 @@ dev: venv mongodb
 	echo "$(GREEN)✓ Services started:$(NC)"; \
 	echo "  Web Server:      http://localhost:8000 (PID: $$WEB_PID)"; \
 	echo "  Image Processor: Running (PID: $$PROC_PID)"; \
-	echo "  MongoDB:         Running on port 27017"; \
+	echo "  MongoDB:         Running on port 27017";
+
+dev: run \
 	echo ""; \
 	echo "$(YELLOW)Press Ctrl+C to stop$(NC)"; \
 	wait

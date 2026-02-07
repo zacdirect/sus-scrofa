@@ -1,0 +1,91 @@
+{% load analyses_tags %}
+
+<div class="box">
+    <div class="wdgt-header">Overall Assessment
+        <span class="pull-right">
+            {% if analysis.report.confidence.manipulation_detected %}
+                <span class="label label-important">Manipulation Detected</span>
+            {% else %}
+                <span class="label label-success">Appears Authentic</span>
+            {% endif %}
+        </span>
+    </div>
+    <div class="wdgt-body">
+        {% if analysis.report.confidence %}
+            <div class="row-fluid">
+                <div class="span6">
+                    <h4>Confidence Scores</h4>
+                    <table class="table">
+                        <tr>
+                            <td><strong>Manipulation Confidence:</strong></td>
+                            <td>
+                                <div class="progress progress-striped {% if analysis.report.confidence.confidence_score > 0.7 %}progress-danger{% elif analysis.report.confidence.confidence_score > 0.5 %}progress-warning{% else %}progress-success{% endif %}" 
+                                     style="margin-bottom: 5px;">
+                                    <div class="bar" style="width: {{ analysis.report.confidence.confidence_score|floatformat:0|add:"%" }}">
+                                        {{ analysis.report.confidence.confidence_score|floatformat:0|add:"%" }}
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>AI Generation Probability:</strong></td>
+                            <td>
+                                <div class="progress progress-striped {% if analysis.report.confidence.ai_generated_probability > 0.7 %}progress-danger{% elif analysis.report.confidence.ai_generated_probability > 0.5 %}progress-warning{% else %}progress-info{% endif %}" 
+                                     style="margin-bottom: 5px;">
+                                    <div class="bar" style="width: {{ analysis.report.confidence.ai_generated_probability|floatformat:0|add:"%" }}">
+                                        {{ analysis.report.confidence.ai_generated_probability|floatformat:0|add:"%" }}
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <h4>Detection Methods</h4>
+                    <table class="table table-condensed">
+                        {% for method, score in analysis.report.confidence.methods.items %}
+                        <tr>
+                            <td>{{ method|title }}</td>
+                            <td><span class="badge">{{ score|floatformat:2 }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+                <div class="span6">
+                    <h4>Key Indicators</h4>
+                    {% if analysis.report.confidence.indicators %}
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Method</th>
+                                    <th>Evidence</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for indicator in analysis.report.confidence.indicators %}
+                                <tr>
+                                    <td><strong>{{ indicator.method }}</strong></td>
+                                    <td><small>{{ indicator.evidence }}</small></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p class="muted">No significant indicators of manipulation detected.</p>
+                    {% endif %}
+                    
+                    <div class="alert {% if analysis.report.confidence.manipulation_detected %}alert-error{% else %}alert-success{% endif %}">
+                        <strong><i class="icon-info-sign"></i> Summary:</strong>
+                        {% if analysis.report.confidence.manipulation_detected %}
+                            <p>Multiple forensic analyses indicate this image has likely been manipulated or is AI-generated. 
+                            Review individual analysis sections for details.</p>
+                        {% else %}
+                            <p>Forensic analysis suggests this image is likely authentic with no significant signs of manipulation or AI generation.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <p class="muted">Confidence scoring not available.</p>
+        {% endif %}
+    </div>
+</div>

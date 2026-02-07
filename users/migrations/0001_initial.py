@@ -56,7 +56,7 @@ class Migration(migrations.Migration):
                 ('source_ip', models.GenericIPAddressField()),
                 ('forwarded_for_ip', models.GenericIPAddressField(null=True, blank=True)),
                 ('created_at', models.DateTimeField(auto_now_add=True, db_index=True)),
-                ('user', models.ForeignKey(blank=True, editable=False, to=settings.AUTH_USER_MODEL, null=True)),
+                ('user', models.ForeignKey(blank=True, editable=False, to=settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)),
             ],
             options={
                 'ordering': ['-created_at'],
