@@ -1,36 +1,69 @@
 # Ghiro AI Detection Module
 
-This directory contains embedded AI detection methods for analyzing potentially AI-generated images. The implementations are designed to be modular and easily replaceable as the field evolves.
+Multi-layer AI-generated image detection combining metadata analysis with machine learning models.
+
+## Architecture
+
+The detection system uses a layered approach:
+
+1. **Metadata Layer (order=0)** - Fast, certain detection
+   - Checks EXIF/XMP metadata for AI generator signatures
+   - Detects 20+ known AI generators (Midjourney, DALL-E, Stable Diffusion, etc.)
+   - C2PA content credentials support
+   - Returns CERTAIN confidence when AI signature found
+   - Execution time: <100ms
+
+2. **ML Model Layer (order=100)** - Fallback for stripped metadata
+   - SPAI (Spectral Prediction and Analysis of AI-generated Images)
+   - CVPR 2025 model by Karageorgiou et al.
+   - ViT-B/16 + Frequency Restoration Estimator
+   - Analyzes spectral/frequency domain patterns
+   - Execution time: ~3-5s per image
 
 ## Structure
 
 ```
 ai_detection/
 ├── README.md              # This file
-├── Makefile              # Setup and installation for AI detection
-├── __init__.py           # Module initialization
-├── requirements.txt      # AI detection dependencies
-├── spai/                 # SPAI (Spectral AI-Generated Image Detector)
+├── Makefile              # Setup and installation
+├── requirements.txt      # PyTorch + dependencies
+├── spai_infer.py         # Standalone inference script
+├── detectors/            # Detection framework
 │   ├── __init__.py
-│   ├── config.py         # Configuration management
-│   ├── inference.py      # Main inference interface
-│   ├── models/           # Model architecture code
-│   └── data/             # Data loading utilities
-└── weights/              # Model weights (gitignored, download separately)
-    └── spai.pth          # ~100MB, see setup instructions
+│   ├── base.py           # BaseDetector, DetectionResult
+│   ├── metadata.py       # MetadataDetector (EXIF/XMP)
+│   ├── spai_detector.py  # SPAIDetector (ML model wrapper)
+│   └── orchestrator.py   # MultiLayerDetector
+├── spai/                 # SPAI model implementation
+│   ├── config.py         # Model configuration
+│   ├── inference.py      # Inference interface
+│   ├── models/           # Architecture (ViT + FRE)
+│   └── data/             # Data loaders
+└── .venv/                # Isolated Python environment (gitignored)
 ```
 
-## Current Method: SPAI (CVPR 2025)
+## Detection Framework
 
-**Spectral AI-Generated Image Detector** - State-of-the-art detector using frequency domain analysis.
+### Orchestrator
+Coordinates multiple detection methods:
+- Runs detectors in order (lowest order first)
+- Early stopping: Stops at CERTAIN/HIGH confidence
+- Weighted combination: Combines results when no single method is decisive
+- Confidence weights: CERTAIN=1.0, HIGH=0.8, MEDIUM=0.5, LOW=0.3
 
-- **Paper**: "Any-Resolution AI-Generated Image Detection by Spectral Learning" (CVPR 2025)
-- **Repository**: https://github.com/mever-team/spai
-- **Approach**: Self-supervised spectral learning with masked frequency restoration
-- **Advantages**:
-  - Works on any resolution images (no resizing needed)
-  - Spectral analysis (frequency domain features)
-  - State-of-the-art accuracy across multiple generators
+### MetadataDetector (order=0)
+**Fast metadata-based detection (100% accurate when present)**
+
+**AI Signatures**: Midjourney, DALL-E, Stable Diffusion, Firefly, Imagen, Leonardo.ai, Ideogram, Flux, and 10+ more
+
+**Technology**: GExiv2 (comprehensive XMP/EXIF) + PIL (fallback)
+
+### SPAIDetector (order=100)
+**ML-based detection via spectral analysis**
+
+**Model**: ViT-B/16 + Frequency Restoration Estimator (CVPR 2025)
+**Weights**: 892MB (spai.pth)
+**Resolution**: Arbitrary (224x224 patches, any image size)
 
 ## Setup
 
