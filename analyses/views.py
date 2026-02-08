@@ -24,6 +24,7 @@ from django.db.models import Count
 from django.utils.encoding import force_str
 from django.core.files import File
 from django.core.files.temp import NamedTemporaryFile
+from django.contrib import messages
 
 import analyses.forms as forms
 from analyses.models import Case, Analysis, Favorite, Comment, Tag
@@ -455,6 +456,50 @@ def delete_analysis(request, analysis_id):
         analysis.delete()
         # TODO: Redirect to the page visited before instad of this.
         return HttpResponseRedirect(reverse("show_case", args=(analysis.case.id, "list")))
+
+@require_safe
+@login_required
+def reprocess_analysis(request, analysis_id):
+    """Re-process a single image using existing image data."""
+    analysis = get_object_or_404(Analysis, pk=analysis_id)
+
+    # Security check.
+    if not(request.user.is_superuser or request.user in analysis.case.users.all()):
+        return render(request, "error.html",
+            {"error": "You are not authorized to re-process this."})
+
+    # Can only re-process completed analyses
+    if analysis.state != "C":
+        return render(request, "error.html",
+            {"error": "Can only re-process completed analyses."})
+
+    # Reset state to trigger re-processing
+    # Keep the same image_id and analysis_id so results get updated
+    analysis.state = "W"
+    analysis.completed_at = None
+    analysis.save()
+
+    return HttpResponseRedirect(reverse("show_case", args=(analysis.case.id, "list")))
+
+@require_safe
+@login_required
+def reprocess_case(request, case_id):
+    """Re-process all completed images in a case."""
+    case = get_object_or_404(Case, pk=case_id)
+
+    # Security check.
+    if not(request.user.is_superuser or request.user in case.users.all()):
+        return render(request, "error.html",
+            {"error": "You are not authorized to re-process this case."})
+
+    # Reset all completed analyses in this case to waiting
+    analyses = Analysis.objects.filter(case=case, state="C")
+    count = analyses.count()
+    
+    analyses.update(state="W", completed_at=None)
+
+    messages.success(request, f"Queued {count} image(s) for re-processing.")
+    return HttpResponseRedirect(reverse("show_case", args=(case_id, "list")))
 
 @require_safe
 @login_required

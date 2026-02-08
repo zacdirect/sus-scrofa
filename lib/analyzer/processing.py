@@ -64,10 +64,18 @@ class AnalysisRunner(Process):
                     else:
                         logger.warning("Module %s returned results not in dict format." % module)
 
-            # Complete.
-            task.analysis_id = save_results(results)
+            # Complete - save or update results
+            # If analysis_id exists, we're re-processing → update existing MongoDB doc
+            # Otherwise, create new MongoDB doc
+            from lib.db import update_results
+            if task.analysis_id:
+                update_results(task.analysis_id, results)
+                logger.info("Re-processed task {0} with success (updated existing analysis)".format(task.id))
+            else:
+                task.analysis_id = save_results(results)
+                logger.info("Processed task {0} with success (new analysis)".format(task.id))
+            
             task.state = "C"
-            logger.info("Processed task {0} with success".format(task.id))
         except Exception as e:
             logger.exception("Critical error processing task {0}, skipping task: {1}".format(task.id, e))
             task.state = "F"

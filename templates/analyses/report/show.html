@@ -48,6 +48,9 @@
                             <a href="#" id="{% url "favorite" analysis.id %}" rel="{{ analysis.id }}" class="btn favorite star{{ analysis.id }}"> <i class="icon-star"> </i></a>
                         {% endif %}
                         <a href="{% url "image" analysis.image_id %}" class="action_print btn btn-info" title="Print"><i class="icon-print"></i> </a>
+                        {% if analysis.state == "C" %}
+                            <a href="{% url "reprocess_analysis" analysis.id %}" class="btn btn-success" title="Re-process"><i class="icon-refresh"></i> </a>
+                        {% endif %}
                         <a class="btn btn-danger btn-delete-report" id="{% url "delete_analysis" analysis.id %}" href="#deleteReport" role="button" data-toggle="modal"> <i class="icon-trash"></i> </a>
                     </div>
                     <div class="btn-group pull-right">

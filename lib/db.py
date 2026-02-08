@@ -115,3 +115,14 @@ def save_results(results):
     db = get_db()
     result = db.analyses.insert_one(results)
     return result.inserted_id
+
+def update_results(analysis_id, results):
+    """Update existing results in mongo (for re-processing).
+    @param analysis_id: existing MongoDB ObjectId (as string)
+    @param results: new data dict to replace
+    """
+    db = get_db()
+    db.analyses.replace_one(
+        {"_id": ObjectId(analysis_id)},
+        results
+    )

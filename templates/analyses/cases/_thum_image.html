@@ -9,6 +9,19 @@
                         <img src="{% url "image" image.thumb_id %}" />
                     </a>
                     <div class="tags">
+                        {% if image.report.confidence.authenticity_score is not None %}
+                            <span class="label-holder">
+                                {% if image.report.confidence.authenticity_score >= 80 %}
+                                    <span class="label label-success" title="Authenticity Score">Auth: {{ image.report.confidence.authenticity_score }}</span>
+                                {% elif image.report.confidence.authenticity_score >= 60 %}
+                                    <span class="label label-info" title="Authenticity Score">Auth: {{ image.report.confidence.authenticity_score }}</span>
+                                {% elif image.report.confidence.authenticity_score >= 40 %}
+                                    <span class="label label-warning" title="Authenticity Score">Auth: {{ image.report.confidence.authenticity_score }}</span>
+                                {% else %}
+                                    <span class="label label-important" title="Authenticity Score">Auth: {{ image.report.confidence.authenticity_score }}</span>
+                                {% endif %}
+                            </span>
+                        {% endif %}
                         {% if image.report.signatures|count_severity:"1" %}
                             <span class="label-holder">
                                 <span class="label label-success">{{ image.report.signatures|count_severity:"1" }}</span>
