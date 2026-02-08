@@ -6,24 +6,22 @@
 Confidence scoring — Zero Trust Auditor Model.
 
 Architecture:
-    The ComplianceAuditor (ai_detection/detectors/compliance_audit.py) is the
-    single source of truth for all scoring.  Individual detectors don't score
-    or weight themselves — they raise findings (HIGH / MEDIUM / LOW / POSITIVE)
-    and the auditor categorizes those findings, then produces three output
-    buckets:
+    The engine runs the compliance auditor (lib/analyzer/auditor.py) as a
+    post-processing step after all plugins complete.  The auditor writes
+    its verdict to results['audit'].  This module reads that verdict and
+    formats it for storage and display at results['confidence'].
 
+    Both the auditor and this module are engine internals, NOT plugins.
+    They always run and cannot be removed or reordered.
+
+    The auditor produces three output buckets:
         1. authenticity_score       (0-100): fake ← → real
         2. ai_probability           (0-100): AI generation likelihood
         3. manipulation_probability (0-100): traditional editing likelihood
 
-    This module extracts the auditor's consolidated results from the analysis
-    pipeline and formats them for storage/display.  There is no legacy weighted
-    fallback — if the auditor didn't run, we report "not analyzed" rather than
-    inventing scores.
-
     Supporting indicators from individual forensic methods (ELA, noise,
-    frequency, photoholmes, hashes) are still collected for transparency but
-    do NOT influence the score.
+    frequency, photoholmes, hashes) are collected here for transparency
+    but do NOT influence the score.
 """
 
 import logging
@@ -64,71 +62,65 @@ def calculate_manipulation_confidence(results):
     }
 
     # ================================================================
-    # PRIORITY 1: Check for Compliance Audit Result (NEW)
+    # PRIORITY 1: Check for Compliance Audit Result
     # ================================================================
-    # The compliance audit aggregates ALL evidence (forensics + detectors)
-    # into a single 0-100 authenticity score. When present, this is the
-    # primary truth and should be displayed prominently.
-    
-    if 'ai_detection' in results and results['ai_detection'].get('enabled', False):
-        ai_det = results['ai_detection']
-        
-        # Check if we have the new authenticity_score from compliance audit
-        if 'authenticity_score' in ai_det and ai_det['authenticity_score'] is not None:
-            auth_score = ai_det['authenticity_score']
-            confidence['authenticity_score'] = auth_score
-            confidence['detected_types'] = ai_det.get('detected_types', [])
-            
-            # Extract component probabilities from audit metadata (three-bucket consolidation)
-            audit_metadata = ai_det.get('audit_metadata', {})
-            
-            # Set AI and manipulation probabilities from audit calculations
-            confidence['ai_generated_probability'] = round(audit_metadata.get('ai_probability', 0.0), 1)
-            confidence['confidence_score'] = round(audit_metadata.get('manipulation_probability', 0.0), 1)
-            
-            # Convert authenticity score to verdict
-            # 0-40: Fake, 41-59: Uncertain, 60-100: Real
-            if auth_score <= 40:
-                confidence['verdict'] = 'ai_generated' if 'ai_generation' in confidence['detected_types'] else 'manipulated'
-                confidence['manipulation_detected'] = True
-                confidence['verdict_confidence'] = round((40 - auth_score) / 40 * 100, 1)
-                
-                if auth_score <= 20:
-                    confidence['verdict_certainty'] = 'high'
-                    confidence['verdict_label'] = 'Definitely Fake (AI or Manipulated)'
-                else:
-                    confidence['verdict_certainty'] = 'moderate'
-                    confidence['verdict_label'] = 'Likely Fake (AI or Manipulated)'
-                    
-            elif auth_score >= 60:
-                confidence['verdict'] = 'authentic'
-                confidence['manipulation_detected'] = False
-                confidence['verdict_confidence'] = round((auth_score - 60) / 40 * 100, 1)
-                
-                if auth_score >= 80:
-                    confidence['verdict_certainty'] = 'high'
-                    confidence['verdict_label'] = 'Highly Authentic'
-                else:
-                    confidence['verdict_certainty'] = 'moderate'
-                    confidence['verdict_label'] = 'Likely Authentic'
+    # The audit dict is written by the engine after all plugins complete.
+    # It contains the authoritative three-bucket scores.
+
+    audit_data = results.get('audit', {})
+
+    if audit_data and 'authenticity_score' in audit_data and audit_data['authenticity_score'] is not None:
+        auth_score = audit_data['authenticity_score']
+        confidence['authenticity_score'] = auth_score
+        confidence['detected_types'] = audit_data.get('detected_types', [])
+
+        # Set AI and manipulation probabilities from audit calculations
+        confidence['ai_generated_probability'] = round(audit_data.get('ai_probability', 0.0), 1)
+        confidence['confidence_score'] = round(audit_data.get('manipulation_probability', 0.0), 1)
+
+        # Convert authenticity score to verdict
+        # 0-40: Fake, 41-59: Uncertain, 60-100: Real
+        if auth_score <= 40:
+            confidence['verdict'] = 'ai_generated' if 'ai_generation' in confidence['detected_types'] else 'manipulated'
+            confidence['manipulation_detected'] = True
+            confidence['verdict_confidence'] = round((40 - auth_score) / 40 * 100, 1)
+
+            if auth_score <= 20:
+                confidence['verdict_certainty'] = 'high'
+                confidence['verdict_label'] = 'Definitely Fake (AI or Manipulated)'
             else:
-                confidence['verdict'] = 'authentic'
-                confidence['manipulation_detected'] = False
-                confidence['verdict_confidence'] = 20.0  # Low certainty
-                confidence['verdict_certainty'] = 'inconclusive'
-                confidence['verdict_label'] = 'Uncertain - Borderline Case'
-            
-            # Add compliance audit as indicator
-            types_str = ', '.join(confidence['detected_types']) if confidence['detected_types'] else 'comprehensive analysis'
-            confidence['indicators'].append({
-                'method': 'Compliance Audit (Aggregated)',
-                'evidence': f"Authenticity score: {auth_score}/100 (detected: {types_str})",
-                'type': 'audit'
-            })
-            
-            # Collect supporting indicators for display (not scoring)
-            _collect_supporting_indicators(results, confidence)
-            return confidence
+                confidence['verdict_certainty'] = 'moderate'
+                confidence['verdict_label'] = 'Likely Fake (AI or Manipulated)'
+
+        elif auth_score >= 60:
+            confidence['verdict'] = 'authentic'
+            confidence['manipulation_detected'] = False
+            confidence['verdict_confidence'] = round((auth_score - 60) / 40 * 100, 1)
+
+            if auth_score >= 80:
+                confidence['verdict_certainty'] = 'high'
+                confidence['verdict_label'] = 'Highly Authentic'
+            else:
+                confidence['verdict_certainty'] = 'moderate'
+                confidence['verdict_label'] = 'Likely Authentic'
+        else:
+            confidence['verdict'] = 'authentic'
+            confidence['manipulation_detected'] = False
+            confidence['verdict_confidence'] = 20.0  # Low certainty
+            confidence['verdict_certainty'] = 'inconclusive'
+            confidence['verdict_label'] = 'Uncertain - Borderline Case'
+
+        # Add compliance audit as indicator
+        types_str = ', '.join(confidence['detected_types']) if confidence['detected_types'] else 'comprehensive analysis'
+        confidence['indicators'].append({
+            'method': 'Compliance Audit (Aggregated)',
+            'evidence': f"Authenticity score: {auth_score}/100 (detected: {types_str})",
+            'type': 'audit'
+        })
+
+        # Collect supporting indicators for display (not scoring)
+        _collect_supporting_indicators(results, confidence)
+        return confidence
 
     # No compliance audit result — report as not analyzed.
     # Individual forensic methods without the auditor cannot produce a
@@ -272,25 +264,25 @@ def _add_ai_detection_indicators(results, confidence):
         return
 
     ai_det = results['ai_detection']
-    ai_pct = ai_det.get('ai_probability', 0)
+    layers = ai_det.get('detection_layers', [])
 
-    if ai_pct > 20:
-        detection_method = "Unknown"
-        if ai_det.get('detection_layers'):
-            for layer in ai_det['detection_layers']:
-                if layer.get('verdict') == 'AI':
-                    detection_method = layer.get('method', 'Unknown')
-                    break
+    for layer in layers:
+        verdict = layer.get('verdict', 'Unknown')
+        method = layer.get('method', 'Unknown')
+        score = layer.get('score')
+        layer_confidence = layer.get('confidence', 'unknown')
 
-        ai_detection_confidence = ai_det.get('confidence', 'unknown')
-        confidence['indicators'].append({
-            'method': f'AI Detection ({detection_method})',
-            'evidence': (
-                f"AI generation probability: {ai_pct:.1f}% "
-                f"({ai_detection_confidence} confidence)"
-            ),
-            'type': 'ai_ml',
-        })
+        if verdict == 'AI' or (score is not None and score > 0.2):
+            evidence = f"Verdict: {verdict}"
+            if score is not None:
+                evidence += f" (score: {score:.1%})"
+            evidence += f" — {layer_confidence} confidence"
+
+            confidence['indicators'].append({
+                'method': f'AI Detection ({method})',
+                'evidence': evidence,
+                'type': 'ai_ml',
+            })
 
 
 def _add_photoholmes_indicators(results, confidence):

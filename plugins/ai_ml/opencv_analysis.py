@@ -26,7 +26,7 @@ class OpenCVAnalysis(BaseAnalyzerModule):
     from the main SusScrofa environment.
     """
     
-    order = 40  # Run after basic metadata/EXIF but before AI detection
+    order = 40
     
     def check_deps(self):
         """Check if OpenCV service is available."""

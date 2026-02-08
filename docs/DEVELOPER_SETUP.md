@@ -1,6 +1,6 @@
-# SusScrofa Developer Setup Guide
+# Sus Scrofa Developer Setup Guide
 
-Quick start guide for developers to get SusScrofa running on their local machine.
+Quick start guide for developers to get Sus Scrofa running on their local machine.
 
 ## System Requirements
 

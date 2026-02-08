@@ -6,7 +6,7 @@ from lib.utils import AutoVivification
 
 class BaseAnalyzerModule(object):
 
-    # Module execution order.
+    # Module execution order (within its tier).
     order = 0
 
     def __init__(self):

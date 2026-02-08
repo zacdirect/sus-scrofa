@@ -1,7 +1,6 @@
 # Plugin Development Guide
 
-How to add new analysis plugins to SusScrofa and integrate them into the
-automated confidence scoring system.
+How to add new analysis plugins to SusScrofa.
 
 ---
 
@@ -9,53 +8,90 @@ automated confidence scoring system.
 
 ```
 Image uploaded
-  └─ AnalysisManager discovers all plugins in plugins/analyzer/
-  └─ Sorts them by `order` attribute
-  └─ For each plugin (in order):
-       ├─ plugin.data = accumulated_results    ← READ previous plugins' output
-       ├─ output = plugin.run(task)            ← DO analysis
-       └─ accumulated_results.update(output)   ← WRITE results into shared dict
-  └─ confidence_scoring (order=90) reads ALL results, computes final verdict
-  └─ Everything is saved to the database
+  │
+  ▼
+Engine Orchestrator (lib/analyzer/orchestrator.py)
+  │
+  ├─ Phase 1a: Static plugins  (plugins/static/)
+  │     Sorted by `order`, run sequentially.
+  │     Each plugin gets accumulated results via self.data,
+  │     writes its own output via self.results.
+  │
+  ├─ Auditor checkpoint
+  │     If static evidence is already decisive → skip Phase 1b.
+  │
+  ├─ Phase 1b: AI/ML plugins  (plugins/ai_ml/)
+  │     Same interface, only runs when needed.
+  │
+  └─ Phase 2: Engine post-processing (NOT plugins)
+        a) Compliance Auditor  → results['audit']
+        b) Confidence Scoring  → results['confidence']
 ```
 
-Every plugin gets to see what all previous plugins produced (via `self.data`)
-and adds its own findings (via `self.results`). The confidence scoring plugin
-runs last and aggregates everything into the final verdict.
+Plugins produce raw findings.  The auditor and confidence scorer
+(engine internals) interpret them.  Plugins never decide "fake or real".
 
-## Current Plugin Inventory
+---
 
-| Order | File | Class | Result Key | Type |
-|-------|------|-------|------------|------|
-| 10 | `info.py` | `InfoAnalyzer` | `file_name`, `file_size` | Basic |
-| 10 | `hash.py` | `HashAnalyzer` | `hash` | Basic |
-| 10 | `mime.py` | `MimeAnalyzer` | `mime_type`, `file_type` | Basic |
-| 10 | `gexiv.py` | `GexivAnalyzer` | `metadata` | Deterministic |
-| 20 | `ela.py` | `ElaAnalyzer` | `ela` | Deterministic |
-| 20 | `hashcomparer.py` | `HashComparerAnalyzer` | *(ORM lookup)* | Deterministic |
-| 20 | `previewcomparer.py` | `PreviewComparerAnalyzer` | *(mutates metadata)* | Deterministic |
-| 25 | `noise_analysis.py` | `NoiseAnalysisAnalyzer` | `noise_analysis` | Deterministic |
-| 26 | `frequency_analysis.py` | `FrequencyAnalysisAnalyzer` | `frequency_analysis` | Deterministic |
-| 30 | `ai_detection.py` | `AIDetectionAnalyzer` | `ai_detection` | AI/ML |
-| 40 | `opencv_analysis.py` | `OpenCVAnalysisAnalyzer` | `opencv_analysis` | AI/ML |
-| 65 | `opencv_manipulation.py` | `OpenCVManipulationAnalyzer` | `opencv_manipulation` | AI/ML |
-| 80 | `signatures.py` | `SignaturesAnalyzer` | `signatures` | Rule-based |
-| **90** | `confidence_scoring.py` | `ConfidenceScoringProcessing` | `confidence` | **Aggregator** |
+## Plugin Inventory
 
-## Step 1: Create the Plugin
+### Static plugins — `plugins/static/`
 
-Create a new Python file in `plugins/analyzer/`. It is auto-discovered — no
-registration required.
+| Order | File | Class | Result key |
+|-------|------|-------|------------|
+| 10 | `info.py` | `InfoAnalyzer` | `file_name`, `file_size` |
+| 10 | `hash.py` | `HashAnalyzer` | `hash` |
+| 10 | `mime.py` | `MimeAnalyzer` | `mime_type`, `file_type` |
+| 10 | `metadata_modern.py` | `MetadataModernAnalyzer` | `metadata` |
+| 15 | `perceptual_hash.py` | `PerceptualHashAnalyzer` | `perceptual_hash` |
+| 20 | `ela.py` | `ElaAnalyzer` | `ela` |
+| 20 | `hashcomparer.py` | `HashComparerAnalyzer` | *(ORM lookup)* |
+| 20 | `previewcomparer.py` | `PreviewComparerAnalyzer` | *(mutates metadata)* |
+| 25 | `noise_analysis.py` | `NoiseAnalysisProcessing` | `noise_analysis` |
+| 26 | `frequency_analysis.py` | `FrequencyAnalysisProcessing` | `frequency_analysis` |
+| 80 | `signatures.py` | `SignatureAnalyzer` | `signatures` |
+
+### AI/ML plugins — `plugins/ai_ml/`
+
+| Order | File | Class | Result key |
+|-------|------|-------|------------|
+| 25 | `photoholmes_detection.py` | `PhotoholmesDetector` | `photoholmes` |
+| 30 | `ai_detection.py` | `AIDetection` | `ai_detection` |
+| 40 | `opencv_analysis.py` | `OpenCVAnalysis` | `opencv_analysis` |
+| 65 | `opencv_manipulation.py` | `OpenCVManipulation` | `opencv_manipulation` |
+
+---
+
+## Step 1: Pick Your Tier
+
+| Question | Tier | Directory |
+|----------|------|-----------|
+| Is it fast and deterministic (metadata, hashes, pixel math)? | Static | `plugins/static/` |
+| Does it use ML models, GPU, or an external service? | AI/ML | `plugins/ai_ml/` |
+
+**Rule of thumb**: if it runs in under 100 ms on a CPU with no network
+calls, it's static.
+
+The tier matters because:
+- All static plugins **always** run.
+- AI/ML plugins are **skipped** when static evidence alone is decisive.
+- Within each tier, `order` controls execution sequence.
+
+---
+
+## Step 2: Create the Plugin
+
+Create a `.py` file in the appropriate tier directory.
 
 ```python
-# plugins/analyzer/my_new_check.py
+# plugins/static/my_check.py          (or plugins/ai_ml/my_check.py)
 
 import logging
 from lib.analyzer.base import BaseAnalyzerModule
 
 logger = logging.getLogger(__name__)
 
-# Guard your imports so the plugin is skipped if deps are missing
+# Guard optional imports
 try:
     import some_library
     HAS_DEPS = True
@@ -63,13 +99,10 @@ except ImportError:
     HAS_DEPS = False
 
 
-class MyNewCheckAnalyzer(BaseAnalyzerModule):
+class MyCheckAnalyzer(BaseAnalyzerModule):
     """One-line description of what this plugin detects."""
 
-    # Pick an order between 10-89.
-    # Lower = runs earlier. Must run BEFORE confidence_scoring (90).
-    # If you need data from another plugin, set your order higher than theirs.
-    order = 35
+    order = 35  # Within-tier ordering (1–99)
 
     def check_deps(self):
         """Return True if all dependencies are available."""
@@ -80,338 +113,185 @@ class MyNewCheckAnalyzer(BaseAnalyzerModule):
         Perform analysis.
 
         Args:
-            task: Analysis model instance. Key attributes:
-                  - task.id: database ID
-                  - task.file_name: original filename
-                  - task.get_file_data: raw file bytes
-                  - task.image_id: GridFS file ID
+            task: Analysis model instance.
+                  task.id            — database ID
+                  task.file_name     — original filename
+                  task.get_file_data — raw file bytes
+                  task.image_id      — GridFS file ID
 
         Returns:
-            self.results (AutoVivification dict) with your findings.
+            self.results (AutoVivification dict).
         """
         try:
-            # Read data from previous plugins via self.data
-            mime_type = self.data.get("mime_type", "")
-            if not mime_type.startswith("image/"):
-                return self.results  # skip non-images
-
-            # Do your analysis...
             raw_bytes = task.get_file_data
+
             score, details = some_library.analyze(raw_bytes)
 
-            # Write results under a unique top-level key
-            self.results["my_new_check"]["score"] = score
-            self.results["my_new_check"]["suspicious"] = score > 0.7
-            self.results["my_new_check"]["details"] = details
-            self.results["my_new_check"]["enabled"] = True
+            self.results["my_check"]["score"] = score
+            self.results["my_check"]["suspicious"] = score > 0.7
+            self.results["my_check"]["details"] = details
+            self.results["my_check"]["enabled"] = True
 
         except Exception as e:
-            logger.exception(f"[Task {task.id}]: MyNewCheck error: {e}")
-            self.results["my_new_check"]["enabled"] = True
-            self.results["my_new_check"]["error"] = str(e)
+            logger.exception("[Task %s]: MyCheck error: %s", task.id, e)
+            self.results["my_check"]["enabled"] = True
+            self.results["my_check"]["error"] = str(e)
 
         return self.results
 ```
 
 ### Key Rules
 
-1. **Unique result key** — Use a descriptive top-level key like
-   `self.results["my_new_check"]`. Never collide with existing keys.
-2. **Always return `self.results`** — Even on error. Other plugins and the
-   confidence scorer will look for your key.
-3. **Include `enabled` and `error` fields** — So the template can show
-   "Unavailable" vs "Not configured" vs actual results.
-4. **Order matters** — If you need metadata, use order > 10. If you need
-   AI detection results, use order > 30. Stay under 90.
-5. **Guard dependencies** — Use try/except on imports and check in
-   `check_deps()`. If it returns False, the plugin is silently skipped.
+1. **Unique result key** — use a descriptive top-level key like
+   `self.results["my_check"]`.  Never collide with existing keys.
+2. **Always return `self.results`** — even on error.  The auditor
+   looks for your key.
+3. **Include `enabled` and `error` fields** — templates use these to
+   show "Unavailable" vs actual results.
+4. **Guard dependencies** — try/except on imports + `check_deps()`.
+   If it returns `False`, the plugin is silently skipped at startup.
+5. **No scoring or verdicts** — raw findings only.  The compliance
+   auditor (`lib/analyzer/auditor.py`) handles interpretation.
 
-## Step 2: Integrate with Confidence Scoring
+---
 
-The scoring engine lives in `lib/forensics/confidence.py`. It has three phases:
+## Step 3: Teach the Auditor (if needed)
 
-```
-Phase 1: Forensic manipulation score (weighted aggregate)
-          ↓
-Phase 2: AI generation detection (override model)
-          ↓
-Phase 3: Final verdict (picks strongest signal)
-```
+If your plugin produces evidence the auditor should consider, add a
+check to `lib/analyzer/auditor.py`.  The auditor is a pure function
+with 13 independent checks.  Each check:
 
-### Deciding Where Your Plugin Fits
+1. Reads a specific key from the results dict.
+2. Produces a `Finding` (risk level + score impact + description).
+3. Appends it to the evidence list.
 
-Ask yourself: **What question does my plugin answer?**
-
-| Question | Phase | How it contributes |
-|----------|-------|--------------------|
-| "Has this image been edited/tampered with?" | Phase 1 | Weighted into `forensic_score` |
-| "Was this image made by an AI?" | Phase 2 | Contributes to `ai_probability` |
-| "Is there deterministic proof of origin?" | Phase 2 | Override (like metadata filename match) |
-
-### Adding to Phase 1 (Manipulation Detection)
-
-Most new forensic methods go here. You need to:
-
-1. **Add a weight** to `forensic_weights`
-2. **Read your plugin's output** from the results dict
-3. **Normalize to 0-1** and apply the weight
-4. **Append an indicator** for the evidence table
+Example: adding a check for your plugin's output:
 
 ```python
-# In lib/forensics/confidence.py, inside calculate_manipulation_confidence()
+# In lib/analyzer/auditor.py, inside audit()
 
-# PHASE 1 weights — must sum to ~1.0
-forensic_weights = {
-    'ela': 0.18,           # was 0.20
-    'noise': 0.18,         # was 0.20
-    'frequency': 0.12,     # was 0.15
-    'metadata': 0.05,      # unchanged (weak signal)
-    'opencv': 0.35,        # was 0.40
-    'my_new_check': 0.12,  # NEW
-}
-
-# ... later in Phase 1 ...
-
-# --- My New Check ---
-if 'my_new_check' in results and results['my_new_check'].get('enabled', False):
-    my_score = results['my_new_check'].get('score', 0)
-    is_suspicious = results['my_new_check'].get('suspicious', False)
-
-    if is_suspicious:
-        # Normalize your score to 0-1 range
-        normalized = min(my_score, 1.0)
-
-        forensic_score += forensic_weights['my_new_check'] * normalized
-        confidence['deterministic_methods']['my_new_check'] = normalized
-        confidence['methods']['my_new_check'] = normalized
-        confidence['indicators'].append({
-            'method': 'My New Check (Deterministic)',
-            'evidence': f"Suspicious pattern detected (score: {my_score:.2f})",
-            'type': 'deterministic'  # or 'ai_ml' for ML-based methods
-        })
+# ── My Check ──────────────────────────────────────────
+my_check = results.get("my_check", {})
+if my_check.get("enabled") and my_check.get("suspicious"):
+    score_val = my_check.get("score", 0)
+    if score_val > 0.9:
+        findings.append(Finding(
+            RISK_HIGH, -50,
+            "my_check",
+            f"Strong suspicious pattern (score: {score_val:.2f})"
+        ))
+    elif score_val > 0.7:
+        findings.append(Finding(
+            RISK_MEDIUM, -30,
+            "my_check",
+            f"Moderate suspicious pattern (score: {score_val:.2f})"
+        ))
 ```
 
-### Adding to Phase 2 (AI Detection)
+The auditor aggregates all findings into three buckets:
 
-If your method detects AI generation specifically:
+| Bucket | Field | Meaning |
+|--------|-------|---------|
+| 1 | `authenticity_score` | 0 = fake, 100 = real |
+| 2 | `ai_probability` | AI generation likelihood |
+| 3 | `manipulation_probability` | Traditional editing likelihood |
 
-```python
-# In Phase 2, after the existing ai_detection block
+Score impacts are additive from a base of 50.  Score capping ensures
+the result never hits 0 or 100 when contradicting evidence exists.
 
-# --- My AI Detector ---
-if 'my_ai_detector' in results and results['my_ai_detector'].get('enabled', False):
-    my_ai_score = results['my_ai_detector'].get('ai_probability', 0)  # 0-100
+---
 
-    # If you have deterministic proof (not probabilistic):
-    if results['my_ai_detector'].get('has_proof', False):
-        ai_deterministic_proof = True
-        ai_probability = max(ai_probability, max(my_ai_score, 95.0))
-    else:
-        # Probabilistic — blend with existing probability
-        ai_probability = max(ai_probability, my_ai_score)
-```
+## Step 4: Add a Template Section (Optional)
 
-### Rebalancing Weights
-
-When you add a new method, the existing weights must be rebalanced so they
-still sum to approximately 1.0. The general principle:
-
-```
-Total weight budget = 1.0
-
-Current allocation:
-  ELA:        0.20  — classic forensic method, medium reliability
-  Noise:      0.20  — good for manipulation, medium reliability
-  Frequency:  0.15  — useful for AI detection, lower reliability alone
-  Metadata:   0.05  — weak signal (easy to strip), keep low
-  OpenCV:     0.40  — multiple sub-methods, highest reliability
-              ----
-              1.00
-```
-
-**Guidelines for setting your new weight:**
-
-- **Strong, reliable method** (like OpenCV with multiple sub-checks): 0.15–0.25
-- **Medium reliability** (like ELA or noise): 0.08–0.15
-- **Weak/easily-fooled signal** (like metadata presence): 0.03–0.05
-
-After adding your weight, reduce the others proportionally:
-
-```python
-# Example: adding a 0.12 weight for a medium-reliability method
-# Scale down others by (1.0 - 0.12) / 1.0 = 0.88
-
-forensic_weights = {
-    'ela': 0.18,           # 0.20 × 0.88 ≈ 0.18
-    'noise': 0.18,         # 0.20 × 0.88 ≈ 0.18
-    'frequency': 0.13,     # 0.15 × 0.88 ≈ 0.13
-    'metadata': 0.04,      # 0.05 × 0.88 ≈ 0.04
-    'opencv': 0.35,        # 0.40 × 0.88 ≈ 0.35
-    'my_new_check': 0.12,  # NEW
-}                          # Total: 1.00
-```
-
-**Important**: Weights don't need to sum to exactly 1.0, but staying close
-prevents the score from inflating or deflating. If they sum to 1.1, a
-maximally suspicious image scores 110% which gets capped at 100%. If they
-sum to 0.9, the maximum possible score is 90%.
-
-### Understanding the Override Model
-
-The scoring system uses two fundamentally different approaches:
-
-**Weighted average** (Phase 1) — For manipulation detection where each method
-provides partial evidence. No single method is conclusive. The weighted sum
-of all method scores becomes the suspicion score.
-
-**Override** (Phase 2) — For AI detection where some evidence is near-certain.
-A filename containing `gemini_generated` is planted by the AI tool itself.
-This can't be a mere 30% weight — it's proof. The override model says:
-"If we have deterministic proof, the verdict is AI-generated regardless of
-what the forensic score says."
-
-**When to use which:**
-- Your method produces a continuous score from 0-1 → Phase 1 weighted average
-- Your method provides binary proof of AI origin → Phase 2 override
-- Your method is a probabilistic AI classifier → Phase 2, blend with
-  `ai_probability` using `max()`
-
-### The Asymmetry Principle
-
-**Presence of a signal is much stronger than absence of a signal.**
-
-Example: If your plugin detects steganography watermarks from Midjourney,
-finding one is strong evidence of AI generation. But NOT finding one means
-nothing — most AI tools don't embed watermarks, and they can be stripped.
-
-Apply this in your scoring:
-
-```python
-# GOOD: Presence = strong signal, absence = no signal
-if watermark_found:
-    ai_probability = max(ai_probability, 90.0)
-# If not found, don't reduce ai_probability — absence proves nothing
-
-# BAD: Treating absence as counter-evidence
-if not watermark_found:
-    ai_probability *= 0.5  # WRONG — penalizes for missing watermark
-```
-
-## Step 3: Add a Template Section (Optional)
-
-If your plugin produces detailed results worth showing in their own section,
-add it to `templates/analyses/report/_automated_analysis.html` in Section 4
-(Method Details):
+If your plugin produces detailed results worth their own UI section,
+add a block to `templates/analyses/report/_automated_analysis.html`:
 
 ```html
-<!-- 4c: My New Check -->
-{% if analysis.report.my_new_check %}
+{% if analysis.report.my_check %}
 <div class="row-fluid" style="margin-top: 15px;">
-    <div class="span12">
-        <div class="box">
-            <div class="wdgt-header">
-                <i class="icon-search"></i> My New Check
-                <span class="pull-right">
-                    {% if analysis.report.my_new_check.error %}
-                        <span class="label label-inverse">Unavailable</span>
-                    {% elif analysis.report.my_new_check.suspicious %}
-                        <span class="label label-warning">Suspicious</span>
-                    {% else %}
-                        <span class="label label-success">Clean</span>
-                    {% endif %}
-                </span>
-            </div>
-            <div class="wdgt-body">
-                {% if analysis.report.my_new_check.error %}
-                    <div class="alert alert-warning" style="margin-bottom: 0;">
-                        <strong>Not Available:</strong>
-                        {{ analysis.report.my_new_check.error }}
-                    </div>
-                {% else %}
-                    <p>Score: {{ analysis.report.my_new_check.score }}</p>
-                    <p class="muted">{{ analysis.report.my_new_check.details }}</p>
-                {% endif %}
-            </div>
-        </div>
+  <div class="span12">
+    <div class="box">
+      <div class="wdgt-header">
+        <i class="icon-search"></i> My Check
+        <span class="pull-right">
+          {% if analysis.report.my_check.error %}
+            <span class="label label-inverse">Unavailable</span>
+          {% elif analysis.report.my_check.suspicious %}
+            <span class="label label-warning">Suspicious</span>
+          {% else %}
+            <span class="label label-success">Clean</span>
+          {% endif %}
+        </span>
+      </div>
+      <div class="wdgt-body">
+        {% if analysis.report.my_check.error %}
+          <div class="alert alert-warning">
+            <strong>Not Available:</strong>
+            {{ analysis.report.my_check.error }}
+          </div>
+        {% else %}
+          <p>Score: {{ analysis.report.my_check.score }}</p>
+          <p class="muted">{{ analysis.report.my_check.details }}</p>
+        {% endif %}
+      </div>
     </div>
+  </div>
 </div>
 {% endif %}
 ```
 
-Your plugin's findings will also automatically appear in the **Key Indicators**
-evidence table (Section 3) via the `indicators` list — no template changes
-needed for that.
+---
 
-## Step 4: Test
+## Step 5: Test
 
-### Unit test the scoring
+### Verify the plugin loads
+
+```bash
+.venv/bin/python manage.py test tests.test_processing -v2 2>&1 | grep -i "my_check\|Loaded"
+```
+
+You should see your plugin in the discovery log.
+
+### Unit test the auditor integration
 
 ```python
-from lib.forensics.confidence import calculate_manipulation_confidence
+from lib.analyzer.auditor import audit
 
 results = {
-    'ela': {'max_difference': 25},
-    'noise_analysis': {'inconsistency_score': 1.5, 'suspicious': False},
-    'metadata': {'Exif': {'Image': {'Make': 'Canon'}}, 'Iptc': None, 'Xmp': None},
-    # Add your plugin's output:
-    'my_new_check': {
-        'enabled': True,
-        'score': 0.85,
-        'suspicious': True,
-        'details': 'Found suspicious pattern X',
+    "metadata": {"dimensions": [1920, 1080]},
+    "noise_analysis": {"inconsistency_score": 5.5},
+    "my_check": {
+        "enabled": True,
+        "score": 0.85,
+        "suspicious": True,
     },
 }
 
-result = calculate_manipulation_confidence(results)
-print(f"Verdict:    {result['verdict_label']}")
-print(f"Certainty:  {result['verdict_confidence']}% ({result['verdict_certainty']})")
-print(f"Suspicion:  {result['confidence_score']}%")
-print(f"AI Prob:    {result['ai_generated_probability']}%")
-for ind in result['indicators']:
-    print(f"  [{ind['type']}] {ind['method']}: {ind['evidence']}")
+verdict = audit(results)
+print(f"Authenticity: {verdict['authenticity_score']}/100")
+print(f"Findings: {verdict['findings_count']}")
+for f in verdict["findings_summary"]:
+    print(f"  [{f['risk']}] {f['description']}")
 ```
 
-### Re-score existing images after changing weights
-
-```bash
-.venv/bin/python -c "
-import django, os
-os.environ['DJANGO_SETTINGS_MODULE'] = 'sus_scrofa.settings'
-django.setup()
-from analyses.models import Analysis
-from lib.forensics.confidence import calculate_manipulation_confidence
-
-for a in Analysis.objects.all():
-    if not a.report:
-        continue
-    a.report['confidence'] = calculate_manipulation_confidence(a.report)
-    a.save()
-print('Done')
-"
-```
-
-### Clear bytecode cache after changes
+### Clear cache and restart
 
 ```bash
 find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null
+# Then restart the processor — plugins load at startup.
 ```
 
-Then restart the processor — it loads plugins at startup.
+---
 
 ## Checklist
 
-- [ ] Plugin file in `plugins/analyzer/` with unique filename
+- [ ] File in `plugins/static/` or `plugins/ai_ml/`
 - [ ] Subclasses `BaseAnalyzerModule`
-- [ ] Has `order` between 10–89
-- [ ] `check_deps()` returns True/False based on imports
+- [ ] `order` set (1–99, within tier)
+- [ ] `check_deps()` → `True` / `False`
 - [ ] `run(task)` writes to `self.results["your_key"]`
 - [ ] `run(task)` always returns `self.results`
 - [ ] Result includes `enabled` flag and `error` on failure
-- [ ] Weight added to `forensic_weights` in `confidence.py` (Phase 1)
-      **or** integrated into `ai_probability` logic (Phase 2)
-- [ ] Existing weights rebalanced to sum ≈ 1.0
-- [ ] Indicator appended to `confidence['indicators']` list
-- [ ] Type label set: `'deterministic'` or `'ai_ml'`
-- [ ] Tested with `calculate_manipulation_confidence()` directly
-- [ ] Existing images re-scored after weight changes
+- [ ] Auditor check added in `lib/analyzer/auditor.py` (if applicable)
+- [ ] Tested with `audit()` directly
 - [ ] `__pycache__` cleared, processor restarted

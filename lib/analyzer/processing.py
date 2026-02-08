@@ -3,19 +3,19 @@
 # See the file 'docs/LICENSE.txt' for license terms.
 
 import logging
-import pkgutil
-import inspect
 
 from time import sleep
 from multiprocessing import cpu_count, Process, JoinableQueue
 from django.utils.timezone import now
 from django.conf import settings
 
-import plugins.analyzer as modules
-from lib.utils import AutoVivification
+from lib.analyzer.orchestrator import (
+    discover_plugins, check_deps, should_skip_ai_ml, run_plugins,
+)
+from lib.analyzer.auditor import audit
+from lib.forensics.confidence import calculate_manipulation_confidence
+from lib.db import save_results, update_results
 from analyses.models import Analysis
-from lib.analyzer.base import BaseAnalyzerModule
-from lib.db import save_results
 
 logger = logging.getLogger(__name__)
 
@@ -23,18 +23,17 @@ logger = logging.getLogger(__name__)
 class AnalysisRunner(Process):
     """Run an analysis process."""
 
-    def __init__(self, tasks, modules=None):
+    def __init__(self, tasks, static_plugins=None, ai_ml_plugins=None):
         Process.__init__(self)
         self.tasks = tasks
-        self.modules = modules
+        self.static_plugins = static_plugins or []
+        self.ai_ml_plugins = ai_ml_plugins or []
         logger.debug("AnalysisRunner started")
 
     def run(self):
         """Start processing."""
-        # Antani-finite loop.
         while True:
             try:
-                # Get a new task from queue.
                 task = self.tasks.get()
                 self._process_image(task)
             except KeyboardInterrupt:
@@ -42,32 +41,63 @@ class AnalysisRunner(Process):
 
     def _process_image(self, task):
         """Process an image.
+
+        Three-phase architecture:
+
+          Phase 1a — Static plugins:
+                     Fast, deterministic analysers (metadata, hashes,
+                     ELA, noise, frequency, signatures, …).
+
+          ── Auditor checkpoint ──
+                     If static evidence alone is already decisive,
+                     skip the expensive AI/ML phase.
+
+          Phase 1b — AI/ML plugins:
+                     Heavier detectors (SDXL, SPAI, OpenCV manipulation,
+                     photoholmes, …).  Only run when Phase 1a didn't
+                     already produce a clear verdict.
+
+          Phase 2  — Engine post-processing (NOT plugins):
+                     a) Compliance Auditor → results['audit']
+                     b) Confidence Scoring → results['confidence']
+
         @param task: image task
         """
         try:
             results = {}
-
-            # Save reference to image data on  GridFS.
             results["file_data"] = task.image_id
 
-            for module in self.modules:
-                current = module()
-                current.data = results
-                try:
-                    output = current.run(task)
-                except Exception as e:
-                    logger.exception("Critical error in plugin {0}, skipping: {1}".format(module, e))
-                    continue
-                else:
-                    if isinstance(output, AutoVivification):
-                        results.update(output)
-                    else:
-                        logger.warning("Module %s returned results not in dict format." % module)
+            # ── Phase 1a: Static plugins ──────────────────────────
+            run_plugins(self.static_plugins, results, task)
 
-            # Complete - save or update results
-            # If analysis_id exists, we're re-processing → update existing MongoDB doc
-            # Otherwise, create new MongoDB doc
-            from lib.db import update_results
+            # ── Auditor checkpoint ────────────────────────────────
+            skipped_ai = False
+            if self.ai_ml_plugins and should_skip_ai_ml(results):
+                skipped_ai = True
+                results["_engine"] = {"ai_ml_skipped": True,
+                                      "skip_reason": "decisive static evidence"}
+                logger.info("Task %s: AI/ML tier skipped (static evidence sufficient)", task.id)
+            else:
+                # ── Phase 1b: AI/ML plugins ───────────────────────
+                run_plugins(self.ai_ml_plugins, results, task)
+
+            # ── Phase 2: Engine post-processing ───────────────────
+            try:
+                results["audit"] = audit(results)
+                logger.info("Compliance audit complete for task %s: authenticity=%s",
+                            task.id, results["audit"].get("authenticity_score"))
+            except Exception as e:
+                logger.exception("Compliance audit failed for task %s: %s", task.id, e)
+                results["audit"] = {"error": str(e)}
+
+            try:
+                results["confidence"] = calculate_manipulation_confidence(results)
+            except Exception as e:
+                logger.exception("Confidence scoring failed for task %s: %s", task.id, e)
+                results["confidence"] = {"error": str(e)}
+
+            # Complete — save or update results.
+            # If analysis_id exists, we're re-processing → update existing MongoDB doc.
             if task.analysis_id:
                 update_results(task.analysis_id, results)
                 logger.info("Re-processed task {0} with success (updated existing analysis)".format(task.id))
@@ -90,12 +120,13 @@ class AnalysisManager():
     """Manage all analysis' process."""
 
     def __init__(self):
-        # Processing pool.
         logger.debug("Using pool on %i core" % self.get_parallelism())
-        # Load modules.
-        self.modules = []
-        self.load_modules()
-        self.check_module_deps()
+        # Discover and validate plugins via engine orchestrator.
+        static_raw, ai_ml_raw = discover_plugins()
+        self.static_plugins = check_deps(static_raw)
+        self.ai_ml_plugins = check_deps(ai_ml_raw)
+        logger.info("Loaded %d static plugins, %d AI/ML plugins",
+                     len(self.static_plugins), len(self.ai_ml_plugins))
         # Starting worker pool.
         self.workers = []
         self.tasks = JoinableQueue(self.get_parallelism())
@@ -104,7 +135,7 @@ class AnalysisManager():
     def workers_start(self):
         """Start workers pool."""
         for _ in range(self.get_parallelism()):
-            runner = AnalysisRunner(self.tasks, self.modules)
+            runner = AnalysisRunner(self.tasks, self.static_plugins, self.ai_ml_plugins)
             runner.start()
             self.workers.append(runner)
 
@@ -126,42 +157,6 @@ class AnalysisManager():
             return cpu_count() - 1
         else:
             return 1
-
-    def load_modules(self):
-        """Load modules."""
-        # Search for analysis modules, it need to import module directory as package named "modules".
-        for loader_instance, module_name, is_pkg in pkgutil.iter_modules(modules.__path__, modules.__name__ + "."):
-            # Skip packages.
-            if is_pkg:
-                continue
-            # Load module.
-            # NOTE: This code is inspired to Cuckoo Sandbox module loading system.
-            try:
-                module = __import__(module_name, globals(), locals(), ["dummy"], 0)
-                
-                # Inspect module for analyzer classes
-                for class_name, class_pkg in inspect.getmembers(module):
-                    if inspect.isclass(class_pkg):
-                        # Load only modules which inherits BaseModule.
-                        if issubclass(class_pkg, BaseAnalyzerModule) and class_pkg is not BaseAnalyzerModule:
-                            self.modules.append(class_pkg)
-                            logger.debug("Found module: %s" % class_name)
-                            
-            except ImportError as e:
-                logger.warning("Unable to import module %s: %s" % (module_name, e))
-            except Exception as e:
-                logger.error("Error loading module %s: %s" % (module_name, e))
-
-        # Sort modules by execution order.
-        self.modules.sort(key=lambda x: x.order)
-
-    def check_module_deps(self):
-        """Check modules for requested deps, if not found removes the module from the list."""
-        for plugin in self.modules:
-            # NOTE: create the module class instance.
-            if not plugin().check_deps():
-                self.modules.remove(plugin)
-                logger.warning("Kicked module, requirements not found: %s" % plugin.__name__)
 
     def run(self):
         """Start all analyses."""

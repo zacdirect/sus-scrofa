@@ -540,6 +540,14 @@ class ComplianceAuditor:
         Note: score_impact values are designed as risk impacts:
         - Negative impact = suspicious = lowers authenticity
         - Positive impact = evidence of authenticity = raises authenticity
+        
+        Score capping:
+        - If ANY findings exist, the score is capped below 100 and above 0.
+        - Each HIGH risk finding lowers the ceiling by 10.
+        - Each MEDIUM risk finding lowers the ceiling by 5.
+        - Each HIGH POSITIVE finding raises the floor by 5.
+        - This ensures contradictory evidence is always visible in the
+          score — a 100 means "zero doubt", not "preponderance of evidence".
         """
         # Start at neutral (50 = uncertain)
         base_score = 50
@@ -550,9 +558,34 @@ class ComplianceAuditor:
         for finding in findings:
             base_score += finding.score_impact
         
-        # Clamp to 0-100 and return as authenticity
-        # After applying impacts: low score = suspicious, high score = authentic
-        return max(0, min(100, base_score))
+        # Risk-based score capping
+        # Never claim 100% or 0% when there are contradicting findings.
+        ceiling = 100
+        floor = 0
+        
+        high_risk_count = sum(1 for f in findings if f.risk_level == Finding.HIGH)
+        medium_risk_count = sum(1 for f in findings if f.risk_level == Finding.MEDIUM)
+        positive_count = sum(1 for f in findings if f.risk_level == Finding.POSITIVE)
+        
+        if high_risk_count > 0:
+            # Each HIGH risk finding caps the max 10 points lower
+            ceiling -= high_risk_count * 10
+            # But never drop ceiling below 55 just from capping
+            ceiling = max(55, ceiling)
+        
+        if medium_risk_count > 0:
+            # Each MEDIUM risk finding caps the max 5 points lower
+            ceiling -= medium_risk_count * 5
+            ceiling = max(55, ceiling)
+        
+        if positive_count > 0:
+            # Positive evidence raises the floor (never say 0% if there's
+            # real camera data, GPS, etc.)
+            floor += positive_count * 5
+            # But never raise floor above 45 just from capping
+            floor = min(45, floor)
+        
+        return max(floor, min(ceiling, base_score))
     
     def _collect_detector_types(self, findings: List[Finding]) -> List[str]:
         """Collect detector types that triggered for informational purposes."""

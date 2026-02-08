@@ -331,8 +331,8 @@ photoholmes-setup:
 	@echo "Installing jpegio (JPEG DCT extraction)..."
 	$(PIP) install jpegio>=0.4.0
 	@echo ""
-	@echo "Installing photoholmes from local clone..."
-	$(PIP) install -e ./temp/photoholmes
+	@echo "Installing photoholmes from GitHub..."
+	$(PIP) install "photoholmes @ git+https://github.com/photoholmes/photoholmes.git"
 	@echo ""
 	@echo "$(GREEN)========================================$(NC)"
 	@echo "$(GREEN)✓ Photoholmes ready!$(NC)"

@@ -287,10 +287,8 @@
                         <span class="label label-inverse">Unavailable</span>
                     {% elif not analysis.report.ai_detection.enabled %}
                         <span class="label">Disabled</span>
-                    {% elif analysis.report.ai_detection.likely_ai %}
-                        <span class="label label-important">AI Generated</span>
                     {% else %}
-                        <span class="label label-success">Authentic</span>
+                        <span class="label label-info">{{ analysis.report.ai_detection.methods_run|length }} method{{ analysis.report.ai_detection.methods_run|length|pluralize }}</span>
                     {% endif %}
                 </span>
             </div>
@@ -332,16 +330,9 @@
                     </table>
                     {% endif %}
 
-                    {% if analysis.report.ai_detection.detection_framework %}
+                    {% if analysis.report.ai_detection.methods_run %}
                         <p class="muted" style="font-size: 10px; margin: 0;">
-                            <strong>Framework:</strong> {{ analysis.report.ai_detection.detection_framework }}
-                            &nbsp;|&nbsp;
-                            <strong>Overall AI Probability:</strong> {{ analysis.report.ai_detection.ai_probability|floatformat:1 }}%
-                            &nbsp;|&nbsp;
-                            <strong>Confidence:</strong>
-                            <span class="label {% if analysis.report.ai_detection.confidence == 'certain' or analysis.report.ai_detection.confidence == 'high' %}label-important{% elif analysis.report.ai_detection.confidence == 'medium' %}label-warning{% else %}label-info{% endif %}" style="font-size: 9px;">
-                                {{ analysis.report.ai_detection.confidence|upper }}
-                            </span>
+                            <strong>Methods:</strong> {{ analysis.report.ai_detection.methods_run|join:", " }}
                         </p>
                     {% endif %}
                 {% else %}

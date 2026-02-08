@@ -1,12 +1,14 @@
 {% load analyses_tags %}
 
 <div class="box">
-    <div class="wdgt-header">AI Generation Detection
+    <div class="wdgt-header">AI Generation Detection — Raw Detector Results
         <span class="pull-right">
-            {% if analysis.report.ai_detection.likely_ai %}
-                <span class="label label-important">AI Generated</span>
+            {% if analysis.report.ai_detection.error %}
+                <span class="label label-inverse">Unavailable</span>
+            {% elif not analysis.report.ai_detection.enabled %}
+                <span class="label">Disabled</span>
             {% else %}
-                <span class="label label-success">Authentic</span>
+                <span class="label label-info">{{ analysis.report.ai_detection.methods_run|length }} method{{ analysis.report.ai_detection.methods_run|length|pluralize }}</span>
             {% endif %}
         </span>
     </div>
@@ -14,81 +16,59 @@
         {% if analysis.report.ai_detection.error %}
             <div class="alert alert-warning">
                 <strong>Analysis Not Available:</strong> {{ analysis.report.ai_detection.error }}
-                <br><small>See AI_DETECTION_SETUP.md for installation instructions.</small>
+                <br><small>Run <code>make ai-setup</code> to enable AI detection.</small>
             </div>
         {% elif analysis.report.ai_detection.enabled %}
-            <div class="row-fluid">
-                <div class="span6">
-                    <h4>AI Probability Score</h4>
-                    <div class="progress progress-striped {% if analysis.report.ai_detection.ai_probability > 85 %}progress-danger{% elif analysis.report.ai_detection.ai_probability > 70 %}progress-warning{% else %}progress-success{% endif %}" 
-                         style="height: 30px; margin-bottom: 20px;">
-                        <div class="bar" style="width: {{ analysis.report.ai_detection.ai_probability }}%; line-height: 30px; font-size: 16px;">
-                            {{ analysis.report.ai_detection.ai_probability|floatformat:1 }}%
-                        </div>
-                    </div>
-                    
-                    <p class="muted">
-                        <small>
-                            <strong>Confidence:</strong>
-                            <span class="label {% if analysis.report.ai_detection.confidence == 'very_high' or analysis.report.ai_detection.confidence == 'high' %}label-important{% elif analysis.report.ai_detection.confidence == 'medium' %}label-warning{% else %}label-info{% endif %}">
-                                {{ analysis.report.ai_detection.confidence|upper }}
-                            </span>
-                        </small>
-                    </p>
-                    
-                    <h4>Technical Details</h4>
-                    <table class="table table-striped table-condensed">
-                        <tr>
-                            <td><strong>Model:</strong></td>
-                            <td><small>{{ analysis.report.ai_detection.model }}</small></td>
-                        </tr>
-                        <tr>
-                            <td><strong>Score:</strong></td>
-                            <td><small>{{ analysis.report.ai_detection.logit|floatformat:3 }}</small></td>
-                        </tr>
-                        <tr>
-                            <td><strong>Method:</strong></td>
-                            <td><small>Spectral Learning (Frequency Domain)</small></td>
-                        </tr>
-                        <tr>
-                            <td><strong>Paper:</strong></td>
-                            <td><small>{{ analysis.report.ai_detection.paper }}</small></td>
-                        </tr>
-                    </table>
-                </div>
-                <div class="span6">
-                    <h4>Assessment</h4>
-                    <div class="alert {% if analysis.report.ai_detection.likely_ai %}alert-error{% else %}alert-info{% endif %}" style="margin-top: 0;">
-                        <p><strong>{{ analysis.report.ai_detection.interpretation }}</strong></p>
-                    </div>
-                    
-                    {% if analysis.report.ai_detection.evidence %}
-                        <h4>Evidence</h4>
-                        <ul class="unstyled">
-                            {% for item in analysis.report.ai_detection.evidence %}
-                            <li style="margin-bottom: 8px;">
-                                <i class="icon-{% if analysis.report.ai_detection.likely_ai %}warning-sign{% else %}ok{% endif %}"></i> {{ item }}
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-                    
-                    <p class="muted" style="margin-top: 20px;">
-                        <small>
-                            <strong>About SPAI:</strong><br>
-                            State-of-the-art spectral learning detector (CVPR 2025) trained on 
-                            {{ analysis.report.ai_detection.training }}.
-                            Works on any image resolution using frequency domain analysis.
-                            <br><br>
-                            <em>Developed by CERTH/University of Amsterdam</em>
-                        </small>
-                    </p>
-                </div>
-            </div>
+            {% if analysis.report.ai_detection.detection_layers %}
+            <table class="table table-condensed table-bordered" style="font-size: 12px; margin-bottom: 10px;">
+                <thead>
+                    <tr>
+                        <th style="width: 25%;">Detection Method</th>
+                        <th style="width: 12%;">Verdict</th>
+                        <th style="width: 12%;">Score</th>
+                        <th style="width: 15%;">Confidence</th>
+                        <th>Evidence</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for layer in analysis.report.ai_detection.detection_layers %}
+                    <tr>
+                        <td><strong>{{ layer.method }}</strong></td>
+                        <td>
+                            {% if layer.verdict == 'AI' %}
+                                <span class="label label-important">AI</span>
+                            {% elif layer.verdict == 'Real' %}
+                                <span class="label label-success">Real</span>
+                            {% else %}
+                                <span class="label">Unknown</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if layer.score is not None %}
+                                {{ layer.score|floatformat:2 }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                        <td>{{ layer.confidence|default:"—"|upper }}</td>
+                        <td class="muted">{{ layer.evidence|default:"—" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+                <p class="muted">No detection layers returned results.</p>
+            {% endif %}
+
+            <p class="muted" style="font-size: 10px; margin: 0;">
+                <strong>Methods:</strong> {{ analysis.report.ai_detection.methods_run|join:", " }}
+                <br>
+                <em>These are raw detector outputs. The authoritative verdict is in the Compliance Audit section above.</em>
+            </p>
         {% else %}
             <div class="alert alert-info">
-                <p>AI detection analysis not available. SPAI may not be installed.</p>
-                <small>See <code>AI_DETECTION_SETUP.md</code> for installation instructions.</small>
+                <p>AI detection not configured.</p>
+                <small>Run <code>make ai-setup</code> to install detection models.</small>
             </div>
         {% endif %}
     </div>

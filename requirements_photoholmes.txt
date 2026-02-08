@@ -14,5 +14,5 @@ torchvision>=0.16.0
 # JPEG DCT coefficient extraction (required for DQ method)
 jpegio>=0.4.0
 
-# Photoholmes library (installed from local clone)
-# -e ./temp/photoholmes
+# Photoholmes library (from GitHub — not yet on PyPI)
+photoholmes @ git+https://github.com/photoholmes/photoholmes.git
