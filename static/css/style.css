@@ -251,12 +251,12 @@ a {
     text-decoration: none !important;
     outline: none;
 }
-.ghiro-thumbnails {
+.sus-scrofa-thumbnails {
     list-style: none outside none;
     margin: 0;
     padding: 0;
 }
-.ghiro-thumbnails > li {
+.sus-scrofa-thumbnails > li {
     display: block;
     float: left;
     overflow: hidden;
@@ -264,11 +264,11 @@ a {
     width: 210px;
     height: 160px;
 }
-.ghiro-thumbnails > li > *:first-child {
+.sus-scrofa-thumbnails > li > *:first-child {
     display: block;
     position: relative;
 }
-.ghiro-thumbnails > li > .tools {
+.sus-scrofa-thumbnails > li > .tools {
     background-color: rgba(0, 0, 0, 0.55);
     bottom: 0;
     left: -30px;
@@ -280,17 +280,17 @@ a {
     width: 29px;
     height: 85px;
 }
-.ghiro-thumbnails > li:hover > .tools {
+.sus-scrofa-thumbnails > li:hover > .tools {
     left: 0;
 }
-.ghiro-thumbnails > li > .tools > a, .ghiro-thumbnails > li > *:first-child .inner a {
+.sus-scrofa-thumbnails > li > .tools > a, .sus-scrofa-thumbnails > li > *:first-child .inner a {
     color: #FFFFFF;
     display: inline-block;
     font-size: 18px;
     font-weight: normal;
     padding: 4px;
 }
-.ghiro-thumbnails > li > .tools > a:hover, .ghiro-thumbnails > li > *:first-child .inner a:hover {
+.sus-scrofa-thumbnails > li > .tools > a:hover, .sus-scrofa-thumbnails > li > *:first-child .inner a:hover {
     color: #C9E2EA;
     text-decoration: none;
 }
@@ -453,7 +453,7 @@ input[type='checkbox']{
 }
 
 /* Tooltip map image */
-.ghiro-thumbnails > li .tags {
+.sus-scrofa-thumbnails > li .tags {
     background-color: transparent;
     border-width: 0;
     top: 110px;

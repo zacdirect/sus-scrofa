@@ -39,7 +39,7 @@ after_success:
   coveralls
 notifications:
   irc:
-    channels: "irc.freenode.org#ghiro"
+    channels: "irc.freenode.org#sus_scrofa"
     template:
       - "%{repository}@%{branch}: %{message} (%{build_url})"
     on_success: change

@@ -1,5 +1,5 @@
-# Ghiro - Copyright (C) 2013-2015 Ghiro Developers.
-# This file is part of Ghiro.
+# SusScrofa - Copyright (C) 2026 SusScrofa Developers.
+# This file is part of SusScrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
 import re
@@ -13,6 +13,18 @@ from lib.db import get_file
 from analyses.models import AnalysisMetadataDescription
 
 register = template.Library()
+
+@register.filter
+def pct(value, decimals=0):
+    """Convert a 0-1 fraction to a percentage string.
+    @param value: float 0-1
+    @param decimals: decimal places (default 0)
+    @return: formatted percentage number (without % sign)
+    """
+    try:
+        return f"{float(value) * 100:.{int(decimals)}f}"
+    except (ValueError, TypeError):
+        return "0"
  
 @register.filter("mongo_id")
 def mongo_id(value):

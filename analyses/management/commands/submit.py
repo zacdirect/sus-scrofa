@@ -1,5 +1,5 @@
-# Ghiro - Copyright (C) 2013-2015 Ghiro Developers.
-# This file is part of Ghiro.
+# SusScrofa - Copyright (C) 2026 SusScrofa Developers.
+# This file is part of SusScrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
 import magic
@@ -12,7 +12,7 @@ from analyses.models import Case, Analysis
 from lib.db import save_file
 from lib.utils import create_thumb
 from users.models import Profile
-from ghiro.common import check_allowed_content
+from sus_scrofa.common import check_allowed_content
 
 
 class Command(BaseCommand):

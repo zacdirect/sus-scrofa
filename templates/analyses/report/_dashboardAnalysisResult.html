@@ -6,6 +6,24 @@
         </tr>
     </thead>
     <tbody>
+        {% if analysis.report.confidence %}
+        <tr>
+            <td><strong>Automated Analysis</strong></td>
+            <td>
+                {% if analysis.report.confidence.verdict == 'ai_generated' %}
+                    <span class="label label-important">{{ analysis.report.confidence.verdict_label }} ({{ analysis.report.confidence.verdict_confidence|floatformat:0 }}%)</span>
+                {% elif analysis.report.confidence.verdict == 'manipulated' %}
+                    <span class="label label-important">{{ analysis.report.confidence.verdict_label }} ({{ analysis.report.confidence.confidence_score|floatformat:0 }}% suspicion)</span>
+                {% elif analysis.report.confidence.verdict_certainty == 'inconclusive' %}
+                    <span class="label label-warning">Inconclusive</span>
+                {% elif analysis.report.confidence.verdict_certainty == 'low' %}
+                    <span class="label label-info">{{ analysis.report.confidence.verdict_label }}</span>
+                {% else %}
+                    <span class="label label-success">{{ analysis.report.confidence.verdict_label }}</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endif %}
         <tr>
             <td>Static analysis</td>
             <td><span class="label label-success">Static data</span></td>

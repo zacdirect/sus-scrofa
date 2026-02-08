@@ -1,5 +1,5 @@
-# Ghiro - Copyright (C) 2013-2026 Ghiro Developers.
-# This file is part of Ghiro.
+# SusScrofa - Copyright (C) 2013-2026 SusScrofa Developers.
+# This file is part of SusScrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
 import logging
@@ -111,7 +111,7 @@ class OpenCVManipulation(BaseAnalyzerModule):
             # Extract results
             opencv_results = analysis.get('results', {})
             
-            # Format for Ghiro
+            # Format for SusScrofa
             results["opencv_manipulation"]["enabled"] = True
             results["opencv_manipulation"]["is_suspicious"] = opencv_results.get('is_suspicious', False)
             results["opencv_manipulation"]["overall_confidence"] = opencv_results.get('overall_confidence', 0.0)

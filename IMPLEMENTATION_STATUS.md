@@ -2,7 +2,7 @@
 
 ## Summary
 
-Successfully implemented AI/manipulation detection enhancement for Ghiro with **air-gapped, deterministic** approach.
+Successfully implemented AI/manipulation detection enhancement for SusScrofa with **air-gapped, deterministic** approach.
 
 ## What Was Built
 
@@ -96,7 +96,7 @@ Cannot run full Django tests due to Python 3.13 incompatibility:
 
 ### 1. Quick Validation (Already Done)
 ```bash
-cd /home/zac/repos/ghiro
+cd /home/zac/repos/sus_scrofa
 source .venv/bin/activate
 python test_forensics_standalone.py
 ```

@@ -1,9 +1,9 @@
-# Ghiro - Copyright (C) 2013-2016 Ghiro Developers.
-# This file is part of Ghiro.
+# SusScrofa - Copyright (C) 2013-2016 SusScrofa Developers.
+# This file is part of SusScrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
 class GhiroException(Exception):
-    """Base Ghiro exception."""
+    """Base SusScrofa exception."""
     pass
 
 class GhiroValidationException(GhiroException):

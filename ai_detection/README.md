@@ -1,4 +1,4 @@
-# Ghiro AI Detection Module
+# SusScrofa AI Detection Module
 
 Multi-layer AI-generated image detection combining metadata analysis with machine learning models.
 
@@ -84,7 +84,7 @@ make weights      # Downloads model weights
 make verify       # Verifies installation
 ```
 
-## Usage from Ghiro Plugin
+## Usage from SusScrofa Plugin
 
 The plugin automatically uses the embedded SPAI code:
 

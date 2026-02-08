@@ -1,5 +1,5 @@
-# Ghiro - Copyright (C) 2013-2015 Ghiro Developers.
-# This file is part of Ghiro.
+# SusScrofa - Copyright (C) 2026 SusScrofa Developers.
+# This file is part of SusScrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
 import gridfs
@@ -30,7 +30,7 @@ from analyses.models import Case, Analysis, Favorite, Comment, Tag
 from lib.db import save_file, get_file, mongo_connect, get_db
 from lib.utils import create_thumb, hexdump
 from users.models import Profile
-from ghiro.common import log_activity, check_allowed_content
+from sus_scrofa.common import log_activity, check_allowed_content
 
 try:
     import pdfkit

@@ -1,11 +1,11 @@
 # AI Detection Integration Guide
 
-This document explains how the AI detection module integrates with Ghiro.
+This document explains how the AI detection module integrates with SusScrofa.
 
 ## Architecture Overview
 
 ```
-ghiro/
+sus_scrofa/
 ├── plugins/analyzer/ai_detection.py  # Plugin that uses the module
 └── ai_detection/                     # Standalone AI detection module
     ├── Makefile                      # Independent setup/build system
@@ -26,7 +26,7 @@ ghiro/
 ### 1. Modularity
 - **Separate directory**: `ai_detection/` is self-contained
 - **Own build system**: Independent Makefile with `make setup`, `make verify`, `make clean`
-- **Isolated dependencies**: Separate virtual environment, doesn't pollute main Ghiro
+- **Isolated dependencies**: Separate virtual environment, doesn't pollute main SusScrofa
 - **Easy replacement**: When better AI detection methods emerge, swap in new module
 
 ### 2. Performance
@@ -102,18 +102,18 @@ class SPAIDetection(AnalyzerModule):
 3. **Inference**: `run()` processes images
    - Gets detector (cached or new)
    - Calls `detector.predict(image_path)`
-   - Returns formatted results for Ghiro
+   - Returns formatted results for SusScrofa
 
 ## Setup Workflow
 
 ### For Developers
 
 ```bash
-# 1. Clone Ghiro repository
-git clone <ghiro-repo>
-cd ghiro
+# 1. Clone SusScrofa repository
+git clone <sus_scrofa-repo>
+cd sus_scrofa
 
-# 2. Main Ghiro setup
+# 2. Main SusScrofa setup
 make setup
 make install
 
@@ -121,13 +121,13 @@ make install
 make ai-setup      # Creates venv, installs deps, downloads weights
 make ai-verify     # Tests installation
 
-# 4. Run Ghiro
+# 4. Run SusScrofa
 make run
 ```
 
 ### For Users
 
-If AI detection is not set up, Ghiro will:
+If AI detection is not set up, SusScrofa will:
 - Log warning: "AI detection module not available"
 - Continue processing without AI detection
 - Other analysis plugins work normally
@@ -326,7 +326,7 @@ self.log("INFO", f"AI detection took {elapsed:.2f}s")
 
 ### Access Control
 
-- Plugin runs with same permissions as Ghiro
+- Plugin runs with same permissions as SusScrofa
 - No network access required after setup
 - No external API calls during inference
 - Model inference is local-only

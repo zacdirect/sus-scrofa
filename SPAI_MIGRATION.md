@@ -2,7 +2,7 @@
 
 ## Summary
 
-Successfully migrated Ghiro's AI detection plugin from **GRIP-UNINA** (2022) to **SPAI** (CVPR 2025).
+Successfully migrated SusScrofa's AI detection plugin from **GRIP-UNINA** (2022) to **SPAI** (CVPR 2025).
 
 ## What Changed
 

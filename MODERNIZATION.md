@@ -1,7 +1,7 @@
-# Ghiro 0.2.1 Modernization Guide
+# SusScrofa 0.2.1 Modernization Guide
 
 ## Overview
-This document details the complete modernization of Ghiro 0.2.1 from Python 2.7/Django 1.6.7 (last updated 2015) to **Python 3.13/Django 4.2.17 LTS** in 2026 - spanning nearly 10 years of framework evolution.
+This document details the complete modernization of SusScrofa 0.2.1 from Python 2.7/Django 1.6.7 (last updated 2015) to **Python 3.13/Django 4.2.17 LTS** in 2026 - spanning nearly 10 years of framework evolution.
 
 ## Summary of Changes
 Successfully modernized a 10-year-old forensic image analysis application to work with modern Python and Django versions, maintaining full functionality including EXIF metadata extraction.
@@ -27,7 +27,7 @@ Django==4.2.17  # Upgraded from 3.2.25
 
 #### 2. Settings Configuration
 ```python
-# ghiro/settings.py
+# sus_scrofa/settings.py
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'  # Changed from AutoField
 ```
 
@@ -94,7 +94,7 @@ make run
 ### Timezone Configuration
 **Issue**: `TIME_ZONE = None` caused `pytz.exceptions.UnknownTimeZoneError`
 
-**Fix**: Set explicit timezone in `ghiro/settings.py`
+**Fix**: Set explicit timezone in `sus_scrofa/settings.py`
 ```python
 TIME_ZONE = 'UTC'
 ```
@@ -413,7 +413,7 @@ Updated all Python `reverse()` calls from old-style view paths to new-style URL 
 
 ## Conclusion
 
-After nearly 10 years without updates, Ghiro has been successfully modernized to work with **Python 3.13 and Django 4.2 LTS**. All core functionality remains intact, including the critical EXIF metadata extraction feature. The application is now ready for continued use and future enhancements on modern infrastructure.
+After nearly 10 years without updates, SusScrofa has been successfully modernized to work with **Python 3.13 and Django 4.2 LTS**. All core functionality remains intact, including the critical EXIF metadata extraction feature. The application is now ready for continued use and future enhancements on modern infrastructure.
 
 **Total Effort**: 
 - Phase 1 (Django 3.2): ~50+ file modifications, 3 automated refactoring scripts, system dependency installation

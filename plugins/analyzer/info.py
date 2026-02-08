@@ -1,5 +1,5 @@
-# Ghiro - Copyright (C) 2013-2015 Ghiro Developers.
-# This file is part of Ghiro.
+# SusScrofa - Copyright (C) 2026 SusScrofa Developers.
+# This file is part of SusScrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
 from lib.analyzer.base import BaseAnalyzerModule

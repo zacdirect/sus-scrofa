@@ -35,7 +35,7 @@ curl http://localhost:8080/health
 
 ### View Results
 
-1. Upload image to Ghiro
+1. Upload image to SusScrofa
 2. Wait for analysis
 3. Click analyzed image
 4. Go to **"Automated Analysis"** tab

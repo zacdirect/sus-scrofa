@@ -1,5 +1,5 @@
-# Ghiro - Copyright (C) 2013-2015 Ghiro Developers.
-# This file is part of Ghiro.
+# SusScrofa - Copyright (C) 2026 SusScrofa Developers.
+# This file is part of SusScrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
 import logging
@@ -107,7 +107,7 @@ class AnalysisManager():
             sex_worker.join()
 
     def get_parallelism(self):
-        """Get the ghiro parallelism level for analysis processing."""
+        """Get the sus_scrofa parallelism level for analysis processing."""
         # Check database type. If we detect SQLite we slow down processing to
         # only one process. SQLite does not support parallelism.
         if settings.DATABASES["default"]["ENGINE"].endswith("sqlite3"):

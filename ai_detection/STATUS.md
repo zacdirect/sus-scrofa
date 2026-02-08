@@ -110,9 +110,9 @@ make weights
 
 ### 4. Test Plugin Integration
 ```bash
-cd /home/zac/repos/ghiro
+cd /home/zac/repos/sus_scrofa
 make run
-# Upload test image through Ghiro UI
+# Upload test image through SusScrofa UI
 # Verify AI detection appears in analysis results
 ```
 
@@ -196,7 +196,7 @@ All documentation is complete:
 
 ## 🎉 Summary
 
-The AI detection module is **architecturally complete** and ready for testing. All model code has been successfully extracted from the SPAI repository and integrated into the embedded structure. The next step is to run `make ai-setup` from the main Ghiro directory to install dependencies and download weights, then test with actual images.
+The AI detection module is **architecturally complete** and ready for testing. All model code has been successfully extracted from the SPAI repository and integrated into the embedded structure. The next step is to run `make ai-setup` from the main SusScrofa directory to install dependencies and download weights, then test with actual images.
 
 ### Key Achievements
 1. ✅ Extracted 5 model files (~2100 lines of code)

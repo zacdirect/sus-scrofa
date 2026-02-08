@@ -1,5 +1,5 @@
-# Ghiro - Copyright (C) 2013-2026 Ghiro Developers.
-# This file is part of Ghiro.
+# SusScrofa - Copyright (C) 2013-2026 SusScrofa Developers.
+# This file is part of SusScrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
 import logging
@@ -118,7 +118,7 @@ class AIDetection(BaseAnalyzerModule):
             evidence = detection_result.get('evidence', 'No evidence')
             layer_results = detection_result.get('layer_results', [])
             
-            # Format for Ghiro
+            # Format for SusScrofa
             results["ai_detection"]["enabled"] = detection_result.get('enabled', True)
             results["ai_detection"]["verdict"] = "AI-Generated" if verdict else "Real" if verdict is False else "Unknown"
             results["ai_detection"]["confidence"] = confidence.lower()

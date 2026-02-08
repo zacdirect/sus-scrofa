@@ -1,5 +1,5 @@
-# Ghiro - Copyright (C) 2013-2015 Ghiro Developers.
-# This file is part of Ghiro.
+# SusScrofa - Copyright (C) 2026 SusScrofa Developers.
+# This file is part of SusScrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
 from django.contrib.auth.decorators import login_required
@@ -10,7 +10,7 @@ from django.urls import reverse
 
 import hashes.forms as forms
 from hashes.models import List, Hash
-from ghiro.common import log_activity
+from sus_scrofa.common import log_activity
 
 @require_safe
 @login_required

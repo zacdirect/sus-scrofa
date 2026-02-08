@@ -18,7 +18,7 @@ Instead of building custom heuristic detection, we can integrate a pre-trained d
 1. **Academic Quality**: Published at IEEE ICASSP 2023, peer-reviewed research
 2. **Specifically Trained for Modern AI**: Designed for Stable Diffusion, DALL-E, Midjourney, etc.
 3. **Pre-trained Weights Available**: Download from [Google Drive](https://drive.google.com/file/d/1sAoAuOGCWS4dAMBhDkRHgBf4SgBgvkVf/view?usp=share_link)
-4. **Apache 2.0 License**: Can be integrated into Ghiro without licensing issues
+4. **Apache 2.0 License**: Can be integrated into SusScrofa without licensing issues
 5. **ResNet50 Architecture**: Well-understood, efficient CNN model
 6. **Proven Performance**: Tested on multiple GAN/diffusion model outputs
 7. **Simple Integration**: PyTorch model with straightforward inference
@@ -392,14 +392,14 @@ if not ml_model_available:
 
 ```bash
 # 1. Create models directory
-mkdir -p /home/zac/repos/ghiro/plugins/models
+mkdir -p /home/zac/repos/sus_scrofa/plugins/models
 
 # 2. Download weights (manual step - requires browser)
 # Visit: https://drive.google.com/file/d/1sAoAuOGCWS4dAMBhDkRHgBf4SgBgvkVf/view
 # Download: weights.zip (~100MB)
 
 # 3. Extract and place
-cd /home/zac/repos/ghiro/plugins/models
+cd /home/zac/repos/sus_scrofa/plugins/models
 unzip ~/Downloads/weights.zip
 mv Grag2021_latent/model_epoch_best.pth gripunina_latent_diffusion.pth
 mv Grag2021_progan/model_epoch_best.pth gripunina_progan.pth
@@ -447,4 +447,4 @@ If using GRIP-UNINA model, add to documentation:
 - **Model weights**: Download from [Google Drive](https://drive.google.com/file/d/1sAoAuOGCWS4dAMBhDkRHgBf4SgBgvkVf/view)
 - **Paper**: https://arxiv.org/abs/2211.00680
 - **Code reference**: https://github.com/grip-unina/DMimageDetection
-- **License**: Apache 2.0 (compatible with Ghiro)
+- **License**: Apache 2.0 (compatible with SusScrofa)

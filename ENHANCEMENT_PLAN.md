@@ -1,4 +1,4 @@
-# Ghiro Enhancement Plan: Advanced Image Forensics
+# SusScrofa Enhancement Plan: Advanced Image Forensics
 ## AI-Generated & Manipulated Image Detection
 
 **Target Environment**: Air-gapped, offline operation  
@@ -770,7 +770,7 @@ def progressive_analysis(image, task):
 
 ## Summary
 
-This enhancement plan provides Ghiro with **state-of-the-art image forensics** capabilities while maintaining:
+This enhancement plan provides SusScrofa with **state-of-the-art image forensics** capabilities while maintaining:
 - ✓ Air-gapped operation
 - ✓ Deterministic detection
 - ✓ No AI dependencies (for core functionality)

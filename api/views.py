@@ -1,5 +1,5 @@
-# Ghiro - Copyright (C) 2013-2015 Ghiro Developers.
-# This file is part of Ghiro.
+# SusScrofa - Copyright (C) 2026 SusScrofa Developers.
+# This file is part of SusScrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
 import json
@@ -9,8 +9,8 @@ from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404
 
-from ghiro.common import log_activity
-from ghiro.authorization import api_authenticate
+from sus_scrofa.common import log_activity
+from sus_scrofa.authorization import api_authenticate
 from analyses.models import Case, Analysis
 from lib.db import save_file
 from lib.utils import create_thumb

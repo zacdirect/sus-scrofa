@@ -1,6 +1,6 @@
 # AI Detection Setup Guide - SPAI
 
-This document explains how to set up the **SPAI (Spectral AI-Generated Image Detector)** for Ghiro's AI detection plugin.
+This document explains how to set up the **SPAI (Spectral AI-Generated Image Detector)** for SusScrofa's AI detection plugin.
 
 ## About SPAI
 
@@ -9,7 +9,7 @@ This document explains how to set up the **SPAI (Spectral AI-Generated Image Det
 - **Paper**: "Any-Resolution AI-Generated Image Detection by Spectral Learning"
 - **Authors**: Karageorgiou et al. (CERTH/University of Amsterdam)
 - **GitHub**: https://github.com/mever-team/spai
-- **License**: Apache 2.0 (compatible with Ghiro)
+- **License**: Apache 2.0 (compatible with SusScrofa)
 
 ### Key Features
 
@@ -69,7 +69,7 @@ Download the pre-trained SPAI model weights (~100MB):
 
 1. Visit: https://drive.google.com/file/d/1vvXmZqs6TVJdj8iF1oJ4L_fcgdQrp_YI/view
 2. Download `spai.pth` or the weights file
-3. Place in Ghiro's models directory: `models/weights/spai.pth`
+3. Place in SusScrofa's models directory: `models/weights/spai.pth`
 
 **Option 2: Using gdown (Command Line)**
 
@@ -81,8 +81,8 @@ pip install gdown
 cd /tmp
 gdown 1vvXmZqs6TVJdj8iF1oJ4L_fcgdQrp_YI
 
-# Move to Ghiro models directory
-mv spai.pth /path/to/ghiro/models/weights/spai.pth
+# Move to SusScrofa models directory
+mv spai.pth /path/to/sus_scrofa/models/weights/spai.pth
 ```
 
 ### 3. Verify Installation
@@ -102,7 +102,7 @@ python -m spai --help
 # Should show SPAI help text with available commands
 ```
 
-### 4. Set PYTHONPATH for Ghiro Integration
+### 4. Set PYTHONPATH for SusScrofa Integration
 
 Since SPAI isn't installed as a package, add it to Python path:
 
@@ -110,21 +110,21 @@ Since SPAI isn't installed as a package, add it to Python path:
 # Option 1: Set environment variable
 export PYTHONPATH="/path/to/spai:$PYTHONPATH"
 
-# Option 2: Add to Ghiro's virtualenv activation script
+# Option 2: Add to SusScrofa's virtualenv activation script
 echo 'export PYTHONPATH="/path/to/spai:$PYTHONPATH"' >> ~/venv/bin/activate
 
 # Option 3: Add to ~/.bashrc for permanent setup
 echo 'export PYTHONPATH="/path/to/spai:$PYTHONPATH"' >> ~/.bashrc
 ```
 
-### 5. Configure Ghiro
+### 5. Configure SusScrofa
 
 The plugin will automatically detect SPAI if:
 - SPAI directory is in PYTHONPATH or Python can find the `spai` module
 - Model weights exist at `models/weights/spai.pth`
 - The `python -m spai` command works
 
-No additional Ghiro configuration needed!
+No additional SusScrofa configuration needed!
 
 ---
 
@@ -147,9 +147,9 @@ pip install -r requirements.txt
 # 4. Download weights
 pip install gdown && gdown 1vvXmZqs6TVJdj8iF1oJ4L_fcgdQrp_YI
 
-# 5. Place weights in Ghiro's models directory
-mkdir -p /path/to/ghiro/models/weights
-mv spai.pth /path/to/ghiro/models/weights/
+# 5. Place weights in SusScrofa's models directory
+mkdir -p /path/to/sus_scrofa/models/weights
+mv spai.pth /path/to/sus_scrofa/models/weights/
 
 # 6. Add SPAI to Python path
 export PYTHONPATH="/tmp/spai:$PYTHONPATH"
@@ -172,7 +172,7 @@ To use a custom configuration:
 
 1. Copy SPAI's config: `cp /path/to/spai/configs/spai.yaml models/spai_config.yaml`
 2. Edit as needed
-3. Ghiro will automatically use `models/spai_config.yaml` if it exists
+3. SusScrofa will automatically use `models/spai_config.yaml` if it exists
 
 ### GPU vs CPU
 
@@ -271,8 +271,8 @@ python --version
 # Should show Python 3.11 or newer
 
 # If older, create new environment:
-conda create -n ghiro python=3.11
-conda activate ghiro
+conda create -n sus_scrofa python=3.11
+conda activate sus_scrofa
 ```
 
 ---
@@ -308,9 +308,9 @@ WORKDIR /app
 Ensure the service user can access model weights:
 
 ```bash
-sudo mkdir -p /opt/ghiro/models/weights
-sudo cp spai.pth /opt/ghiro/models/weights/
-sudo chown -R ghiro:ghiro /opt/ghiro/models
+sudo mkdir -p /opt/sus_scrofa/models/weights
+sudo cp spai.pth /opt/sus_scrofa/models/weights/
+sudo chown -R sus_scrofa:sus_scrofa /opt/sus_scrofa/models
 ```
 
 ### Hosting Model Weights Internally
@@ -377,7 +377,7 @@ cat /tmp/output/*.csv
 
 For issues with:
 - **SPAI itself**: https://github.com/mever-team/spai/issues
-- **Ghiro integration**: Open an issue on Ghiro's repository
+- **SusScrofa integration**: Open an issue on SusScrofa's repository
 - **Model downloads**: Contact d.karageorgiou@uva.nl
 
 ---
@@ -385,7 +385,7 @@ For issues with:
 ## License
 
 - **SPAI**: Apache 2.0
-- **Ghiro**: Ghiro license (see docs/LICENSE.txt)
+- **SusScrofa**: SusScrofa license (see docs/LICENSE.txt)
 - **Model weights**: Apache 2.0 (research use)
 
 Both are compatible for commercial and research use.

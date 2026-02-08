@@ -4,7 +4,7 @@ Containerized OpenCV service for image manipulation detection and analysis.
 
 ## Overview
 
-This service provides REST API endpoints for analyzing images using OpenCV computer vision techniques. It runs as a separate container to isolate OpenCV dependencies from the main Ghiro application.
+This service provides REST API endpoints for analyzing images using OpenCV computer vision techniques. It runs as a separate container to isolate OpenCV dependencies from the main SusScrofa application.
 
 ## Detection Methods
 
@@ -127,34 +127,34 @@ make opencv-clean  # Removes container and image
 ```bash
 # Build
 cd opencv_service
-podman build -t ghiro-opencv:latest .
+podman build -t sus_scrofa-opencv:latest .
 
 # Run
 podman run -d \
-  --name ghiro-opencv \
+  --name sus_scrofa-opencv \
   -p 8080:8080 \
-  ghiro-opencv:latest
+  sus_scrofa-opencv:latest
 
 # Stop
-podman stop ghiro-opencv
-podman rm ghiro-opencv
+podman stop sus_scrofa-opencv
+podman rm sus_scrofa-opencv
 ```
 
 ### Using Docker
 ```bash
 # Build
 cd opencv_service
-docker build -t ghiro-opencv:latest .
+docker build -t sus_scrofa-opencv:latest .
 
 # Run
 docker run -d \
-  --name ghiro-opencv \
+  --name sus_scrofa-opencv \
   -p 8080:8080 \
-  ghiro-opencv:latest
+  sus_scrofa-opencv:latest
 
 # Stop
-docker stop ghiro-opencv
-docker rm ghiro-opencv
+docker stop sus_scrofa-opencv
+docker rm sus_scrofa-opencv
 ```
 
 ## Testing the Service
@@ -186,18 +186,18 @@ with open('test_image.jpg', 'rb') as f:
     print(response.json())
 ```
 
-## Ghiro Plugin Integration
+## SusScrofa Plugin Integration
 
-The OpenCV service is automatically integrated with Ghiro through the `opencv_analysis.py` plugin located in `plugins/analyzer/`.
+The OpenCV service is automatically integrated with SusScrofa through the `opencv_analysis.py` plugin located in `plugins/analyzer/`.
 
-### Enable in Ghiro
+### Enable in SusScrofa
 
 1. **Start the OpenCV service:**
    ```bash
    make opencv-start
    ```
 
-2. **Start Ghiro:**
+2. **Start SusScrofa:**
    ```bash
    make run
    ```
@@ -249,7 +249,7 @@ Results appear in the analysis under `opencv_analysis`:
 ## Architecture
 
 ```
-Ghiro Main Process (Python 3.13)
+SusScrofa Main Process (Python 3.13)
     ↓
 OpenCV Plugin (plugins/analyzer/opencv_analysis.py)
     ↓ HTTP REST API
@@ -342,4 +342,4 @@ curl -X POST http://localhost:8080/analyze \
 
 ## License
 
-Part of Ghiro - see `docs/LICENSE.txt` for terms.
+Part of SusScrofa - see `docs/LICENSE.txt` for terms.

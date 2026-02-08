@@ -1,5 +1,5 @@
-# Ghiro - Copyright (C) 2013-2015 Ghiro Developers.
-# This file is part of Ghiro.
+# SusScrofa - Copyright (C) 2026 SusScrofa Developers.
+# This file is part of SusScrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
 from io import BytesIO, StringIO
@@ -93,7 +93,7 @@ def str2file(text_data):
     return strIO
 
 def str2temp_file(text_data, suffix=None):
-    tmp = tempfile.NamedTemporaryFile(prefix="ghiro-", suffix=suffix, delete=False)
+    tmp = tempfile.NamedTemporaryFile(prefix="sus_scrofa-", suffix=suffix, delete=False)
     tmp.write(text_data)
     return tmp
 

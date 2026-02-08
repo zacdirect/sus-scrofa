@@ -1,5 +1,5 @@
-# Ghiro - Copyright (C) 2013-2015 Ghiro Developers.
-# This file is part of Ghiro.
+# SusScrofa - Copyright (C) 2026 SusScrofa Developers.
+# This file is part of SusScrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
 import os
@@ -12,7 +12,7 @@ ALLOWED_HOSTS = ['*']
 
 SITE_ID = 1
 
-# Actual Ghiro release.
+# Actual SusScrofa release.
 GHIRO_VERSION = "0.2.1"
 
 # If you set this to False, Django will make some optimizations so as not
@@ -68,7 +68,7 @@ FILE_UPLOAD_HANDLERS = ("django.core.files.uploadhandler.TemporaryFileUploadHand
 # Unique secret key generator.
 # Secret key will be placed in secret_key.py file.
 try:
-    from ghiro.secret_key import SECRET_KEY
+    from sus_scrofa.secret_key import SECRET_KEY
 except ImportError:
     SETTINGS_DIR=os.path.abspath(os.path.dirname(__file__))
     # Using the same generation schema of Django startproject.
@@ -109,10 +109,10 @@ MIDDLEWARE = (
     # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
 
-ROOT_URLCONF = 'ghiro.urls'
+ROOT_URLCONF = 'sus_scrofa.urls'
 
 # Python dotted path to the WSGI application used by Django's runserver.
-WSGI_APPLICATION = 'ghiro.wsgi.application'
+WSGI_APPLICATION = 'sus_scrofa.wsgi.application'
 
 INSTALLED_APPS = (
     'django.contrib.auth',

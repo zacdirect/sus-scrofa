@@ -111,6 +111,11 @@
                                     <a href="#map" data-toggle="tab">Map</a>
                                 </li>
                                 {% endif %}
+                                {% if analysis.report.ai_detection or analysis.report.opencv_manipulation or analysis.report.confidence %}
+                                <li>
+                                    <a href="#automated" data-toggle="tab">Automated Analysis</a>
+                                </li>
+                                {% endif %}
                                 {% if analysis.report.ela %}
                                 <li>
                                     <a href="#ela" data-toggle="tab">ELA</a>
@@ -124,11 +129,6 @@
                                 {% if analysis.report.frequency_analysis %}
                                 <li>
                                     <a href="#frequency" data-toggle="tab">Frequency</a>
-                                </li>
-                                {% endif %}
-                                {% if analysis.report.ai_detection or analysis.report.opencv_manipulation or analysis.report.confidence %}
-                                <li>
-                                    <a href="#automated" data-toggle="tab">Automated Analysis</a>
                                 </li>
                                 {% endif %}
                                 {% if analysis.report.signatures and analysis.report.signatures|length > 0 %}
@@ -169,6 +169,11 @@
                                     {% include 'analyses/report/_map.html' %}
                                 </div>
                                 {% endif %}
+                                {% if analysis.report.ai_detection or analysis.report.opencv_manipulation or analysis.report.confidence %}
+                                <div id="automated" class="tab-pane">
+                                    {% include 'analyses/report/_automated_analysis.html' %}
+                                </div>
+                                {% endif %}
                                 {% if analysis.report.ela %}
                                 <div id="ela" class="tab-pane">
                                     {% include 'analyses/report/_ela.html' %}
@@ -182,11 +187,6 @@
                                 {% if analysis.report.frequency_analysis %}
                                 <div id="frequency" class="tab-pane">
                                     {% include 'analyses/report/_frequency_analysis.html' %}
-                                </div>
-                                {% endif %}
-                                {% if analysis.report.ai_detection or analysis.report.opencv_manipulation or analysis.report.confidence %}
-                                <div id="automated" class="tab-pane">
-                                    {% include 'analyses/report/_automated_analysis.html' %}
                                 </div>
                                 {% endif %}
                                 {% if analysis.report.signatures and analysis.report.signatures|length > 0 %}

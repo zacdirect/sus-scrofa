@@ -1,6 +1,6 @@
-# Ghiro Plugin Development Guide
+# SusScrofa Plugin Development Guide
 
-Complete guide for developing image analysis plugins for Ghiro.
+Complete guide for developing image analysis plugins for SusScrofa.
 
 ## Table of Contents
 1. [Architecture Overview](#architecture-overview)
@@ -26,7 +26,7 @@ Complete guide for developing image analysis plugins for Ghiro.
 ### Key Components
 
 ```
-ghiro/
+sus_scrofa/
 ├── lib/
 │   ├── analyzer/
 │   │   ├── base.py              # BaseAnalyzerModule class
@@ -527,7 +527,7 @@ def run(self, task):
 
 ```bash
 # Connect to MongoDB
-mongosh mongodb://localhost:27017/ghiro
+mongosh mongodb://localhost:27017/sus_scrofa
 
 # Find analysis
 db.fs.files.find().limit(5)
@@ -636,5 +636,5 @@ This shows how to integrate external deep learning models while maintaining fall
 ---
 
 **Last Updated**: February 2026  
-**Ghiro Version**: modernize branch (Django 4.2 + Python 3.13)  
+**SusScrofa Version**: modernize branch (Django 4.2 + Python 3.13)  
 **Plugin API Version**: 2.0 (BaseAnalyzerModule)

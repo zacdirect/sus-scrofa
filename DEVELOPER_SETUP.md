@@ -1,6 +1,6 @@
-# Ghiro Developer Setup Guide
+# SusScrofa Developer Setup Guide
 
-Quick start guide for developers to get Ghiro running on their local machine.
+Quick start guide for developers to get SusScrofa running on their local machine.
 
 ## System Requirements
 
@@ -31,8 +31,8 @@ sudo apt-get install -y \
 
 1. **Clone and setup**:
    ```bash
-   git clone https://github.com/yourusername/ghiro.git
-   cd ghiro
+   git clone https://github.com/yourusername/sus_scrofa.git
+   cd sus_scrofa
    git checkout modernize
    ```
 
@@ -102,10 +102,10 @@ make fresh
 ## Project Structure
 
 ```
-ghiro/
+sus_scrofa/
 ├── analyses/           # Image analysis app
 ├── api/               # REST API
-├── ghiro/             # Django project settings
+├── sus_scrofa/             # Django project settings
 ├── lib/               # Core libraries
 │   ├── analyzer/      # Analysis framework
 │   └── forensics/     # NEW: Enhanced forensics library
@@ -176,7 +176,7 @@ sudo apt-get install gir1.2-gexiv2-0.10
 ```bash
 make mongodb
 # Or manually:
-podman run -d --name ghiro-mongodb -p 27017:27017 mongo:4.4
+podman run -d --name sus_scrofa-mongodb -p 27017:27017 mongo:4.4
 ```
 
 ### Issue: "Permission denied" on podman

@@ -1,5 +1,5 @@
-# Ghiro - Copyright (C) 2013-2016 Ghiro Developers.
-# This file is part of Ghiro.
+# SusScrofa - Copyright (C) 2013-2016 SusScrofa Developers.
+# This file is part of SusScrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
 import os
@@ -30,8 +30,8 @@ class CreateAutoUploadDirTest(TestCase):
         """Test for AUTO_UPLOAD_DIR creation when missing."""
         # Create temporary directory to store everything.
         tmp_path = tempfile.mkdtemp()
-        # Build the ghiro path for auto upload.
-        ghiro_path = os.path.join(tmp_path, "ghiro-test")
+        # Build the sus_scrofa path for auto upload.
+        ghiro_path = os.path.join(tmp_path, "sus_scrofa-test")
         # Set path and test.
         settings.AUTO_UPLOAD_DIR = ghiro_path
         self.assertNotEqual(Command.create_auto_upload_dirs(), False)
@@ -46,8 +46,8 @@ class CreateAutoUploadDirTest(TestCase):
         case2 = Case.objects.create(name="aab", owner=self.user)
         # Create temporary directory to store everything.
         tmp_path = tempfile.mkdtemp()
-        # Build the ghiro path for auto upload.
-        ghiro_path = os.path.join(tmp_path, "ghiro-test")
+        # Build the sus_scrofa path for auto upload.
+        ghiro_path = os.path.join(tmp_path, "sus_scrofa-test")
         # Create AUTO_UPLOAD_DIR.
         os.mkdir(ghiro_path)
         # Set path and test.
@@ -63,8 +63,8 @@ class CreateAutoUploadDirTest(TestCase):
         case2 = Case.objects.create(name="aab", owner=self.user)
         # Create temporary directory to store everything.
         tmp_path = tempfile.mkdtemp()
-        # Build the ghiro path for auto upload.
-        ghiro_path = os.path.join(tmp_path, "ghiro-test")
+        # Build the sus_scrofa path for auto upload.
+        ghiro_path = os.path.join(tmp_path, "sus_scrofa-test")
         # Set path and create folders.
         settings.AUTO_UPLOAD_DIR = ghiro_path
         Command.create_auto_upload_dirs()
@@ -79,8 +79,8 @@ class CreateAutoUploadDirTest(TestCase):
         """Test for AUTO_UPLOAD_STARTUP_CLEANUP."""
         # Create temporary directory to store everything.
         tmp_path = tempfile.mkdtemp()
-        # Build the ghiro path for auto upload.
-        ghiro_path = os.path.join(tmp_path, "ghiro-test")
+        # Build the sus_scrofa path for auto upload.
+        ghiro_path = os.path.join(tmp_path, "sus_scrofa-test")
         # Set path and create folders.
         settings.AUTO_UPLOAD_DIR = ghiro_path
         os.mkdir(ghiro_path)
@@ -113,7 +113,7 @@ class ParseDirNameTest(TestCase):
     def test_parse_dir_name_absolute_path(self):
         """Tests parsing of directory name, expected cases: absolute path."""
         case = Case.objects.create(name="aaa", owner=self.user, id=4)
-        dir_name = os.path.join("/tmp/ghiro", case.directory_name)
+        dir_name = os.path.join("/tmp/sus_scrofa", case.directory_name)
         self.assertEqual(self.c.parse_dir_name(dir_name), case)
 
     def test_parse_dir_name_many_digits(self):

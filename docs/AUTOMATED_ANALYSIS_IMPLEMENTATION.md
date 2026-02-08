@@ -176,7 +176,7 @@ Successfully created a unified "Automated Analysis" tab that consolidates AI Det
 - Iterates over detection layers and methods
 
 ### 4. Professional Styling
-- Consistent with existing Ghiro theme
+- Consistent with existing SusScrofa theme
 - Bootstrap 2.x components
 - Icon fonts (FontAwesome)
 - Color-coded labels and progress bars
@@ -307,7 +307,7 @@ Successfully implemented a unified "Automated Analysis" tab that:
 - ✓ Provides comprehensive, researcher-friendly display
 - ✓ Shows all detection layers and methods transparently
 - ✓ Handles errors gracefully with helpful guidance
-- ✓ Integrates seamlessly with existing Ghiro UI
+- ✓ Integrates seamlessly with existing SusScrofa UI
 - ✓ Tested and validated with mock data
 - ✓ Fully documented for future maintenance
 

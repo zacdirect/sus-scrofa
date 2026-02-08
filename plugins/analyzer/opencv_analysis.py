@@ -1,5 +1,5 @@
-# Ghiro - Copyright (C) 2013-2026 Ghiro Developers.
-# This file is part of Ghiro.
+# SusScrofa - Copyright (C) 2013-2026 SusScrofa Developers.
+# This file is part of SusScrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
 import logging
@@ -23,7 +23,7 @@ class OpenCVAnalysis(BaseAnalyzerModule):
     - JPEG compression artifact detection
     
     The service runs in a separate container to isolate OpenCV dependencies
-    from the main Ghiro environment.
+    from the main SusScrofa environment.
     """
     
     order = 40  # Run after basic metadata/EXIF but before AI detection

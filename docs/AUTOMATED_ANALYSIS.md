@@ -225,7 +225,7 @@ analysis.report.opencv_manipulation = {
 
 ### Upload and Analyze Image
 
-1. Upload image through Ghiro web interface
+1. Upload image through SusScrofa web interface
 2. Analysis runs automatically (both plugins enabled)
 3. View report and click "Automated Analysis" tab
 4. Review comprehensive results:
@@ -420,9 +420,9 @@ print(f"Suspicious: {results['results']['is_suspicious']}")
 print(f"Confidence: {results['results']['overall_confidence']}")
 ```
 
-### Ghiro Plugin Interface
+### SusScrofa Plugin Interface
 
-Plugins communicate through standard Ghiro interface:
+Plugins communicate through standard SusScrofa interface:
 
 ```python
 from plugins.analyzer.opencv_manipulation import OpenCVManipulation
@@ -483,4 +483,4 @@ For issues or questions:
 
 ## License
 
-All detection plugins follow Ghiro's license (see LICENSE.txt)
+All detection plugins follow SusScrofa's license (see LICENSE.txt)

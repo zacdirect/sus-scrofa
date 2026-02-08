@@ -1,8 +1,8 @@
-Ghiro-0.2.1 (27/08/2015)
+SusScrofa-0.2.1 (27/08/2015)
 
 * Fixed pymongo release in requirements to avoid an error using pymongo 3.
 
-Ghiro-0.2 (09/01/2015)
+SusScrofa-0.2 (09/01/2015)
 
  * Added case deletion, you can now delete a case.
  * Added analysis deletion, you can now delete an analysis.
@@ -30,6 +30,6 @@ Ghiro-0.2 (09/01/2015)
  * Documentation update.
  * Bug fixes.
 
-Ghiro-0.1 (10/02/2013)
+SusScrofa-0.1 (10/02/2013)
 
  * Initial release.

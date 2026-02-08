@@ -105,7 +105,7 @@ $(document).ready(function() {
 function internetStatus(){
     var connected = true;
     var img = document.createElement('img');
-    img.src = 'http://www.getghiro.org/static/img/logo_1_original.png?ver=' + (new Date()).getTime();
+    img.src = 'http://www.getsus-scrofa.org/static/img/logo_1_original.png?ver=' + (new Date()).getTime();
     img.onerror = function() {
         $("#noNet").show();
         $("#map_canvas").hide();

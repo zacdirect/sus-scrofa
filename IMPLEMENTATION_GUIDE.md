@@ -28,8 +28,8 @@ touch lib/forensics/__init__.py
 **File**: `plugins/processing/noise_analysis.py`
 
 ```python
-# Ghiro - Copyright (C) 2013-2025 Ghiro Developers.
-# This file is part of Ghiro.
+# SusScrofa - Copyright (C) 2013-2025 SusScrofa Developers.
+# This file is part of SusScrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
 import logging
