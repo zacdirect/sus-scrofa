@@ -11,9 +11,11 @@ from lib.analyzer.base import BaseAnalyzerModule
 from lib.utils import str2temp_file, to_unicode, add_metadata_description, AutoVivification, str2image, image2str
 
 try:
+    import gi
+    gi.require_version('GExiv2', '0.10')
     from gi.repository import GExiv2
     IS_GEXIV = True
-except ImportError:
+except (ImportError, ValueError):
     IS_GEXIV = False
 
 logger = logging.getLogger(__name__)

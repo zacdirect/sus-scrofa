@@ -116,11 +116,6 @@
                                     <a href="#ela" data-toggle="tab">ELA</a>
                                 </li>
                                 {% endif %}
-                                {% if analysis.report.confidence %}
-                                <li>
-                                    <a href="#confidence" data-toggle="tab">Overall Assessment</a>
-                                </li>
-                                {% endif %}
                                 {% if analysis.report.noise_analysis %}
                                 <li>
                                     <a href="#noise" data-toggle="tab">Noise Analysis</a>
@@ -131,9 +126,9 @@
                                     <a href="#frequency" data-toggle="tab">Frequency</a>
                                 </li>
                                 {% endif %}
-                                {% if analysis.report.ai_detection %}
+                                {% if analysis.report.ai_detection or analysis.report.opencv_manipulation or analysis.report.confidence %}
                                 <li>
-                                    <a href="#aidetect" data-toggle="tab">AI Detection</a>
+                                    <a href="#automated" data-toggle="tab">Automated Analysis</a>
                                 </li>
                                 {% endif %}
                                 {% if analysis.report.signatures and analysis.report.signatures|length > 0 %}
@@ -179,11 +174,6 @@
                                     {% include 'analyses/report/_ela.html' %}
                                 </div>
                                 {% endif %}
-                                {% if analysis.report.confidence %}
-                                <div id="confidence" class="tab-pane">
-                                    {% include 'analyses/report/_confidence_summary.html' %}
-                                </div>
-                                {% endif %}
                                 {% if analysis.report.noise_analysis %}
                                 <div id="noise" class="tab-pane">
                                     {% include 'analyses/report/_noise_analysis.html' %}
@@ -194,9 +184,9 @@
                                     {% include 'analyses/report/_frequency_analysis.html' %}
                                 </div>
                                 {% endif %}
-                                {% if analysis.report.ai_detection %}
-                                <div id="aidetect" class="tab-pane">
-                                    {% include 'analyses/report/_ai_detection.html' %}
+                                {% if analysis.report.ai_detection or analysis.report.opencv_manipulation or analysis.report.confidence %}
+                                <div id="automated" class="tab-pane">
+                                    {% include 'analyses/report/_automated_analysis.html' %}
                                 </div>
                                 {% endif %}
                                 {% if analysis.report.signatures and analysis.report.signatures|length > 0 %}

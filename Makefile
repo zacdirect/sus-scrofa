@@ -33,6 +33,15 @@ help:
 	@echo "  make ai-verify   - Verify AI detection installation"
 	@echo "  make ai-clean    - Remove AI detection environment"
 	@echo ""
+	@echo "$(YELLOW)OpenCV Service (Container):$(NC)"
+	@echo "  make opencv-build   - Build OpenCV service container"
+	@echo "  make opencv-start   - Start OpenCV service (port 8080)"
+	@echo "  make opencv-stop    - Stop OpenCV service"
+	@echo "  make opencv-restart - Restart OpenCV service"
+	@echo "  make opencv-logs    - View OpenCV service logs"
+	@echo "  make opencv-test    - Test OpenCV service health"
+	@echo "  make opencv-clean   - Remove OpenCV service container"
+	@echo ""
 	@echo "$(YELLOW)Development:$(NC)"
 	@echo "  make run         - Quick start (MongoDB + Web + Processor)"
 	@echo "  make dev         - Same as 'make run'"
@@ -291,7 +300,48 @@ ai-verify:
 ai-clean:
 	@echo "$(YELLOW)Cleaning AI detection module...$(NC)"
 	@cd ai_detection && $(MAKE) clean
-	@echo "$(GREEN)✓ AI detection cleaned$(NC)" 2. Start development: make dev"
+	@echo "$(GREEN)✓ AI detection cleaned$(NC)"
+
+# OpenCV Service (Container-based)
+opencv-build:
+	@echo "$(GREEN)Building OpenCV service container...$(NC)"
+	@cd opencv_service && podman build -t ghiro-opencv:latest .
+	@echo "$(GREEN)✓ OpenCV service image built$(NC)"
+
+opencv-start:
+	@echo "$(GREEN)Starting OpenCV service...$(NC)"
+	@podman ps -a --filter name=ghiro-opencv -q | grep -q . && podman rm -f ghiro-opencv || true
+	@podman run -d \
+		--name ghiro-opencv \
+		-p 8080:8080 \
+		--network ghiro-net \
+		ghiro-opencv:latest
+	@echo "$(GREEN)✓ OpenCV service started on http://localhost:8080$(NC)"
+	@echo ""
+	@echo "Health check: curl http://localhost:8080/health"
+
+opencv-stop:
+	@echo "$(YELLOW)Stopping OpenCV service...$(NC)"
+	@podman stop ghiro-opencv 2>/dev/null || true
+	@podman rm ghiro-opencv 2>/dev/null || true
+	@echo "$(GREEN)✓ OpenCV service stopped$(NC)"
+
+opencv-logs:
+	@podman logs -f ghiro-opencv
+
+opencv-restart: opencv-stop opencv-start
+
+opencv-shell:
+	@podman exec -it ghiro-opencv /bin/bash
+
+opencv-test:
+	@echo "$(GREEN)Testing OpenCV service...$(NC)"
+	@curl -s http://localhost:8080/health | python -m json.tool || echo "$(RED)Service not responding$(NC)"
+
+opencv-clean: opencv-stop
+	@echo "$(YELLOW)Removing OpenCV service image...$(NC)"
+	@podman rmi ghiro-opencv:latest 2>/dev/null || true
+	@echo "$(GREEN)✓ OpenCV service cleaned$(NC)" 2. Start development: make dev"
 	@echo ""
 	@echo "$(YELLOW)Tip: To also clear MongoDB analysis data:$(NC)"
 	@echo "  podman rm -f ghiro-mongodb"

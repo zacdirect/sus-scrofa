@@ -130,15 +130,19 @@ class AnalysisManager():
             # NOTE: This code is inspired to Cuckoo Sandbox module loading system.
             try:
                 module = __import__(module_name, globals(), locals(), ["dummy"], 0)
-            except ImportError as e:
-                logger.error("Unable to import module: %s" % module)
-            else:
+                
+                # Inspect module for analyzer classes
                 for class_name, class_pkg in inspect.getmembers(module):
                     if inspect.isclass(class_pkg):
                         # Load only modules which inherits BaseModule.
                         if issubclass(class_pkg, BaseAnalyzerModule) and class_pkg is not BaseAnalyzerModule:
                             self.modules.append(class_pkg)
                             logger.debug("Found module: %s" % class_name)
+                            
+            except ImportError as e:
+                logger.warning("Unable to import module %s: %s" % (module_name, e))
+            except Exception as e:
+                logger.error("Error loading module %s: %s" % (module_name, e))
 
         # Sort modules by execution order.
         self.modules.sort(key=lambda x: x.order)

@@ -3,7 +3,6 @@
 # See the file 'docs/LICENSE.txt' for license terms.
 
 import logging
-from itertools import izip
 
 from lib.analyzer.base import BaseAnalyzerModule
 from lib.utils import str2image
@@ -53,7 +52,7 @@ class ImageComparer():
         #assert i1.size == i2.size, "Different sizes."
 
         # Calculate difference.
-        pairs = izip(i1.getdata(), i2.getdata())
+        pairs = zip(i1.getdata(), i2.getdata())
         if len(i1.getbands()) == 1:
             # for gray-scale jpegs
             dif = sum(abs(p1-p2) for p1,p2 in pairs)

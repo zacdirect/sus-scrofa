@@ -1,0 +1,483 @@
+{% load analyses_tags %}
+
+<!-- Overall Confidence Summary (if available) -->
+{% if analysis.report.confidence %}
+<div class="row-fluid">
+    <div class="span12">
+        <div class="box">
+            <div class="wdgt-header">
+                <i class="icon-certificate"></i> Overall Forensic Assessment
+                <span class="pull-right">
+                    {% if analysis.report.confidence.manipulation_detected %}
+                        <span class="label label-important">Manipulation Detected</span>
+                    {% else %}
+                        <span class="label label-success">Appears Authentic</span>
+                    {% endif %}
+                </span>
+            </div>
+            <div class="wdgt-body">
+                <p class="muted"><small>Aggregated confidence scores from all forensic analysis methods</small></p>
+                
+                <div class="row-fluid">
+                    <div class="span4">
+                        <h5>Manipulation Confidence</h5>
+                        <div class="progress progress-striped {% if analysis.report.confidence.confidence_score > 0.7 %}progress-danger{% elif analysis.report.confidence.confidence_score > 0.5 %}progress-warning{% else %}progress-success{% endif %}" 
+                             style="height: 25px; margin-bottom: 10px;">
+                            <div class="bar" style="width: {{ analysis.report.confidence.confidence_score|floatformat:0|add:"%" }}; line-height: 25px;">
+                                {{ analysis.report.confidence.confidence_score|floatformat:0 }}%
+                            </div>
+                        </div>
+                    </div>
+                    <div class="span4">
+                        <h5>AI Generation Probability</h5>
+                        <div class="progress progress-striped {% if analysis.report.confidence.ai_generated_probability > 0.7 %}progress-danger{% elif analysis.report.confidence.ai_generated_probability > 0.5 %}progress-warning{% else %}progress-info{% endif %}" 
+                             style="height: 25px; margin-bottom: 10px;">
+                            <div class="bar" style="width: {{ analysis.report.confidence.ai_generated_probability|floatformat:0|add:"%" }}; line-height: 25px;">
+                                {{ analysis.report.confidence.ai_generated_probability|floatformat:0 }}%
+                            </div>
+                        </div>
+                    </div>
+                    <div class="span4">
+                        <div class="alert {% if analysis.report.confidence.manipulation_detected %}alert-error{% else %}alert-success{% endif %}" style="margin-bottom: 0; padding: 8px;">
+                            <strong><i class="icon-info-sign"></i> Summary:</strong><br>
+                            <small>
+                            {% if analysis.report.confidence.manipulation_detected %}
+                                Multiple forensic analyses indicate this image has likely been manipulated or is AI-generated.
+                            {% else %}
+                                Forensic analysis suggests this image is likely authentic with no significant signs of manipulation.
+                            {% endif %}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if analysis.report.confidence.indicators %}
+                <div style="margin-top: 15px;">
+                    <h5>Key Indicators</h5>
+                    <table class="table table-condensed table-bordered" style="font-size: 11px;">
+                        <thead>
+                            <tr>
+                                <th>Method</th>
+                                <th>Evidence</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for indicator in analysis.report.confidence.indicators %}
+                            <tr>
+                                <td><strong>{{ indicator.method }}</strong></td>
+                                <td><small>{{ indicator.evidence }}</small></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row-fluid" {% if analysis.report.confidence %}style="margin-top: 20px;"{% endif %}>
+    <!-- Individual Detection Results -->
+    <div class="span12">
+        <div class="box">
+            <div class="wdgt-header">
+                <i class="icon-magic"></i> Detection Methods Detail
+                <span class="pull-right">
+                    {% if analysis.report.ai_detection.likely_ai or analysis.report.opencv_manipulation.is_suspicious %}
+                        <span class="label label-important">Issues Found</span>
+                    {% else %}
+                        <span class="label label-success">All Clear</span>
+                    {% endif %}
+                </span>
+            </div>
+            <div class="wdgt-body">
+                <p class="muted"><small>Detailed results from individual automated detection methods</small></p>
+                
+                <div class="row-fluid">
+                    <div class="span6">
+                        <h5><i class="icon-bolt"></i> AI Generation Detection</h5>
+                        {% if analysis.report.ai_detection.enabled %}
+                            <p>
+                                <strong>Status:</strong> 
+                                {% if analysis.report.ai_detection.likely_ai %}
+                                    <span class="label label-important">AI Generated</span>
+                                    <small class="muted">({{ analysis.report.ai_detection.ai_probability|floatformat:1 }}% AI probability, {{ analysis.report.ai_detection.confidence|upper }} confidence)</small>
+                                {% else %}
+                                    <span class="label label-success">Authentic</span>
+                                    <small class="muted">({{ analysis.report.ai_detection.confidence|upper }} confidence)</small>
+                                {% endif %}
+                            </p>
+                        {% else %}
+                            <p class="muted">Not available</p>
+                        {% endif %}
+                    </div>
+                    <div class="span6">
+                        <h5><i class="icon-search"></i> Manipulation Detection</h5>
+                        {% if analysis.report.opencv_manipulation.enabled %}
+                            <p>
+                                <strong>Status:</strong> 
+                                {% if analysis.report.opencv_manipulation.is_suspicious %}
+                                    <span class="label label-warning">Suspicious</span>
+                                {% else %}
+                                    <span class="label label-success">No Issues</span>
+                                {% endif %}
+                                <small class="muted">({{ analysis.report.opencv_manipulation.overall_confidence|floatformat:1 }}% confidence)</small>
+                            </p>
+                        {% else %}
+                            <p class="muted">Not available</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI Generation Detection Section -->
+{% if analysis.report.ai_detection %}
+<div class="row-fluid" style="margin-top: 20px;">
+    <div class="span12">
+        <div class="box">
+            <div class="wdgt-header">
+                <i class="icon-bolt"></i> AI Generation Detection
+                <span class="pull-right">
+                    {% if analysis.report.ai_detection.likely_ai %}
+                        <span class="label label-important">AI Generated</span>
+                    {% else %}
+                        <span class="label label-success">Authentic</span>
+                    {% endif %}
+                </span>
+            </div>
+            <div class="wdgt-body">
+                {% if analysis.report.ai_detection.error %}
+                    <div class="alert alert-warning">
+                        <strong>Analysis Not Available:</strong> {{ analysis.report.ai_detection.error }}
+                        <br><small>Run <code>make ai-setup</code> to enable AI detection.</small>
+                    </div>
+                {% elif analysis.report.ai_detection.enabled %}
+                    <div class="row-fluid">
+                        <div class="span6">
+                            <h4>Detection Results</h4>
+                            
+                            <!-- Multi-Layer Detection Results -->
+                            {% if analysis.report.ai_detection.detection_framework %}
+                                <p class="muted"><small><strong>Framework:</strong> {{ analysis.report.ai_detection.detection_framework }}</small></p>
+                                
+                                {% if analysis.report.ai_detection.detection_layers %}
+                                    <h5>Detection Layers</h5>
+                                    <table class="table table-condensed table-bordered" style="font-size: 12px;">
+                                        <thead>
+                                            <tr>
+                                                <th>Method</th>
+                                                <th>Verdict</th>
+                                                <th>Confidence</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for layer in analysis.report.ai_detection.detection_layers %}
+                                            <tr>
+                                                <td><strong>{{ layer.method }}</strong></td>
+                                                <td>
+                                                    <span class="label {% if layer.verdict == 'AI' %}label-important{% elif layer.verdict == 'Real' %}label-success{% else %}label-info{% endif %}">
+                                                        {{ layer.verdict }}
+                                                    </span>
+                                                </td>
+                                                <td>{{ layer.confidence|upper }}</td>
+                                            </tr>
+                                            {% if layer.evidence %}
+                                            <tr>
+                                                <td colspan="3" class="muted" style="font-size: 11px;">
+                                                    <i class="icon-info-sign"></i> {{ layer.evidence }}
+                                                </td>
+                                            </tr>
+                                            {% endif %}
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                {% endif %}
+                            {% endif %}
+                            
+                            <h5>AI Probability Score</h5>
+                            <div class="progress progress-striped {% if analysis.report.ai_detection.ai_probability > 85 %}progress-danger{% elif analysis.report.ai_detection.ai_probability > 70 %}progress-warning{% else %}progress-success{% endif %}" 
+                                 style="height: 30px; margin-bottom: 20px;">
+                                <div class="bar" style="width: {{ analysis.report.ai_detection.ai_probability }}%; line-height: 30px; font-size: 16px;">
+                                    {{ analysis.report.ai_detection.ai_probability|floatformat:1 }}%
+                                </div>
+                            </div>
+                            
+                            <p class="muted">
+                                <small>
+                                    <strong>Confidence:</strong>
+                                    <span class="label {% if analysis.report.ai_detection.confidence == 'certain' or analysis.report.ai_detection.confidence == 'high' %}label-important{% elif analysis.report.ai_detection.confidence == 'medium' %}label-warning{% else %}label-info{% endif %}">
+                                        {{ analysis.report.ai_detection.confidence|upper }}
+                                    </span>
+                                </small>
+                            </p>
+                        </div>
+                        
+                        <div class="span6">
+                            <h4>Detection Methods Status</h4>
+                            <table class="table table-condensed table-bordered" style="font-size: 11px;">
+                                <thead>
+                                    <tr>
+                                        <th>Method</th>
+                                        <th>Status</th>
+                                        <th>Result</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% if analysis.report.ai_detection.detection_layers %}
+                                        {% for layer in analysis.report.ai_detection.detection_layers %}
+                                        <tr>
+                                            <td><strong>{{ layer.method }}</strong></td>
+                                            <td>
+                                                {% if layer.verdict == 'Unknown' %}
+                                                    <span class="label">N/A</span>
+                                                {% elif layer.verdict == 'AI' %}
+                                                    <span class="label label-important">FAIL</span>
+                                                {% else %}
+                                                    <span class="label label-success">PASS</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="muted">{{ layer.evidence|default:"No data" }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    {% else %}
+                                        <tr>
+                                            <td>Metadata Check</td>
+                                            <td><span class="label">N/A</span></td>
+                                            <td class="muted">No metadata found</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Filename Pattern</td>
+                                            <td><span class="label">N/A</span></td>
+                                            <td class="muted">No AI patterns detected</td>
+                                        </tr>
+                                        <tr>
+                                            <td>ML Model (SPAI)</td>
+                                            <td><span class="label label-warning">UNAVAILABLE</span></td>
+                                            <td class="muted">Model not loaded - run <code>make ai-setup</code></td>
+                                        </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                            <p class="muted" style="font-size: 10px; margin-top: 5px;">
+                                <strong>Legend:</strong> 
+                                <span class="label label-success">PASS</span> = Authentic | 
+                                <span class="label label-important">FAIL</span> = AI Detected | 
+                                <span class="label">N/A</span> = No data/match
+                            </p>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <p>AI detection not available. Run <code>make ai-setup</code> to install.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- OpenCV Manipulation Detection Section -->
+{% if analysis.report.opencv_manipulation %}
+<div class="row-fluid" style="margin-top: 20px;">
+    <div class="span12">
+        <div class="box">
+            <div class="wdgt-header">
+                <i class="icon-search"></i> Image Manipulation Detection
+                <span class="pull-right">
+                    {% if analysis.report.opencv_manipulation.is_suspicious %}
+                        <span class="label label-warning">Suspicious</span>
+                    {% else %}
+                        <span class="label label-success">No Issues</span>
+                    {% endif %}
+                </span>
+            </div>
+            <div class="wdgt-body">
+                {% if analysis.report.opencv_manipulation.error %}
+                    <div class="alert alert-warning">
+                        <strong>Analysis Not Available:</strong> {{ analysis.report.opencv_manipulation.error }}
+                        <br><small>Run <code>make opencv-start</code> to enable manipulation detection.</small>
+                    </div>
+                {% elif analysis.report.opencv_manipulation.enabled %}
+                    <div class="row-fluid">
+                        <div class="span12">
+                            <h4>Overall Confidence</h4>
+                            <div class="progress progress-striped {% if analysis.report.opencv_manipulation.overall_confidence > 70 %}progress-danger{% elif analysis.report.opencv_manipulation.overall_confidence > 50 %}progress-warning{% else %}progress-info{% endif %}" 
+                                 style="height: 25px; margin-bottom: 20px;">
+                                <div class="bar" style="width: {{ analysis.report.opencv_manipulation.overall_confidence|floatformat:0 }}%; line-height: 25px;">
+                                    {{ analysis.report.opencv_manipulation.overall_confidence|floatformat:1 }}%
+                                </div>
+                            </div>
+                            
+                            <p><strong>{{ analysis.report.opencv_manipulation.interpretation }}</strong></p>
+                        </div>
+                    </div>
+                    
+                    <div class="row-fluid" style="margin-top: 20px;">
+                        <!-- Manipulation Detection -->
+                        {% if analysis.report.opencv_manipulation.manipulation_detection %}
+                        <div class="span4">
+                            <div class="box">
+                                <div class="wdgt-header">
+                                    <i class="icon-eye-open"></i> Gaussian Blur Analysis
+                                    {% if analysis.report.opencv_manipulation.manipulation_detection.is_manipulated %}
+                                        <span class="label label-warning pull-right">Detected</span>
+                                    {% else %}
+                                        <span class="label label-success pull-right">Clean</span>
+                                    {% endif %}
+                                </div>
+                                <div class="wdgt-body">
+                                    <p class="muted"><small><strong>Method:</strong> {{ analysis.report.opencv_manipulation.manipulation_detection.method }}</small></p>
+                                    
+                                    <h5>Confidence</h5>
+                                    <div class="progress progress-striped" style="height: 20px; margin-bottom: 10px;">
+                                        <div class="bar bar-warning" style="width: {{ analysis.report.opencv_manipulation.manipulation_detection.confidence|floatformat:0 }}%; line-height: 20px; font-size: 12px;">
+                                            {{ analysis.report.opencv_manipulation.manipulation_detection.confidence|floatformat:1 }}%
+                                        </div>
+                                    </div>
+                                    
+                                    <table class="table table-condensed" style="font-size: 11px;">
+                                        <tr>
+                                            <td><strong>Anomalies:</strong></td>
+                                            <td>{{ analysis.report.opencv_manipulation.manipulation_detection.num_anomalies }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Coverage:</strong></td>
+                                            <td>{{ analysis.report.opencv_manipulation.manipulation_detection.anomaly_percentage|floatformat:2 }}%</td>
+                                        </tr>
+                                    </table>
+                                    
+                                    <p class="muted" style="font-size: 11px;"><em>{{ analysis.report.opencv_manipulation.manipulation_detection.evidence }}</em></p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Noise Analysis -->
+                        {% if analysis.report.opencv_manipulation.noise_analysis %}
+                        <div class="span4">
+                            <div class="box">
+                                <div class="wdgt-header">
+                                    <i class="icon-signal"></i> Noise Consistency
+                                    {% if analysis.report.opencv_manipulation.noise_analysis.is_noise_inconsistent %}
+                                        <span class="label label-warning pull-right">Inconsistent</span>
+                                    {% else %}
+                                        <span class="label label-success pull-right">Consistent</span>
+                                    {% endif %}
+                                </div>
+                                <div class="wdgt-body">
+                                    <p class="muted"><small><strong>Method:</strong> {{ analysis.report.opencv_manipulation.noise_analysis.method }}</small></p>
+                                    
+                                    <h5>Consistency Score</h5>
+                                    <div class="progress progress-striped" style="height: 20px; margin-bottom: 10px;">
+                                        <div class="bar bar-info" style="width: {{ analysis.report.opencv_manipulation.noise_analysis.noise_consistency|floatformat:0 }}%; line-height: 20px; font-size: 12px;">
+                                            {{ analysis.report.opencv_manipulation.noise_analysis.noise_consistency|floatformat:1 }}%
+                                        </div>
+                                    </div>
+                                    
+                                    <table class="table table-condensed" style="font-size: 11px;">
+                                        <tr>
+                                            <td><strong>Overall Noise:</strong></td>
+                                            <td>{{ analysis.report.opencv_manipulation.noise_analysis.overall_noise|floatformat:2 }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Variation:</strong></td>
+                                            <td>{{ analysis.report.opencv_manipulation.noise_analysis.coefficient_variation|floatformat:3 }}</td>
+                                        </tr>
+                                    </table>
+                                    
+                                    {% if analysis.report.opencv_manipulation.noise_analysis.quadrant_variances %}
+                                    <p class="muted" style="font-size: 10px;">
+                                        <strong>Quadrant Variances:</strong><br>
+                                        {% for var in analysis.report.opencv_manipulation.noise_analysis.quadrant_variances %}
+                                            Q{{ forloop.counter }}: {{ var|floatformat:1 }}{% if not forloop.last %}, {% endif %}
+                                        {% endfor %}
+                                    </p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- JPEG Artifacts -->
+                        {% if analysis.report.opencv_manipulation.jpeg_artifacts %}
+                        <div class="span4">
+                            <div class="box">
+                                <div class="wdgt-header">
+                                    <i class="icon-file-alt"></i> JPEG Artifacts
+                                    {% if analysis.report.opencv_manipulation.jpeg_artifacts.has_inconsistent_artifacts %}
+                                        <span class="label label-warning pull-right">Inconsistent</span>
+                                    {% else %}
+                                        <span class="label label-success pull-right">Consistent</span>
+                                    {% endif %}
+                                </div>
+                                <div class="wdgt-body">
+                                    <p class="muted"><small><strong>Method:</strong> {{ analysis.report.opencv_manipulation.jpeg_artifacts.method }}</small></p>
+                                    
+                                    <h5>Confidence</h5>
+                                    <div class="progress progress-striped" style="height: 20px; margin-bottom: 10px;">
+                                        <div class="bar bar-danger" style="width: {{ analysis.report.opencv_manipulation.jpeg_artifacts.confidence|floatformat:0 }}%; line-height: 20px; font-size: 12px;">
+                                            {{ analysis.report.opencv_manipulation.jpeg_artifacts.confidence|floatformat:1 }}%
+                                        </div>
+                                    </div>
+                                    
+                                    <table class="table table-condensed" style="font-size: 11px;">
+                                        <tr>
+                                            <td><strong>Compression Variation:</strong></td>
+                                            <td>{{ analysis.report.opencv_manipulation.jpeg_artifacts.compression_variation|floatformat:3 }}</td>
+                                        </tr>
+                                    </table>
+                                    
+                                    <p class="muted" style="font-size: 11px;"><em>{{ analysis.report.opencv_manipulation.jpeg_artifacts.evidence }}</em></p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row-fluid" style="margin-top: 10px;">
+                        <div class="span12">
+                            <p class="muted">
+                                <small>
+                                    <strong>Detection Methods:</strong> 
+                                    {% for method in analysis.report.opencv_manipulation.methods %}
+                                        {{ method }}{% if not forloop.last %}, {% endif %}
+                                    {% endfor %}
+                                    <br>
+                                    <strong>Service:</strong> {{ analysis.report.opencv_manipulation.service }}
+                                </small>
+                            </p>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <p>Manipulation detection not available. Run <code>make opencv-start</code> to enable.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- No Analysis Available -->
+{% if not analysis.report.ai_detection and not analysis.report.opencv_manipulation %}
+<div class="row-fluid">
+    <div class="span12">
+        <div class="alert alert-info">
+            <h4>No Automated Analysis Available</h4>
+            <p>Neither AI detection nor manipulation detection are currently configured.</p>
+            <p>
+                <strong>To enable:</strong><br>
+                • AI Detection: Run <code>make ai-setup</code><br>
+                • Manipulation Detection: Run <code>make opencv-start</code>
+            </p>
+        </div>
+    </div>
+</div>
+{% endif %}
