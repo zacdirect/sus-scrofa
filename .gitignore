@@ -70,6 +70,8 @@ ai_detection/spai/**/__pycache__/
 ai_detection/weights/
 ai_detection/weights/*.pth
 ai_detection/weights/*.onnx
+ai_detection/models/
+ai_detection/models/**
 
 # Model Evaluation #
 ####################

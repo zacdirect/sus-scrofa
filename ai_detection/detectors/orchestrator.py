@@ -13,6 +13,7 @@ from .base import BaseDetector, DetectionResult, ConfidenceLevel
 from .metadata import MetadataDetector
 from .compliance_audit import ComplianceAuditor
 from .spai_detector import SPAIDetector
+from .sdxl_detector import SDXLDetector
 
 
 logger = logging.getLogger(__name__)
@@ -49,6 +50,7 @@ class MultiLayerDetector:
         self._register_detector(MetadataDetector())
         
         if enable_ml:
+            self._register_detector(SDXLDetector())
             self._register_detector(SPAIDetector())
         
         logger.info(f"Orchestrator initialized with {len(self.detectors)} detectors")
@@ -129,8 +131,10 @@ class MultiLayerDetector:
             return self._error_result("No detection methods available")
         
         try:
-            # Ask auditor to analyze all findings and provide summary
-            audit_result = self.auditor.detect(image_path)
+            # Pass detector results to auditor so ML model findings
+            # feed into the three-bucket consolidation (AI prob, manipulation prob, etc.)
+            serialized_results = [r.to_dict() for r in results]
+            audit_result = self.auditor.detect(image_path, previous_results=serialized_results)
             
             return {
                 'overall_verdict': audit_result.is_fake,

@@ -1,4 +1,4 @@
-.PHONY: help setup install weights verify clean test venv detect-system
+.PHONY: help setup install weights models verify clean test venv detect-system models-download models-verify models-clean
 
 # Colors
 RED := \033[0;31m
@@ -19,16 +19,21 @@ WEIGHTS_DIR := weights
 WEIGHTS_FILE := $(WEIGHTS_DIR)/spai.pth
 WEIGHTS_URL := https://drive.google.com/uc?export=download&id=1vvXmZqs6TVJdj8iF1oJ4L_fcgdQrp_YI
 
+# HuggingFace model cache (git-ignored)
+MODELS_DIR := models
+HF_MODELS := Organika/sdxl-detector
+
 VENV_EXISTS := $(shell test -f $(VENV_DIR)/bin/pip && echo 1 || echo 0)
 
 help:
 	@echo "$(GREEN)Ghiro AI Detection Setup$(NC)"
 	@echo ""
 	@echo "$(YELLOW)Setup:$(NC)"
-	@echo "  make setup       - Complete setup (venv + dependencies + weights)"
+	@echo "  make setup       - Complete setup (venv + dependencies + all weights/models)"
 	@echo "  make venv        - Create Python virtual environment"
 	@echo "  make install     - Install dependencies only"
 	@echo "  make weights     - Download SPAI model weights"
+	@echo "  make models      - Download HuggingFace models (sdxl-detector, etc.)"
 	@echo ""
 	@echo "$(YELLOW)System Detection:$(NC)"
 	@echo "  make detect-system - Check GPU/CUDA availability"
@@ -39,19 +44,22 @@ help:
 	@echo ""
 	@echo "$(YELLOW)Maintenance:$(NC)"
 	@echo "  make clean       - Remove virtual environment"
-	@echo "  make clean-all   - Remove venv and weights"
+	@echo "  make clean-all   - Remove venv, weights, and downloaded models"
+	@echo "  make models-clean - Remove only downloaded HuggingFace models"
 	@echo ""
 	@echo "$(YELLOW)Note:$(NC)"
 	@echo "  PyTorch installation is automatically configured based on"
 	@echo "  detected GPU/CUDA. Run 'make detect-system' to see what"
 	@echo "  will be installed."
+	@echo ""
+	@echo "  HuggingFace models are cached to ai_detection/models/ (git-ignored)."
 
 detect-system:
 	@echo "$(BLUE)Detecting system configuration...$(NC)"
 	@echo ""
 	@$(SYSTEM_PYTHON) detect_system.py
 
-setup: detect-system venv install weights
+setup: detect-system venv install weights models
 	@echo ""
 	@echo "$(GREEN)========================================$(NC)"
 	@echo "$(GREEN)✓ AI Detection setup complete!$(NC)"
@@ -88,6 +96,8 @@ install: venv
 	$(PIP) install opencv-python>=4.10.0 pyyaml>=6.0.1 scipy>=1.14.0 \
 		timm==0.4.12 yacs>=0.1.8 numpy>=1.26.4 torchmetrics>=1.4.0 \
 		tqdm>=4.66.4 pillow>=10.4.0 einops>=0.8.0 ftfy>=6.1.0 regex>=2023.0.0; \
+	echo "$(YELLOW)Installing HuggingFace Transformers...$(NC)"; \
+	$(PIP) install transformers>=4.36.0 safetensors>=0.4.0; \
 	echo "$(YELLOW)Installing CLIP (for alternative backbones)...$(NC)"; \
 	$(PIP) install git+https://github.com/openai/CLIP.git; \
 	echo ""; \
@@ -122,6 +132,54 @@ weights:
 		exit 1; \
 	fi
 
+# ============================================================================
+# HuggingFace Model Downloads
+# ============================================================================
+
+models: venv
+	@echo "$(BLUE)Downloading HuggingFace models to $(MODELS_DIR)/...$(NC)"
+	@echo ""
+	@mkdir -p $(MODELS_DIR)
+	@for model in $(HF_MODELS); do \
+		safe_name=$$(echo $$model | tr '/' '--'); \
+		if [ -d "$(MODELS_DIR)/$$safe_name" ] && [ "$$(ls -A $(MODELS_DIR)/$$safe_name 2>/dev/null)" ]; then \
+			size=$$(du -sh "$(MODELS_DIR)/$$safe_name" | cut -f1); \
+			echo "$(GREEN)✓ $$model already downloaded ($$size)$(NC)"; \
+		else \
+			echo "$(YELLOW)Downloading $$model...$(NC)"; \
+			$(PYTHON) download_models.py "$$model" "$(MODELS_DIR)/$$safe_name"; \
+			if [ $$? -eq 0 ]; then \
+				size=$$(du -sh "$(MODELS_DIR)/$$safe_name" | cut -f1); \
+				echo "$(GREEN)✓ $$model downloaded ($$size)$(NC)"; \
+			else \
+				echo "$(RED)✗ Failed to download $$model$(NC)"; \
+			fi; \
+		fi; \
+		echo ""; \
+	done
+	@echo "$(GREEN)✓ Model downloads complete$(NC)"
+	@echo "  Models cached in: $(MODELS_DIR)/ (git-ignored)"
+
+models-clean:
+	@echo "$(YELLOW)Removing downloaded HuggingFace models...$(NC)"
+	@rm -rf $(MODELS_DIR)
+	@echo "$(GREEN)✓ Models removed$(NC)"
+	@echo "  Run 'make models' to re-download"
+
+models-list:
+	@echo "$(BLUE)Configured HuggingFace models:$(NC)"
+	@for model in $(HF_MODELS); do \
+		safe_name=$$(echo $$model | tr '/' '--'); \
+		if [ -d "$(MODELS_DIR)/$$safe_name" ] && [ "$$(ls -A $(MODELS_DIR)/$$safe_name 2>/dev/null)" ]; then \
+			size=$$(du -sh "$(MODELS_DIR)/$$safe_name" | cut -f1); \
+			echo "  $(GREEN)✓$(NC) $$model ($$size)"; \
+		else \
+			echo "  $(RED)✗$(NC) $$model (not downloaded)"; \
+		fi; \
+	done
+	@echo ""
+	@echo "To add a model, edit HF_MODELS in this Makefile"
+
 verify:
 	@echo "$(GREEN)Verifying AI detection installation...$(NC)"
 	@echo ""
@@ -146,12 +204,12 @@ verify:
 		echo "  $(YELLOW)  Inference will be slower (~2-3s per image)$(NC)"; \
 	fi
 	@echo ""
-	@echo "$(YELLOW)4. Checking weights file...$(NC)"
+	@echo "$(YELLOW)4. Checking SPAI weights file...$(NC)"
 	@if [ -f $(WEIGHTS_FILE) ]; then \
 		size=$$(du -h $(WEIGHTS_FILE) | cut -f1); \
-		echo "  $(GREEN)✓ Weights file exists ($$size)$(NC)"; \
+		echo "  $(GREEN)✓ SPAI weights exist ($$size)$(NC)"; \
 	else \
-		echo "  $(RED)✗ Weights file not found$(NC)"; \
+		echo "  $(RED)✗ SPAI weights not found$(NC)"; \
 		echo "  Run: make weights"; \
 		exit 1; \
 	fi
@@ -160,6 +218,22 @@ verify:
 	@$(PYTHON) -c "from spai.inference import SPAIDetector; \
 		print('  $(GREEN)✓ SPAI module loads successfully$(NC)')" || \
 		(echo "  $(RED)✗ SPAI module failed to load$(NC)" && exit 1)
+	@echo ""
+	@echo "$(YELLOW)6. Checking HuggingFace Transformers...$(NC)"
+	@$(PYTHON) -c "import transformers; print(f'  $(GREEN)✓ Transformers {transformers.__version__}$(NC)')" || \
+		(echo "  $(RED)✗ Transformers not installed$(NC)" && exit 1)
+	@echo ""
+	@echo "$(YELLOW)7. Checking HuggingFace models...$(NC)"
+	@for model in $(HF_MODELS); do \
+		safe_name=$$(echo $$model | tr '/' '--'); \
+		if [ -d "$(MODELS_DIR)/$$safe_name" ]; then \
+			size=$$(du -sh "$(MODELS_DIR)/$$safe_name" | cut -f1); \
+			echo "  $(GREEN)✓ $$model ($$size)$(NC)"; \
+		else \
+			echo "  $(YELLOW)⚠ $$model not downloaded$(NC)"; \
+			echo "    Run: make models"; \
+		fi; \
+	done
 	@echo ""
 	@echo "$(GREEN)========================================$(NC)"
 	@echo "$(GREEN)✓ All checks passed!$(NC)"
@@ -179,4 +253,6 @@ clean:
 clean-all: clean
 	@echo "$(YELLOW)Removing weights...$(NC)"
 	@rm -rf $(WEIGHTS_DIR)
+	@echo "$(YELLOW)Removing downloaded models...$(NC)"
+	@rm -rf $(MODELS_DIR)
 	@echo "$(GREEN)✓ Full cleanup complete$(NC)"

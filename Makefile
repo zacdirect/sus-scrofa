@@ -29,7 +29,7 @@ help:
 	@echo "  make mongodb     - Start MongoDB container (Podman)"
 	@echo ""
 	@echo "$(YELLOW)AI Detection (Optional):$(NC)"
-	@echo "  make ai-setup    - Setup AI detection module (SPAI)"
+	@echo "  make ai-setup    - Setup AI detection (SPAI + HuggingFace models)"
 	@echo "  make ai-verify   - Verify AI detection installation"
 	@echo "  make ai-clean    - Remove AI detection environment"
 	@echo ""

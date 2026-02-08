@@ -15,11 +15,11 @@
 - ❌ Interpret detection results
 - ❌ Calculate final verdict
 
-### 🔍 Detectors (`MetadataDetector`, `SPAIDetector`, etc.)
+### 🔍 Detectors (`MetadataDetector`, `SDXLDetector`, `SPAIDetector`, etc.)
 **Responsibility**: Analyze specific aspects - report what they find
 
 **Specializations** (detectors focus on what they know):
-- **AI-Focused**: Only detect AI generation (e.g., SPAI model)
+- **AI-Focused**: Only detect AI generation (e.g., SPAI spectral model, SDXL Swin Transformer)
 - **Manipulation-Focused**: Only detect traditional editing (e.g., ELA, clone detection)
 - **Multi-Aspect**: Can detect both AI AND manipulation (e.g., metadata, noise analysis)
 
@@ -79,7 +79,7 @@
          │                         │
          ▼                         │
 ┌─────────────────────────────────┐│
-│ 4. Orchestrator: Run Detector 2││ ──▶ SPAIDetector
+│ 4. Orchestrator: Run Detector 2││ ──▶ SDXLDetector
 └─────┬───────────────────────────┘│
       │                            │
       ▼                            │
@@ -87,16 +87,30 @@
 │ 5. Auditor: Review Results      ││ ──▶ should_stop_early()?
 └─────┬───────────────────────────┘│
       │                            │
+      ├─ YES (Stop) ──────────────┤
+      │                            │
+      └─ NO (Continue)             │
+         │                         │
+         ▼                         │
+┌─────────────────────────────────┐│
+│ 6. Orchestrator: Run Detector 3││ ──▶ SPAIDetector
+└─────┬───────────────────────────┘│
+      │                            │
+      ▼                            │
+┌─────────────────────────────────┐│
+│ 7. Auditor: Review Results      ││ ──▶ should_stop_early()?
+└─────┬───────────────────────────┘│
+      │                            │
       └─ (All detectors done) ─────┤
                                    │
                                    ▼
-                     ┌──────────────────────────────┐
-                     │ 6. Auditor: Final Summary    │
-                     │    - Re-analyze image        │
-                     │    - Aggregate findings      │
-                     │    - Calculate score         │
-                     │    - Return verdict          │
-                     └──────────────────────────────┘
+                     ┌──────────────────────────────────────────────┐
+                     │ 8. Auditor: Final Summary                   │
+                     │    - Re-analyze image                       │
+                     │    - Incorporate ML results (previous_results)│
+                     │    - Calculate score                        │
+                     │    - Return verdict                         │
+                     └──────────────────────────────────────────────┘
 ```
 
 ## Key Principles

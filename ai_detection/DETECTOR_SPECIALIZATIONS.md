@@ -6,7 +6,11 @@ Not all detectors detect the same things. Some are specialists:
 
 ```
 ┌─────────────────┐
-│  SPAIDetector   │ → Only trained on: AI vs Real
+│  SPAIDetector   │ → Only trained on: AI vs Real (spectral analysis)
+└─────────────────┘   ❌ Doesn't detect: Traditional edits
+
+┌─────────────────┐
+│  SDXLDetector   │ → Only trained on: AI vs Real (Swin Transformer)
 └─────────────────┘   ❌ Doesn't detect: Traditional edits
 
 ┌─────────────────┐
@@ -32,6 +36,10 @@ Not all detectors detect the same things. Some are specialists:
 │  SPAIDetector                                             │
 │  ├─ detected_types: ['ai_generation']                     │
 │  └─ confidence: 85                                        │
+│                                                            │
+│  SDXLDetector                                             │
+│  ├─ detected_types: ['ai_generation']                     │
+│  └─ confidence: 95                                        │
 │                                                            │
 │  MetadataDetector                                         │
 │  ├─ detected_types: ['ai_dimensions', 'metadata_stripped']│

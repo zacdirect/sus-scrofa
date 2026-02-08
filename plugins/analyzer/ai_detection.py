@@ -23,7 +23,12 @@ class AIDetection(BaseAnalyzerModule):
        - Looks for software signatures (Midjourney, DALL-E, Stable Diffusion, etc.)
        - Checks for C2PA content credentials
     
-    2. **ML Model Detection** (Slower, for enrichment when metadata stripped)
+    2. **SDXL Detector** (Moderate speed, high accuracy on modern AI images)
+       - Swin Transformer (Organika/sdxl-detector)
+       - Trained on Wikimedia-SDXL image pairs
+       - 98.1% published accuracy
+    
+    3. **SPAI ML Model** (Slower, for enrichment when metadata stripped)
        - SPAI (Spectral AI-Generated Image Detector) - CVPR 2025
        - Frequency domain analysis
        - Works on any image resolution
@@ -31,8 +36,8 @@ class AIDetection(BaseAnalyzerModule):
     Detection Strategy:
     - Run fast metadata checks first
     - If high-confidence result found, stop (early exit)
-    - Otherwise, run ML model for deeper analysis
-    - Combine results with confidence-weighted decision logic
+    - Otherwise, run ML models for deeper analysis
+    - Combine results with compliance audit decision logic
     
     This multi-layer approach is robust against:
     - Metadata stripping

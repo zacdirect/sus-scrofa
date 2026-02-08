@@ -12,7 +12,8 @@ Each detector is responsible for its own domain of expertise:
 **Detectors are specialized analyzers** - they focus on what they know:
 
 - **AI Generation Detectors**: Look for AI-specific patterns
-  - Example: `SPAIDetector` - ML model trained on AI vs real
+  - Example: `SPAIDetector` - spectral frequency analysis ML model
+  - Example: `SDXLDetector` - Swin Transformer trained on AI vs real images
   - Returns findings about AI generation likelihood
 
 - **Manipulation Detectors**: Look for editing/tampering
@@ -85,14 +86,18 @@ class ComplianceAuditor:
         """
         pass
     
-    def detect(self, image_path: str) -> DetectionResult:
+    def detect(self, image_path: str, previous_results: list = None) -> DetectionResult:
         """
         Aggregate all findings into final verdict.
         
         Called by orchestrator ONCE at the end (regardless of early stop).
         
-        Re-analyzes the image to generate final verdict based on all evidence
-        collected by detectors that ran.
+        Re-analyzes the image AND incorporates ML model results from
+        previous_results to generate final verdict.
+        
+        Args:
+            image_path: Path to image file
+            previous_results: Serialized results from all detectors that ran
         
         Returns:
             DetectionResult with:
@@ -122,7 +127,7 @@ class ComplianceAuditor:
          │
          │  Run detectors in operationally efficient order:
          │
-         ├──▶ 1. MetadataDetector (fast, deterministic)
+         ├──▶ 1. MetadataDetector (order=10, fast, deterministic)
          │         │
          │         ├─ Check EXIF data
          │         ├─ Analyze dimensions
@@ -138,9 +143,24 @@ class ComplianceAuditor:
          │         ├─ If YES → Skip remaining, go to summary
          │         └─ If NO  → Continue...
          │
-         ├──▶ 2. SPAIDetector (slower, ML-based)
+         ├──▶ 2. SDXLDetector (order=60, HuggingFace Swin Transformer)
          │         │
-         │         ├─ Run ML model
+         │         ├─ Run image-classification pipeline (subprocess)
+         │         ├─ Labels: "artificial" vs "human"
+         │         └─ Return: confidence + score
+         │         │
+         │         ▼
+         │    ┌─────────────────────────────────────┐
+         │    │  Consult Auditor: should_stop_early? │
+         │    │  (Auditor reviews all results so far)│
+         │    └─────────────────────────────────────┘
+         │         │
+         │         ├─ If YES → Go to summary
+         │         └─ If NO  → Continue...
+         │
+         ├──▶ 3. SPAIDetector (order=100, spectral analysis ML)
+         │         │
+         │         ├─ Run ML model (subprocess)
          │         └─ Return: confidence + score
          │         │
          │         ▼
@@ -152,14 +172,14 @@ class ComplianceAuditor:
          │         ├─ If YES → Go to summary
          │         └─ If NO  → Continue to next detector...
          │
-         └──▶ 3. Final Summary (ALWAYS happens)
+         └──▶ 4. Final Summary (ALWAYS happens)
                    │
                    ▼
-              ┌────────────────────────────────────────┐
-              │  Auditor.detect(image_path)            │
-              │  (Re-analyzes image, aggregates all    │
-              │   findings from detectors that ran)    │
-              └────────────────────────────────────────┘
+              ┌────────────────────────────────────────────────────┐
+              │  Auditor.detect(image_path, previous_results=...)  │
+              │  (Re-analyzes image AND aggregates all detector    │
+              │   findings into three-bucket consolidation)        │
+              └────────────────────────────────────────────────────┘
                    │
                    ├─ Calculate authenticity_score (0-100)
                    ├─ Calculate component probabilities

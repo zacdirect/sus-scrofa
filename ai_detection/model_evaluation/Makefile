@@ -70,14 +70,20 @@ setup-test-data:
 	@echo "$(BLUE)Setting up test data directory...$(NC)"
 	@if [ ! -d "$(TEST_DATA_DIR)" ]; then \
 		echo "$(YELLOW)Test data directory not found.$(NC)"; \
-		echo "Please create symlink to your test images:"; \
-		echo "  ln -s /path/to/your/test/images $(TEST_DATA_DIR)"; \
+		echo "Please copy your test images into $(TEST_DATA_DIR)/:"; \
+		echo ""; \
+		echo "  mkdir -p $(TEST_DATA_DIR)/{fake,edited,real}"; \
+		echo "  cp /path/to/ai-generated/*.jpg $(TEST_DATA_DIR)/fake/"; \
+		echo "  cp /path/to/edited/*.jpg       $(TEST_DATA_DIR)/edited/"; \
+		echo "  cp /path/to/real-photos/*.jpg   $(TEST_DATA_DIR)/real/"; \
 		echo ""; \
 		echo "Required structure:"; \
 		echo "  $(TEST_DATA_DIR)/"; \
 		echo "  ├── fake/     # AI-generated images"; \
 		echo "  ├── edited/   # Human-edited images"; \
 		echo "  └── real/     # Authentic photos"; \
+		echo ""; \
+		echo "The directory is git-ignored so your test images stay local."; \
 		exit 1; \
 	fi
 	@if [ ! -d "$(TEST_DATA_DIR)/fake" ] || [ ! -d "$(TEST_DATA_DIR)/real" ]; then \

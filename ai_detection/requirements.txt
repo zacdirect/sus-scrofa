@@ -23,6 +23,10 @@ regex>=2023.0.0
 # CLIP for alternative backbones (optional but used in backbones.py)
 git+https://github.com/openai/CLIP.git
 
+# HuggingFace Transformers (for Swin-based detectors: Organika/sdxl-detector, etc.)
+transformers>=4.36.0
+safetensors>=0.4.0
+
 # Optional: For additional features
 # tensorboard  # For training visualization (not needed for inference)
 # neptune      # For experiment tracking (not needed for inference)

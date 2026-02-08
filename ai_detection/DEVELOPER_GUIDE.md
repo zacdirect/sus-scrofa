@@ -90,6 +90,7 @@ class MultiLayerDetector:
         self._register_detector(MyCustomDetector())  # Add here
         
         if enable_ml:
+            self._register_detector(SDXLDetector())
             self._register_detector(SPAIDetector())
 ```
 

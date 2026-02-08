@@ -37,9 +37,9 @@ The Ghiro processing system uses **analyzer modules** (processors) that run duri
          ▼                        ▼
     ┌─────────────────┐    ┌────────────────┐
     │ MetadataDetector│    │ 3 Buckets:     │
-    │  SPAIDetector   │    │ - Authenticity │
-    └─────────────────┘    │ - AI Prob      │
-                          │ - Manipulation │
+    │  SDXLDetector   │    │ - Authenticity │
+    │  SPAIDetector   │    │ - AI Prob      │
+    └─────────────────┘    │ - Manipulation │
                           └────────────────┘
 ```
 
