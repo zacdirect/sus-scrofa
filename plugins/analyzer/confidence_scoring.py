@@ -32,6 +32,10 @@ class ConfidenceScoringProcessing(BaseAnalyzerModule):
             self.results["confidence"]["indicators"] = confidence['indicators']
             self.results["confidence"]["methods"] = confidence['methods']
             
+            # Store new compliance audit fields
+            self.results["confidence"]["authenticity_score"] = confidence.get('authenticity_score')
+            self.results["confidence"]["detected_types"] = confidence.get('detected_types', [])
+            
             # Store verdict fields
             self.results["confidence"]["verdict"] = confidence['verdict']
             self.results["confidence"]["verdict_label"] = confidence['verdict_label']

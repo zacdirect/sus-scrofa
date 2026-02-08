@@ -78,11 +78,58 @@
     </div>
 </div>
 
-<!-- Supporting Evidence (Individual Detectors - Informational Only) -->
+<!-- ================ SECTION 2: COMPONENT BREAKDOWN (From Auditor) ================ -->
 <div class="row-fluid">
+    <div class="span6">
+        <div class="box">
+            <div class="wdgt-header">
+                <i class="icon-bolt"></i> AI Generation Signals
+                <span class="label label-info" style="font-size: 9px; margin-left: 5px;">Component</span>
+            </div>
+            <div class="wdgt-body">
+                <div class="progress progress-striped {% if analysis.report.confidence.ai_generated_probability > 70 %}progress-danger{% elif analysis.report.confidence.ai_generated_probability > 50 %}progress-warning{% else %}progress-success{% endif %}"
+                     style="height: 35px; margin-bottom: 5px;">
+                    <div class="bar" style="width: {{ analysis.report.confidence.ai_generated_probability|floatformat:0 }}%; line-height: 35px; font-size: 16px;">
+                        {{ analysis.report.confidence.ai_generated_probability|floatformat:0 }}%
+                    </div>
+                </div>
+                <p class="muted" style="font-size: 11px; margin: 0;">
+                    Probability image was AI-generated based on metadata, dimensions, patterns, and ML models.
+                    <br><strong>Note:</strong> Aggregated into authenticity score above.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="span6">
+        <div class="box">
+            <div class="wdgt-header">
+                <i class="icon-search"></i> Manipulation Signals
+                <span class="label label-info" style="font-size: 9px; margin-left: 5px;">Component</span>
+            </div>
+            <div class="wdgt-body">
+                <div class="progress progress-striped {% if analysis.report.confidence.confidence_score > 70 %}progress-danger{% elif analysis.report.confidence.confidence_score > 50 %}progress-warning{% else %}progress-success{% endif %}"
+                     style="height: 35px; margin-bottom: 5px;">
+                    <div class="bar" style="width: {{ analysis.report.confidence.confidence_score|floatformat:0 }}%; line-height: 35px; font-size: 16px;">
+                        {{ analysis.report.confidence.confidence_score|floatformat:0 }}%
+                    </div>
+                </div>
+                <p class="muted" style="font-size: 11px; margin: 0;">
+                    Evidence of post-processing, editing, or manipulation based on noise, frequency, and forensic analysis.
+                    <br><strong>Note:</strong> Aggregated into authenticity score above.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row-fluid" style="margin-top: 10px;">
     <div class="span12">
-        <div class="alert alert-info" style="padding: 10px; margin-bottom: 20px;">
-            <strong><i class="icon-info-sign"></i> Note:</strong> The authenticity score above aggregates all forensic evidence and detector results. Individual detector scores below are shown for transparency and educational purposes only.
+        <div class="alert alert-info" style="padding: 8px 12px; margin-bottom: 15px;">
+            <i class="icon-info-sign"></i> 
+            <strong>How to Read This:</strong>
+            The <strong>Authenticity Score ({{ analysis.report.confidence.authenticity_score }}/100)</strong> above is the final verdict.
+            These component scores show <em>why</em> - what types of evidence contributed to that score.
+            Low scores (0-40) indicate fake/manipulated, high scores (60-100) indicate authentic, middle scores (41-59) are uncertain.
         </div>
     </div>
 </div>
@@ -127,17 +174,12 @@
         </div>
     </div>
 </div>
-{% endif %}
 
-<!-- ================ SECTION 2: INDIVIDUAL DETECTOR SCORES (Informational) ================ -->
+<!-- Section 2: Legacy three-box layout -->
 <div class="row-fluid">
     <div class="span4">
         <div class="box">
-            <div class="wdgt-header"><i class="icon-search"></i> Forensic Suspicion
-                {% if analysis.report.confidence.authenticity_score is not None %}
-                    <span class="label label-info" style="font-size: 9px; margin-left: 5px;">Info Only</span>
-                {% endif %}
-            </div>
+            <div class="wdgt-header"><i class="icon-search"></i> Forensic Suspicion</div>
             <div class="wdgt-body">
                 <div class="progress progress-striped {% if analysis.report.confidence.confidence_score > 70 %}progress-danger{% elif analysis.report.confidence.confidence_score > 50 %}progress-warning{% else %}progress-success{% endif %}"
                      style="height: 30px; margin-bottom: 5px;">
@@ -145,17 +187,13 @@
                         {{ analysis.report.confidence.confidence_score|floatformat:0 }}%
                     </div>
                 </div>
-                <p class="muted" style="font-size: 11px; margin: 0;">How much evidence of manipulation was found. Higher = more suspicious.</p>
+                <p class="muted" style="font-size: 11px; margin: 0;">Evidence of manipulation.</p>
             </div>
         </div>
     </div>
     <div class="span4">
         <div class="box">
-            <div class="wdgt-header"><i class="icon-bolt"></i> AI Generation Probability
-                {% if analysis.report.confidence.authenticity_score is not None %}
-                    <span class="label label-info" style="font-size: 9px; margin-left: 5px;">Info Only</span>
-                {% endif %}
-            </div>
+            <div class="wdgt-header"><i class="icon-bolt"></i> AI Generation Probability</div>
             <div class="wdgt-body">
                 <div class="progress progress-striped {% if analysis.report.confidence.ai_generated_probability > 70 %}progress-danger{% elif analysis.report.confidence.ai_generated_probability > 50 %}progress-warning{% else %}progress-info{% endif %}"
                      style="height: 30px; margin-bottom: 5px;">
@@ -163,17 +201,13 @@
                         {{ analysis.report.confidence.ai_generated_probability|floatformat:0 }}%
                     </div>
                 </div>
-                <p class="muted" style="font-size: 11px; margin: 0;">Individual ML model probability (aggregated in authenticity score above).</p>
+                <p class="muted" style="font-size: 11px; margin: 0;">AI probability.</p>
             </div>
         </div>
     </div>
     <div class="span4">
         <div class="box">
-            <div class="wdgt-header"><i class="icon-ok-circle"></i> Legacy Verdict Certainty
-                {% if analysis.report.confidence.authenticity_score is not None %}
-                    <span class="label label-info" style="font-size: 9px; margin-left: 5px;">Info Only</span>
-                {% endif %}
-            </div>
+            <div class="wdgt-header"><i class="icon-ok-circle"></i> Verdict Confidence</div>
             <div class="wdgt-body">
                 <div class="progress progress-striped {% if analysis.report.confidence.verdict_confidence > 70 %}progress-success{% elif analysis.report.confidence.verdict_confidence > 40 %}progress-info{% else %}progress-warning{% endif %}"
                      style="height: 30px; margin-bottom: 5px;">
@@ -181,11 +215,12 @@
                         {{ analysis.report.confidence.verdict_confidence|floatformat:0 }}%
                     </div>
                 </div>
-                <p class="muted" style="font-size: 11px; margin: 0;">Legacy calculation confidence (superseded by authenticity score).</p>
+                <p class="muted" style="font-size: 11px; margin: 0;">Confidence.</p>
             </div>
         </div>
     </div>
 </div>
+{% endif %}
 
 <!-- ================ SECTION 3: EVIDENCE TABLE ================ -->
 {% if analysis.report.confidence.indicators %}
