@@ -83,7 +83,7 @@ class SDXLDetector(BaseDetector):
             logger.error("Error checking SDXLDetector dependencies: %s", e)
             return False
 
-    def detect(self, image_path: str) -> DetectionResult:
+    def detect(self, image_path: str, context=None) -> DetectionResult:
         """
         Classify an image as AI-generated or real via subprocess.
 
@@ -91,6 +91,10 @@ class SDXLDetector(BaseDetector):
           - score: probability the image is artificial (0.0-1.0)
           - is_ai_generated: True if artificial > human
           - confidence: mapped from probability distance to 0.5
+
+        Args:
+            image_path: Path to image file
+            context: Optional ResultStore (unused by this detector)
         """
         if not self.check_deps():
             return DetectionResult(

@@ -39,12 +39,15 @@ class MyCustomDetector(BaseDetector):
         """
         return 15  # Adjust based on your detector's speed
     
-    def detect(self, image_path: str) -> DetectionResult:
+    def detect(self, image_path: str, context=None) -> DetectionResult:
         """
         Analyze the image and return findings.
         
         Args:
             image_path: Path to image file
+            context: Optional ResultStore — read from it if you want to
+                     see what earlier detectors found ("better together"
+                     pattern), or ignore it entirely.
             
         Returns:
             DetectionResult with:
@@ -153,7 +156,7 @@ class FastHeuristicDetector(BaseDetector):
     def get_order(self) -> int:
         return 5  # Run early
     
-    def detect(self, image_path: str) -> DetectionResult:
+    def detect(self, image_path: str, context=None) -> DetectionResult:
         # Quick checks only
         img = Image.open(image_path)
         width, height = img.size
@@ -198,7 +201,7 @@ class MLModelDetector(BaseDetector):
     def get_order(self) -> int:
         return 25  # Run late (slow)
     
-    def detect(self, image_path: str) -> DetectionResult:
+    def detect(self, image_path: str, context=None) -> DetectionResult:
         # Run ML model
         prediction = self.model.predict(image_path)
         
@@ -211,7 +214,7 @@ class MLModelDetector(BaseDetector):
         )
 ```
 
-### Pattern 3: Hybrid Detector
+### Pattern 3: Hybrid Detector ("Better Together")
 
 ```python
 class HybridDetector(BaseDetector):
@@ -220,14 +223,21 @@ class HybridDetector(BaseDetector):
     def get_order(self) -> int:
         return 15  # Medium priority
     
-    def detect(self, image_path: str) -> DetectionResult:
+    def detect(self, image_path: str, context=None) -> DetectionResult:
         # Combine heuristics and ML
         
         # 1. Fast heuristic checks
         img = Image.open(image_path)
         heuristic_score = self._check_heuristics(img)
         
-        # 2. Only run ML if heuristics are uncertain
+        # 2. Optionally check what earlier detectors found
+        if context:
+            metadata_result = context.get('MetadataDetector')
+            if metadata_result and metadata_result.is_ai_generated:
+                # Metadata already flagged AI — adjust our approach
+                heuristic_score = max(heuristic_score, 0.6)
+        
+        # 3. Only run ML if heuristics are uncertain
         if 0.3 < heuristic_score < 0.7:
             ml_score = self._run_ml_model(image_path)
             final_score = (heuristic_score + ml_score) / 2
@@ -242,6 +252,11 @@ class HybridDetector(BaseDetector):
             evidence=f"Hybrid analysis: {final_score:.2f}"
         )
 ```
+
+The `context` parameter is a `ResultStore` — a shared read/write store that
+the orchestrator creates per analysis run.  Most detectors ignore it (they
+just worry about themselves), but it's there for detectors that benefit from
+knowing what earlier detectors found.
 
 ## Debugging Tips
 
@@ -288,15 +303,17 @@ print(f"Detected: {result.detected_types}")
 
 ## What the Auditor Does With Your Results
 
-After your detector runs, the auditor:
+After your detector runs, the orchestrator records your result into the
+shared `ResultStore`.  Then:
 
 1. **Reviews for early stopping**: `should_stop_early(results)`
    - Checks if your confidence is high enough to skip remaining detectors
    - Looks at your detected_types for definitive findings
 
-2. **Includes in final summary**: `detect(image_path)`
-   - Your findings are visible in `layer_results`
-   - Auditor may boost confidence if your findings align with its own analysis
+2. **Includes in final summary**: `detect(image_path, context=store)`
+   - The auditor reads your result from the store on its own
+   - Your findings feed into the three-bucket consolidation
    - Your detected_types are added to final `detected_types` list
 
-You don't need to worry about integration - just return accurate results!
+You don't need to worry about integration — just return accurate results!
+The orchestrator handles recording, and the auditor handles reading.

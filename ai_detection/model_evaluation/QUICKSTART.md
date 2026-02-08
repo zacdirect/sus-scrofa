@@ -66,7 +66,7 @@ class NPRDetector(BaseDetector):
         super().__init__()
         # Load your model
         
-    def detect(self, image_path: str) -> DetectionResult:
+    def detect(self, image_path: str, context=None) -> DetectionResult:
         # Your detection logic
         score = your_model.predict(image_path)
         

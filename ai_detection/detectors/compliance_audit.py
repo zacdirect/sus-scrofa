@@ -22,7 +22,7 @@ from typing import Dict, List, Optional
 from PIL import Image
 import exif
 
-from .base import BaseDetector, DetectionResult, DetectionMethod
+from .base import BaseDetector, DetectionResult, DetectionMethod, ResultStore
 
 logger = logging.getLogger(__name__)
 
@@ -163,14 +163,15 @@ class ComplianceAuditor:
     def __init__(self):
         pass
     
-    def detect(self, image_path: str, original_filename: str = None, previous_results: List = None, forensics_data: dict = None) -> DetectionResult:
+    def detect(self, image_path: str, original_filename: str = None, context: ResultStore = None, forensics_data: dict = None) -> DetectionResult:
         """
         Run compliance audit on image.
         
         Args:
             image_path: Path to image file
             original_filename: Original filename for pattern matching
-            previous_results: Results from previous detectors (metadata, SPAI, etc.)
+            context: Shared ResultStore — the auditor reads prior detector
+                     results from here on its own (self-contained)
             forensics_data: Results from forensics analyzers (noise, frequency, etc.)
             
         Returns:
@@ -227,11 +228,12 @@ class ComplianceAuditor:
         # Check 10: Common photo resolution
         findings.extend(self._check_photo_resolution(width, height))
         
-        # === ML MODEL RESULTS (If available) ===
+        # === ML MODEL RESULTS (Read from shared store) ===
         
-        # Check 11: SPAI model results
-        if previous_results:
-            findings.extend(self._check_ml_model_results(previous_results))
+        # Check 11: ML model results — auditor pulls these itself
+        if context:
+            prior_results = context.get_all_serialized()
+            findings.extend(self._check_ml_model_results(prior_results))
         
         # Check 12: Noise consistency analysis
         if forensics_data:
@@ -731,7 +733,7 @@ class ComplianceAuditor:
     
     def _check_ml_model_results(self, previous_results: List) -> List[Finding]:
         """
-        Check ML model results (e.g., SPAI).
+        Check ML model results from the shared store.
         
         Strategy:
         - If ML says AI → HIGH RISK (trust the negative)
@@ -745,32 +747,35 @@ class ComplianceAuditor:
         for result in previous_results:
             method_name = result.get('method', '')
             
-            # Look for ML model results (SPAI, etc.)
-            if 'ml' in method_name.lower() or 'spai' in method_name.lower():
-                is_ai = result.get('is_ai_generated')
-                score = result.get('score', 0.0)
-                confidence = result.get('confidence', 'NONE')
-                
-                # ML model says it's AI-generated
-                if is_ai is True and score > 0.5:
-                    findings.append(Finding(
-                        risk_level=Finding.HIGH,
-                        category="ML Model Detection",
-                        description=f"ML model ({method_name}) detected AI generation: {score:.1%} probability",
-                        score_impact=-100
-                    ))
-                
-                # ML model says it's real with high confidence
-                elif is_ai is False and score < 0.3 and confidence in ['HIGH', 'MEDIUM']:
-                    findings.append(Finding(
-                        risk_level=Finding.POSITIVE,
-                        category="ML Model Assessment",
-                        description=f"ML model ({method_name}) suggests authentic: {(1-score):.1%} confidence",
-                        score_impact=+10  # Low trust boost - ML can be outdated
-                    ))
-                
-                # ML model is uncertain or gave weak signal - ignore it
-                # (Don't penalize for ML uncertainty - that's expected with new AI types)
+            # Only look at ML model results (SDXL, SPAI, etc.)
+            if method_name != 'ml_model':
+                continue
+            
+            is_ai = result.get('is_ai_generated')
+            score = result.get('score', 0.0)
+            confidence = result.get('confidence', 'NONE')
+            evidence = result.get('evidence', method_name)
+            
+            # ML model says it's AI-generated
+            if is_ai is True and score > 0.5:
+                findings.append(Finding(
+                    risk_level=Finding.HIGH,
+                    category="ML Model Detection",
+                    description=f"ML model detected AI generation: {score:.1%} probability ({evidence})",
+                    score_impact=-100
+                ))
+            
+            # ML model says it's real with high confidence
+            elif is_ai is False and score < 0.3 and confidence in ['HIGH', 'MEDIUM', 'CERTAIN']:
+                findings.append(Finding(
+                    risk_level=Finding.POSITIVE,
+                    category="ML Model Assessment",
+                    description=f"ML model suggests authentic: {(1-score):.1%} confidence ({evidence})",
+                    score_impact=+10  # Low trust boost - ML can be outdated
+                ))
+            
+            # ML model is uncertain or gave weak signal - ignore it
+            # (Don't penalize for ML uncertainty - that's expected with new AI types)
         
         return findings
     

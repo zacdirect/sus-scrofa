@@ -6,14 +6,17 @@
 **Responsibility**: Run detectors in operationally efficient order
 
 **What it does:**
-- ✅ Runs detectors (fast → slow)
-- ✅ Passes results to auditor for review
-- ✅ Stops early if auditor says so
+- ✅ Creates a shared `ResultStore` per analysis
+- ✅ Runs detectors (fast → slow), passing the store as `context`
+- ✅ Records each result into the store
+- ✅ Consults auditor for early stopping
+- ✅ Hands the store to the auditor for final summary
 
 **What it does NOT do:**
 - ❌ Make decisions about confidence
 - ❌ Interpret detection results
 - ❌ Calculate final verdict
+- ❌ Serialize or inject results into the auditor
 
 ### 🔍 Detectors (`MetadataDetector`, `SDXLDetector`, `SPAIDetector`, etc.)
 **Responsibility**: Analyze specific aspects - report what they find
@@ -44,9 +47,10 @@
 
 2. **Consolidator** (called once at the end):
    ```python
-   detect(image_path) -> DetectionResult
+   detect(image_path, context=store) -> DetectionResult
    ```
    - Re-analyzes the image itself
+   - **Reads prior detector results from the shared `ResultStore`**
    - **Consolidates varied detector findings into three buckets**:
      * Authenticity Score: fake ← → real (0-100)
      * AI Probability: synthetic content (0-100)
@@ -104,13 +108,13 @@
       └─ (All detectors done) ─────┤
                                    │
                                    ▼
-                     ┌──────────────────────────────────────────────┐
+                     ┌────────────────────────────────────────────────┐
                      │ 8. Auditor: Final Summary                   │
                      │    - Re-analyze image                       │
-                     │    - Incorporate ML results (previous_results)│
+                     │    - Read ML results from ResultStore        │
                      │    - Calculate score                        │
                      │    - Return verdict                         │
-                     └──────────────────────────────────────────────┘
+                     └────────────────────────────────────────────────┘
 ```
 
 ## Key Principles
@@ -141,8 +145,10 @@
 ```python
 # 1. Create detector
 class MyDetector(BaseDetector):
-    def detect(self, image_path: str) -> DetectionResult:
+    def detect(self, image_path: str, context=None) -> DetectionResult:
         # Your analysis
+        # context is a ResultStore — read from it if you want to see
+        # what earlier detectors found, or just ignore it.
         return DetectionResult(
             confidence=90,
             score=0.75,
@@ -153,7 +159,8 @@ class MyDetector(BaseDetector):
 # Edit orchestrator.__init__():
 self._register_detector(MyDetector())
 
-# That's it! Auditor automatically reviews its results.
+# That's it! The orchestrator records your result into the store.
+# The auditor reads it from the store automatically.
 ```
 
 ## Testing New Detectors

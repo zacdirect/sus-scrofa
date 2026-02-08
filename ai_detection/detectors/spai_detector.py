@@ -51,12 +51,13 @@ class SPAIDetector(BaseDetector):
             logger.error(f"Error checking SPAI dependencies: {e}")
             return False
     
-    def detect(self, image_path: str) -> DetectionResult:
+    def detect(self, image_path: str, context=None) -> DetectionResult:
         """
         Analyze image using SPAI model.
         
         Args:
             image_path: Path to image file
+            context: Optional ResultStore (unused by this detector)
             
         Returns:
             DetectionResult with ML model verdict

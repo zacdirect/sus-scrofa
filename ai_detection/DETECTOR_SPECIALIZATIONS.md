@@ -134,8 +134,10 @@ The auditor splits these:
 
 ```python
 class MyDetector(BaseDetector):
-    def detect(self, image_path):
+    def detect(self, image_path, context=None):
         # Just report what you find
+        # context is available if you want to see prior results,
+        # but most detectors can ignore it.
         return DetectionResult(
             confidence=80,
             detected_types=['whatever_you_found']
@@ -158,7 +160,11 @@ class ComplianceAuditor:
     def _calculate_manipulation_probability(self, findings):
         # Weight manipulation-related findings
         
-    def detect(self, image_path):
+    def detect(self, image_path, context=None):
+        # Read prior detector results from the shared store
+        if context:
+            prior_results = context.get_all_serialized()
+            findings.extend(self._check_ml_model_results(prior_results))
         # Consolidate everything into three buckets
 ```
 
@@ -175,7 +181,7 @@ Regardless of which detectors ran or what they're specialized in.
 ### Scenario 1: AI-Only Detector
 ```python
 class NewAIDetector(BaseDetector):
-    def detect(self, image_path):
+    def detect(self, image_path, context=None):
         return DetectionResult(
             detected_types=['ai_indicator_xyz']
         )
@@ -186,7 +192,7 @@ Register it, add `'ai_indicator_xyz'` to auditor's `AI_FINDING_TYPES`. Done.
 ### Scenario 2: Manipulation-Only Detector
 ```python
 class NewForensicDetector(BaseDetector):
-    def detect(self, image_path):
+    def detect(self, image_path, context=None):
         return DetectionResult(
             detected_types=['forensic_finding_abc']
         )
@@ -197,7 +203,7 @@ Register it, add `'forensic_finding_abc'` to auditor's `MANIPULATION_FINDING_TYP
 ### Scenario 3: Multi-Aspect Detector
 ```python
 class NewHybridDetector(BaseDetector):
-    def detect(self, image_path):
+    def detect(self, image_path, context=None):
         return DetectionResult(
             detected_types=[
                 'ai_thing',          # ← Goes to AI bucket

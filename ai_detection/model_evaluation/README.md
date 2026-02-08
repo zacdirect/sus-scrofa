@@ -199,12 +199,13 @@ class MyDetector(BaseDetector):
         except ImportError:
             return False
     
-    def detect(self, image_path: str) -> DetectionResult:
+    def detect(self, image_path: str, context=None) -> DetectionResult:
         """
         Analyze image for AI generation.
         
         Args:
             image_path: Path to image file
+            context: Optional ResultStore (unused by most detectors)
             
         Returns:
             DetectionResult with verdict and confidence
@@ -285,7 +286,7 @@ class MyDetector(BaseDetector):
         
         self._model = external_package.load_model(weights_path)
     
-    def detect(self, image_path: str) -> DetectionResult:
+    def detect(self, image_path: str, context=None) -> DetectionResult:
         from PIL import Image
         
         img = Image.open(image_path)
@@ -300,7 +301,7 @@ If the model needs its own environment (like SPAI):
 
 ```python
 class MyDetector(BaseDetector):
-    def detect(self, image_path: str) -> DetectionResult:
+    def detect(self, image_path: str, context=None) -> DetectionResult:
         import subprocess
         import json
         
@@ -344,7 +345,7 @@ class MyDetector(BaseDetector):
         except:
             return False
     
-    def detect(self, image_path: str) -> DetectionResult:
+    def detect(self, image_path: str, context=None) -> DetectionResult:
         import requests
         
         with open(image_path, 'rb') as f:

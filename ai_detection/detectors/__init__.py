@@ -6,7 +6,7 @@ using multiple complementary detection methods.
 """
 
 from .metadata import MetadataDetector
-from .base import BaseDetector, DetectionResult
+from .base import BaseDetector, DetectionResult, ResultStore
 from .sdxl_detector import SDXLDetector
 
-__all__ = ['MetadataDetector', 'BaseDetector', 'DetectionResult', 'SDXLDetector']
+__all__ = ['MetadataDetector', 'BaseDetector', 'DetectionResult', 'ResultStore', 'SDXLDetector']

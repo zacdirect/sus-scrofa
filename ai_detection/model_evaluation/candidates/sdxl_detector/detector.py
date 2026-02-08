@@ -101,7 +101,7 @@ class SDXLDetector(BaseDetector):
             return False
         return True
 
-    def detect(self, image_path: str) -> DetectionResult:
+    def detect(self, image_path: str, context=None) -> DetectionResult:
         """
         Classify an image as AI-generated ("artificial") or real ("human").
 

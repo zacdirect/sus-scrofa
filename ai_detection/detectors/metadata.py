@@ -7,7 +7,7 @@ This is the fastest and most reliable method when metadata is present.
 
 import logging
 from pathlib import Path
-from typing import Dict, Set
+from typing import Dict, Optional, Set
 
 from PIL import Image
 from PIL.ExifTags import TAGS
@@ -112,13 +112,14 @@ class MetadataDetector(BaseDetector):
             logger.warning("'exif' library not available. Install with: pip install exif")
         return HAS_EXIF
     
-    def detect(self, image_path: str, original_filename: str = None) -> DetectionResult:
+    def detect(self, image_path: str, original_filename: str = None, context=None) -> DetectionResult:
         """
         Analyze image metadata for AI signatures.
         
         Args:
             image_path: Path to image file (may be temporary)
             original_filename: Original filename (for pattern matching)
+            context: Optional ResultStore (unused by this detector)
             
         Returns:
             DetectionResult with high confidence if AI signatures found

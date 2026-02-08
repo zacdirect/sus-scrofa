@@ -90,12 +90,13 @@ class MyDetector(BaseDetector):
         
         return True
     
-    def detect(self, image_path: str) -> DetectionResult:
+    def detect(self, image_path: str, context=None) -> DetectionResult:
         """
         Analyze image for AI generation artifacts.
         
         Args:
             image_path: Path to image file
+            context: Optional ResultStore (unused by most detectors)
             
         Returns:
             DetectionResult with verdict and confidence

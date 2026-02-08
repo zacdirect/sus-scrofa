@@ -35,12 +35,19 @@ Each detector is responsible for its own domain of expertise:
 ### 2. Orchestration Pattern
 
 The **orchestrator** (`MultiLayerDetector`) is responsible for:
+- Creating a shared `ResultStore` for each analysis run
 - Running detectors in operationally efficient order (fast → slow)
+- Recording each detector's result into the store
 - Consulting the auditor after each detector runs
 - Stopping early if auditor determines we have enough evidence
 - **NOT** making any decisions about confidence or verdicts
 
 The orchestrator is purely operational - it doesn't interpret results.
+
+Detectors receive the store as an optional `context` parameter. Most ignore it,
+but any detector that wants to incorporate earlier findings ("better together"
+pattern) can read from it. The auditor reads from the store to pull ML model
+results — it's self-contained and never has results injected into it.
 
 ### 3. Audit & Decision Centralization
 
@@ -86,18 +93,20 @@ class ComplianceAuditor:
         """
         pass
     
-    def detect(self, image_path: str, previous_results: list = None) -> DetectionResult:
+    def detect(self, image_path: str, context: ResultStore = None) -> DetectionResult:
         """
         Aggregate all findings into final verdict.
         
         Called by orchestrator ONCE at the end (regardless of early stop).
         
-        Re-analyzes the image AND incorporates ML model results from
-        previous_results to generate final verdict.
+        Re-analyzes the image AND pulls ML model results from the shared
+        ResultStore to generate final verdict.  The auditor is self-contained —
+        it reads what it needs from the store rather than having results
+        passed in.
         
         Args:
             image_path: Path to image file
-            previous_results: Serialized results from all detectors that ran
+            context: Shared ResultStore containing all prior detector results
         
         Returns:
             DetectionResult with:
@@ -176,9 +185,9 @@ class ComplianceAuditor:
                    │
                    ▼
               ┌────────────────────────────────────────────────────┐
-              │  Auditor.detect(image_path, previous_results=...)  │
-              │  (Re-analyzes image AND aggregates all detector    │
-              │   findings into three-bucket consolidation)        │
+              │  Auditor.detect(image_path, context=store)          │
+              │  (Re-analyzes image AND reads all detector results  │
+              │   from the shared ResultStore on its own)           │
               └────────────────────────────────────────────────────┘
                    │
                    ├─ Calculate authenticity_score (0-100)
@@ -346,7 +355,7 @@ Forensic Suspicion: 60%         [Info Only]
 ### Adding a New Detector
 
 1. Inherit from `BaseDetector`
-2. Implement `detect(image_path: str) -> DetectionResult`
+2. Implement `detect(image_path: str, context=None) -> DetectionResult`
 3. Return `confidence` and `score` (not `authenticity_score`)
 4. Register in orchestrator at appropriate priority level
 
@@ -354,8 +363,10 @@ Forensic Suspicion: 60%         [Info Only]
 class CustomDetector(BaseDetector):
     """Detects specific image characteristics."""
     
-    def detect(self, image_path: str) -> DetectionResult:
+    def detect(self, image_path: str, context=None) -> DetectionResult:
         # Your detection logic
+        # context is the shared ResultStore — read from it if you want
+        # to see what earlier detectors found, or ignore it entirely.
         return DetectionResult(
             confidence=90.0,
             score=75.0,

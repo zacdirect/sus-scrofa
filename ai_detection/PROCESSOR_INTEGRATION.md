@@ -138,10 +138,13 @@ def calculate_manipulation_confidence(results):
    
    AIDetection (order=30):
    ├─ Orchestrator.detect(image)
-   │  ├─ MetadataDetector runs → finds AI dimensions
+   │  ├─ Creates shared ResultStore
+   │  ├─ MetadataDetector runs → result recorded in store
    │  ├─ Auditor.should_stop_early()? → No, continue
-   │  ├─ SPAIDetector runs → finds AI patterns
-   │  └─ Auditor.detect() → FINAL SUMMARY
+   │  ├─ SDXLDetector runs → result recorded in store
+   │  ├─ SPAIDetector runs → result recorded in store
+   │  └─ Auditor.detect(context=store) → FINAL SUMMARY
+   │     ├─ Reads ML results from store on its own
    │     ├─ Authenticity: 15/100
    │     ├─ AI Probability: 85%
    │     └─ Manipulation Probability: 60%
@@ -197,14 +200,14 @@ confidence['confidence_score'] = audit_metadata.get('manipulation_probability')
 ### Separation of Concerns
 - **AnalysisManager**: Orchestrates all analyzer modules (Ghiro level)
 - **AIDetection module**: Bridges to detection architecture
-- **MultiLayerDetector**: Orchestrates detectors (detection level)
-- **ComplianceAuditor**: Gatekeeper for verdicts (decision level)
+- **MultiLayerDetector**: Orchestrates detectors, owns the `ResultStore` (detection level)
+- **ComplianceAuditor**: Gatekeeper for verdicts, reads from the store (decision level)
 
 Each level has clear responsibility:
 1. Ghiro: Run modules, store results
 2. AIDetection module: Call detection system, format output
-3. Orchestrator: Run detectors efficiently
-4. Auditor: Make all decisions, consolidate into three buckets
+3. Orchestrator: Run detectors efficiently, maintain shared store
+4. Auditor: Make all decisions, read from store, consolidate into three buckets
 
 ### Clean Integration
 The detection architecture is **completely self-contained**:

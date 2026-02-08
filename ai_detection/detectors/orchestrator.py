@@ -9,7 +9,7 @@ import logging
 from typing import List, Dict, Optional
 from pathlib import Path
 
-from .base import BaseDetector, DetectionResult, ConfidenceLevel
+from .base import BaseDetector, DetectionResult, ConfidenceLevel, ResultStore
 from .metadata import MetadataDetector
 from .compliance_audit import ComplianceAuditor
 from .spai_detector import SPAIDetector
@@ -83,25 +83,28 @@ class MultiLayerDetector:
         if not Path(image_path).exists():
             return self._error_result("Image file not found")
         
+        # Shared store for this analysis run.
+        # Detectors can optionally read from it; the auditor will.
+        store = ResultStore()
+        
         # Sort detectors by execution order
         sorted_detectors = sorted(self.detectors, key=lambda d: d.get_order())
         
-        layer_results = []
-        
         for detector in sorted_detectors:
             try:
-                # Run detector
+                # Run detector — pass context so it *can* see prior results
                 if detector.name == 'MetadataDetector' and original_filename:
-                    result = detector.detect(image_path, original_filename=original_filename)
+                    result = detector.detect(image_path, original_filename=original_filename, context=store)
                 else:
-                    result = detector.detect(image_path)
-                    
-                layer_results.append(result)
+                    result = detector.detect(image_path, context=store)
+                
+                # Record into the shared store
+                store.record(detector.name, result)
                 logger.debug(f"{detector.name}: {result.evidence}")
                 
                 # Consult auditor: have we seen enough?
                 if early_stop:
-                    should_stop = self.auditor.should_stop_early(layer_results)
+                    should_stop = self.auditor.should_stop_early(store.get_all())
                     if should_stop:
                         logger.info(f"Auditor decision: stop early after {detector.name}")
                         break
@@ -110,31 +113,29 @@ class MultiLayerDetector:
                 logger.error(f"Error running {detector.name}: {e}")
                 continue
         
-        # Ask auditor to summarize all findings
-        return self._get_audit_summary(image_path, layer_results)
+        # Ask auditor to summarize all findings — it reads from the store
+        return self._get_audit_summary(image_path, store)
     
-    def _get_audit_summary(self, image_path: str, results: List[DetectionResult]) -> Dict:
+    def _get_audit_summary(self, image_path: str, store: ResultStore) -> Dict:
         """
         Ask auditor to provide final summary of all findings.
         
-        The auditor aggregates all detector results into a single verdict
-        with authenticity score and component probabilities.
+        The auditor reads detector results from the shared ResultStore
+        rather than receiving them as a parameter — it's self-contained.
         
         Args:
             image_path: Path to the analyzed image
-            results: Results from all detectors that ran
+            store: Shared ResultStore containing all detector results
             
         Returns:
             Dictionary with final verdict and all supporting data
         """
-        if not results:
+        if not store:
             return self._error_result("No detection methods available")
         
         try:
-            # Pass detector results to auditor so ML model findings
-            # feed into the three-bucket consolidation (AI prob, manipulation prob, etc.)
-            serialized_results = [r.to_dict() for r in results]
-            audit_result = self.auditor.detect(image_path, previous_results=serialized_results)
+            # Auditor reads from the store on its own
+            audit_result = self.auditor.detect(image_path, context=store)
             
             return {
                 'overall_verdict': audit_result.is_fake,
@@ -145,7 +146,7 @@ class MultiLayerDetector:
                 'detection_method': audit_result.method.value,
                 'detected_types': audit_result.detected_types or [],
                 'audit_metadata': audit_result.metadata or {},  # Three-bucket probabilities
-                'layer_results': [r.to_dict() for r in results],
+                'layer_results': store.get_all_serialized(),
                 'enabled': True
             }
         except Exception as e:

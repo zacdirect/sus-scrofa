@@ -5,7 +5,7 @@ Each detector implements a specific detection method and returns
 standardized results that can be combined.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, Optional, List
 from abc import ABC, abstractmethod
@@ -110,6 +110,59 @@ class DetectionResult:
         return result
 
 
+class ResultStore:
+    """
+    Shared results store for a single image analysis run.
+
+    The orchestrator creates one per detect() call and passes it to
+    detectors and the auditor.  Each detector's result is recorded
+    automatically by the orchestrator after it returns.
+
+    Detectors are *not required* to read from the store — most won't.
+    But if a detector wants to incorporate earlier findings ("better
+    together" pattern), it can query the store via get() / get_all().
+
+    The auditor reads from the store instead of receiving serialised
+    ``previous_results`` as a parameter, keeping it self-contained.
+    """
+
+    def __init__(self):
+        self._results: Dict[str, DetectionResult] = {}
+        self._order: List[str] = []  # insertion order
+
+    # -- write (called by orchestrator) ----------------------------------
+
+    def record(self, detector_name: str, result: DetectionResult) -> None:
+        """Record a detector's result.  Overwrites any previous entry for the same name."""
+        if detector_name not in self._results:
+            self._order.append(detector_name)
+        self._results[detector_name] = result
+
+    # -- read (available to detectors & auditor) -------------------------
+
+    def get(self, detector_name: str) -> Optional[DetectionResult]:
+        """Get a specific detector's result, or None if it hasn't run yet."""
+        return self._results.get(detector_name)
+
+    def get_all(self) -> List[DetectionResult]:
+        """All results recorded so far, in execution order."""
+        return [self._results[n] for n in self._order]
+
+    def get_all_serialized(self) -> List[Dict]:
+        """All results as dicts, in execution order."""
+        return [self._results[n].to_dict() for n in self._order]
+
+    def names(self) -> List[str]:
+        """Names of detectors that have recorded results."""
+        return list(self._order)
+
+    def __len__(self) -> int:
+        return len(self._results)
+
+    def __bool__(self) -> bool:
+        return bool(self._results)
+
+
 class BaseDetector(ABC):
     """
     Base class for all AI detection methods.
@@ -126,12 +179,16 @@ class BaseDetector(ABC):
         self.name = self.__class__.__name__
     
     @abstractmethod
-    def detect(self, image_path: str) -> DetectionResult:
+    def detect(self, image_path: str, context: Optional['ResultStore'] = None) -> DetectionResult:
         """
         Analyze an image and return detection result.
         
         Args:
             image_path: Path to image file
+            context: Optional shared ResultStore — detectors may read
+                     earlier results from here if they want to, but are
+                     never required to.  The orchestrator records each
+                     result into the store automatically.
             
         Returns:
             DetectionResult with verdict and evidence
