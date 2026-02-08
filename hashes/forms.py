@@ -22,6 +22,13 @@ class ListForm(forms.ModelForm):
 
         # Checks file for validation line by line.
         for row in file.readlines():
+            # Decode bytes to string if needed (Python 3 compatibility)
+            if isinstance(row, bytes):
+                row = row.decode('utf-8', errors='ignore')
+            
+            # Strip whitespace
+            row = row.strip()
+            
             # Skip comments.
             if row.startswith("#"):
                 continue

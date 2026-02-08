@@ -38,9 +38,13 @@ def new_hashes(request):
             list.owner = request.user
             list.save()
             # Read file.
-            with open(request.FILES["hash_list"].temporary_file_path(), "r") as file:
+            with open(request.FILES["hash_list"].temporary_file_path(), "r", encoding='utf-8', errors='ignore') as file:
                 for row in file.readlines():
-                    Hash.objects.get_or_create(value=row.strip(), list=list)
+                    row = row.strip()
+                    # Skip comments and empty lines
+                    if row.startswith("#") or len(row) == 0:
+                        continue
+                    Hash.objects.get_or_create(value=row, list=list)
 
             # Auditing.
             log_activity("H",
