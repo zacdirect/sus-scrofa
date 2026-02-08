@@ -6,7 +6,7 @@
         </tr>
     </thead>
     <tbody>
-        {% for k, v in analysis.report.metadata.Xmp.iteritems %}
+        {% for k, v in analysis.report.metadata.Xmp.items %}
         <tr>
             <td><b>{{ k|upper }}</b></td>
             <td> {% include 'analyses/report/_visualize_value.html' with value=v  subgroup=k group="Xmp" %} </td>

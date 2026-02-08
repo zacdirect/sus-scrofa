@@ -23,7 +23,7 @@ class Command(NoArgsCommand):
         if os.path.exists(options["path"]):
             dst_path = os.path.join(options["path"], "ghiro_output")
             if os.path.exists(dst_path):
-                print "ERROR: a folder 'ghiro_output' already exist in that path!"
+                print("ERROR: a folder 'ghiro_output' already exist in that path!")
                 sys.exit()
             else:
                 # Create destination folder.

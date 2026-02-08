@@ -1,7 +1,7 @@
 {% load analyses_tags %}
 
 {% if value|classname == "dict" %}
-    {% for a, b in value.iteritems %}
+    {% for a, b in value.items %}
         {% if b|classname == "list" %}
             <b>{{ a }}</b>:
             {% for item in b %}
@@ -10,7 +10,7 @@
             <br />
         {% elif b|classname == "dict" %}
             <b>{{ a }}</b>:
-            {% for k,v in b.iteritems %}
+            {% for k,v in b.items %}
                 {{ k }}: {{ v}};
         {% endfor %}
             <br />

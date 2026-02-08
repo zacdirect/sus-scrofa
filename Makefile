@@ -75,7 +75,7 @@ check-deps:
 	@echo "$(YELLOW)System Libraries:$(NC)"
 	@pkg-config --exists cairo && echo "$(GREEN)✓ Cairo found$(NC)" || echo "$(RED)✗ Cairo not found (install libcairo2-dev)$(NC)"
 	@pkg-config --exists girepository-2.0 && echo "$(GREEN)✓ GIRepository-2.0 found$(NC)" || echo "$(RED)✗ GIRepository-2.0 not found (install libgirepository-2.0-dev)$(NC)"
-	@dpkg -l | grep -q "gir1.2-gexiv2-0.10" && echo "$(GREEN)✓ GExiv2 found$(NC)" || echo "$(YELLOW)⚠ GExiv2 not found (install gir1.2-gexiv2-0.10)$(NC)"
+	@dpkg -l | grep -q libexempi8 && echo "$(GREEN)✓ Exempi found (XMP metadata)$(NC)" || echo "$(YELLOW)⚠ Exempi not found (install libexempi8 for XMP support)$(NC)"
 	@echo ""
 	@dpkg -l | grep -q python3.13-dev && echo "$(GREEN)✓ Python dev headers found$(NC)" || echo "$(RED)✗ Python dev headers not found (install python3.13-dev)$(NC)"
 
@@ -97,14 +97,17 @@ install: venv
 	@echo "$(YELLOW)Installing requirements...$(NC)"
 	@$(VENV)/pip install -r requirements.txt
 	@echo ""
-	@echo "$(YELLOW)Installing PyGObject (for EXIF support)...$(NC)"
+	@echo "$(YELLOW)Verifying modern metadata libraries...$(NC)"
+	@$(VENV)/python -c "import exif; print('  ✓ exif (pure Python EXIF extraction)')" 2>/dev/null || \
+		(echo "$(RED)  ✗ exif library not found$(NC)" && exit 1)
+	@$(VENV)/python -c "import pillow_heif; print('  ✓ pillow-heif (HEIF/HEIC support)')" 2>/dev/null || \
+		(echo "$(RED)  ✗ pillow-heif library not found$(NC)" && exit 1)
+	@$(VENV)/python -c "from libxmp import XMPFiles; print('  ✓ python-xmp-toolkit (XMP metadata)')" 2>/dev/null || \
+		(echo "$(YELLOW)  ⚠ python-xmp-toolkit not found (XMP support unavailable)$(NC)")
+	@echo ""
+	@echo "$(YELLOW)Installing PyGObject (for system integration)...$(NC)"
 	@$(VENV)/pip install PyGObject || (echo "$(RED)PyGObject installation failed. Make sure you have:$(NC)" && \
 		echo "  sudo apt-get install build-essential libcairo2-dev libgirepository-2.0-dev pkg-config python3.13-dev" && exit 1)
-	@echo ""
-	@echo "$(YELLOW)Verifying GExiv2 access from venv...$(NC)"
-	@$(VENV)/python -c "from gi.repository import GExiv2; print('  ✓ GExiv2 version:', GExiv2.get_version())" 2>/dev/null || \
-		(echo "$(RED)  ✗ Cannot import GExiv2. Make sure gir1.2-gexiv2-0.10 is installed:$(NC)" && \
-		echo "    sudo apt-get install gir1.2-gexiv2-0.10" && exit 1)
 	@echo ""
 	@echo "$(YELLOW)Verifying scientific computing libraries...$(NC)"
 	@$(VENV)/python -c "import numpy, scipy, cv2, skimage; print('  ✓ NumPy, SciPy, OpenCV, scikit-image')" 2>/dev/null || \

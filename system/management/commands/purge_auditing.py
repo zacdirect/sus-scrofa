@@ -17,14 +17,14 @@ class Command(NoArgsCommand):
     def handle(self, *args, **options):
         """Runs command."""
 
-        print "Audit log purge"
-        print "WARNING: this will permanently delete all your audit logs!"
+        print("Audit log purge")
+        print("WARNING: this will permanently delete all your audit logs!")
 
         ans = raw_input("Do you want to continue? [y/n]")
 
         if ans.strip().lower() == "y":
-            print "Purging audit log... (it could take several minutes)"
-            Activity.objects.all().delete()
-            print "Done."
+            print("Purging audit log... (it could take several minutes)")
+            Auditing.objects.all().delete()
+            print("Done.")
         else:
-            print "Please use only y/n"
+            print("Please use only y/n")

@@ -25,16 +25,26 @@ class ConfidenceScoringProcessing(BaseAnalyzerModule):
             # Calculate confidence based on all accumulated results
             confidence = calculate_manipulation_confidence(self.data)
             
-            # Store results
+            # Store all results (including new verdict fields)
             self.results["confidence"]["manipulation_detected"] = confidence['manipulation_detected']
             self.results["confidence"]["confidence_score"] = confidence['confidence_score']
             self.results["confidence"]["ai_generated_probability"] = confidence['ai_generated_probability']
             self.results["confidence"]["indicators"] = confidence['indicators']
             self.results["confidence"]["methods"] = confidence['methods']
             
+            # Store verdict fields
+            self.results["confidence"]["verdict"] = confidence['verdict']
+            self.results["confidence"]["verdict_label"] = confidence['verdict_label']
+            self.results["confidence"]["verdict_confidence"] = confidence['verdict_confidence']
+            self.results["confidence"]["verdict_certainty"] = confidence['verdict_certainty']
+            
+            # Store method breakdown
+            self.results["confidence"]["deterministic_methods"] = confidence.get('deterministic_methods', {})
+            self.results["confidence"]["ai_ml_methods"] = confidence.get('ai_ml_methods', {})
+            
             logger.info(f"[Task {task.id}]: Confidence scoring complete - "
-                       f"Manipulation: {confidence['confidence_score']:.2%}, "
-                       f"AI: {confidence['ai_generated_probability']:.2%}")
+                       f"Manipulation: {confidence['confidence_score']:.2f}%, "
+                       f"AI: {confidence['ai_generated_probability']:.2f}%")
             
         except Exception as e:
             logger.exception(f"[Task {task.id}]: Error in confidence scoring: {e}")

@@ -8,6 +8,11 @@ python-magic>=0.4.24
 sqlparse>=0.3.0
 asgiref>=3.3.0
 
+# Modern metadata extraction (replaces GExiv2)
+exif>=1.6.0
+pillow-heif>=0.15.0
+python-xmp-toolkit>=2.0.1
+
 # Enhanced forensics dependencies
 numpy>=1.21.0
 scipy>=1.7.0

@@ -24,7 +24,7 @@ class HashComparerProcessing(BaseProcessingModule):
         return IS_HASH
 
     def run(self, task):
-        for key, value in self.data["hash"].iteritems():
+        for key, value in self.data["hash"].items():
             # Get all lists matching hash type.
             hash_lists = List.objects.filter(cipher=key).filter(Q(owner=task.owner) | Q(public=True))
             # Check hashes.

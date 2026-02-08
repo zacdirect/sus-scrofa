@@ -1,8 +1,4 @@
-<div class="alert hide" id="noNet">
-    <strong>Warning!</strong> To use the map feature you need to be connected to internet.
-</div>
-
-<div id="map_canvas" style="width:1100px;"></div>
+<div id="map_canvas" style="width:1100px; height:500px;"></div>
 
 <div id="mapinfo">
     {% include 'analyses/report/_staticMapinfo.html' %}
@@ -10,22 +6,35 @@
 
 <script type="text/javascript">
 $(document).ready(function(){
-    internetStatus();
+    initializeMap();
 });
 
 var map = null;
-function initialize() {
-    var pos = new google.maps.LatLng({{ analysis.report.metadata.gps.pos.Latitude|floatformat:6 }}, {{ analysis.report.metadata.gps.pos.Longitude|floatformat:6 }});
-    var mapOptions = {
-        center: pos,
-        zoom: 7,
-        mapTypeId: google.maps.MapTypeId.HYBRID
-    };
-    map = new google.maps.Map(document.getElementById('map_canvas'), mapOptions);
-    marker = new google.maps.Marker({
-        position: pos,
-        map: map,
-        title: "Image location"
-    });
+var marker = null;
+
+function initializeMap() {
+    var lat = {{ analysis.report.metadata.gps.pos.Latitude|floatformat:6 }};
+    var lon = {{ analysis.report.metadata.gps.pos.Longitude|floatformat:6 }};
+    
+    // Initialize Leaflet map with OpenStreetMap
+    map = L.map('map_canvas').setView([lat, lon], 13);
+    
+    // Add OpenStreetMap tile layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19
+    }).addTo(map);
+    
+    // Add marker
+    marker = L.marker([lat, lon]).addTo(map)
+        .bindPopup('Image location')
+        .openPopup();
 }
+
+// Handle tab switching
+$('a[data-toggle="tab"]').on('shown', function (e) {
+    if (map) {
+        map.invalidateSize();
+    }
+});
 </script>

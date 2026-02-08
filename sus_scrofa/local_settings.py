@@ -38,7 +38,10 @@ ALLOWED_EXT = ['image/bmp', 'image/x-canon-cr2', 'image/jpeg', 'image/png',
                'application/postscript', 'image/gif', 'image/x-minolta-mrw',
                'image/x-olympus-orf', 'image/x-photoshop', 'image/x-fuji-raf',
                'image/x-panasonic-raw2', 'image/x-tga', 'image/tiff', 'image/pjpeg',
-               'image/x-x3f', 'image/x-portable-pixmap']
+               'image/x-x3f', 'image/x-portable-pixmap',
+               # Modern image formats
+               'image/webp', 'image/heif', 'image/heic', 'image/avif',
+               'image/heif-sequence', 'image/heic-sequence']
 
 # Override default secret key stored in secret_key.py
 # Make this unique, and don't share it with anybody.

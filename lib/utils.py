@@ -37,13 +37,13 @@ class AutoVivification(dict):
     def to_dict(self):
         return self._convert_to_dict(self)
 
-def to_unicode(str):
-    """Attempt to fix non uft-8 string into utf-8. It tries to guess input encoding,
+def to_unicode(data):
+    """Attempt to fix non utf-8 string into utf-8. It tries to guess input encoding,
     if fail retry with a replace strategy (so undetectable chars will be escaped).
     @see: fuller list of encodings at http://docs.python.org/library/codecs.html#standard-encodings
     """
 
-    def brute_enc(str):
+    def brute_enc(data):
         """Trying to decode via simple brute forcing."""
         result = None
         encodings = ("ascii", "utf8", "latin1")
@@ -51,40 +51,49 @@ def to_unicode(str):
             if result:
                 break
             try:
-                result = unicode(str, enc)
-            except UnicodeDecodeError:
+                result = data.decode(enc)
+            except (UnicodeDecodeError, AttributeError):
                 pass
         return result
 
-    def chardet_enc(str):
+    def chardet_enc(data):
         """Guess encoding via chardet."""
         result = None
-        enc = chardet.detect(str)["encoding"]
+        enc = chardet.detect(data)["encoding"]
 
         try:
-            result = unicode(str, enc)
-        except UnicodeDecodeError:
+            result = data.decode(enc)
+        except (UnicodeDecodeError, AttributeError):
             pass
 
         return result
 
-    # If already in unicode, skip.
-    if isinstance(str, unicode):
-        return str
+    # If already a string (unicode in Python 3), return it
+    if isinstance(data, str):
+        return data
+    
+    # If numeric types, convert to string
+    if isinstance(data, (int, float)):
+        return str(data)
+    
+    # If bytes, try to decode
+    if isinstance(data, bytes):
+        # First try to decode against a little set of common encodings.
+        result = brute_enc(data)
 
-    # First try to decode against a little set of common encodings.
-    result = brute_enc(str)
+        # Try via chardet.
+        if not result and IS_CHARDET:
+            result = chardet_enc(data)
 
-    # Try via chardet.
-    if not result and IS_CHARDET:
-        result = chardet_enc(str)
+        # If not possible to convert the input string, try again with
+        # a replace strategy.
+        if not result:
+            result = data.decode("utf-8", errors="replace")
 
-    # If not possible to convert the input string, try again with
-    # a replace strategy.
-    if not result:
-        result = unicode(str, errors="replace")
-
-    return result
+        return result
+    
+    # For other types, convert to string
+    return str(data)
 
 def str2file(text_data):
     strIO = BytesIO()
@@ -172,10 +181,10 @@ def hexdump(image_id, length=8):
         line = {}
         s = src[i:i+length]
         # In Python 3, iterating bytes yields integers, not characters
-        hexa = b" ".join(["%0*X" % (digits, x) for x in s])
+        hexa = b" ".join([("%0*X" % (digits, x)).encode('ascii') for x in s])
         text = b"".join([bytes([x]) if 0x20 <= x < 0x7F else b"." for x in s])
-        line["address"] = b"%04X" % i
-        line["hex"] = b"%-*s" % (length*(digits + 1), hexa)
+        line["address"] = ("%04X" % i).encode('ascii')
+        line["hex"] = ("%-*s" % (length*(digits + 1), hexa.decode('ascii'))).encode('ascii')
         line["text"] = text
         hex_dump.append(line)
     return hex_dump
@@ -194,7 +203,9 @@ def import_is_available(module_name):
 def deps_check():
     """Check for all dependencies."""
     deps = [{"name": "Django", "module": "django"},
-            {"name": "GExiv2", "module": "gi.repository.GExiv2"},
+            {"name": "exif (metadata)", "module": "exif"},
+            {"name": "pillow-heif (HEIF support)", "module": "pillow_heif"},
+            {"name": "python-xmp-toolkit (XMP metadata)", "module": "libxmp"},
             {"name": "Pillow", "module": "PIL"},
             {"name": "Pdfkit", "module": "pdfkit"},
             {"name": "Pymongo", "module": "pymongo"},

@@ -13,12 +13,17 @@ from PIL import Image
 from PIL.ExifTags import TAGS
 
 try:
-    import gi
-    gi.require_version('GExiv2', '0.10')
-    from gi.repository import GExiv2
-    HAS_GEXIV2 = True
-except (ImportError, ValueError):
-    HAS_GEXIV2 = False
+    import exif
+    HAS_EXIF = True
+except ImportError:
+    HAS_EXIF = False
+
+try:
+    import pillow_heif
+    pillow_heif.register_heif_opener()
+    HAS_HEIF = True
+except ImportError:
+    HAS_HEIF = False
 
 from .base import BaseDetector, DetectionResult, DetectionMethod, ConfidenceLevel
 
@@ -102,8 +107,10 @@ class MetadataDetector(BaseDetector):
         return 0
     
     def check_deps(self) -> bool:
-        """Check if GExiv2 is available."""
-        return HAS_GEXIV2
+        """Check if exif library is available."""
+        if not HAS_EXIF:
+            logger.warning("'exif' library not available. Install with: pip install exif")
+        return HAS_EXIF
     
     def detect(self, image_path: str, original_filename: str = None) -> DetectionResult:
         """
@@ -133,14 +140,14 @@ class MetadataDetector(BaseDetector):
         if filename_result.confidence != ConfidenceLevel.NONE:
             return filename_result
         
-        # Try EXIF/XMP with GExiv2 first (more comprehensive)
-        if HAS_GEXIV2:
+        # Try EXIF with modern exif library (more comprehensive)
+        if HAS_EXIF:
             try:
-                result = self._check_with_gexiv2(str(path))
+                result = self._check_with_exif(str(path))
                 if result.confidence != ConfidenceLevel.NONE:
                     return result
             except Exception as e:
-                logger.debug(f"GExiv2 metadata check failed: {e}")
+                logger.debug(f"exif metadata check failed: {e}")
         
         # Fallback to PIL EXIF
         try:
@@ -189,48 +196,72 @@ class MetadataDetector(BaseDetector):
             evidence=""
         )
     
-    def _check_with_gexiv2(self, image_path: str) -> DetectionResult:
-        """Check metadata using GExiv2 (supports XMP)."""
-        metadata = GExiv2.Metadata()
-        metadata.open_path(image_path)
+    def _check_with_exif(self, image_path: str) -> DetectionResult:
+        """Check metadata using modern exif library."""
+        with open(image_path, 'rb') as f:
+            img = exif.Image(f)
         
-        # Check all tags for AI signatures
-        for tag in metadata.get_tags():
-            try:
-                value = metadata.get_tag_string(tag)
-                if value and self._contains_ai_signature(value):
-                    return DetectionResult(
-                        method=DetectionMethod.METADATA,
-                        is_ai_generated=True,
-                        confidence=ConfidenceLevel.CERTAIN,
-                        score=1.0,
-                        evidence=f"AI generator found in {tag}: {value}",
-                        metadata={'tag': tag, 'value': value}
-                    )
-            except:
+        if not img.has_exif:
+            return DetectionResult(
+                method=DetectionMethod.METADATA,
+                is_ai_generated=None,
+                confidence=ConfidenceLevel.NONE,
+                score=0.0,
+                evidence=""
+            )
+        
+        # Check all available EXIF tags for AI signatures
+        for tag in dir(img):
+            if tag.startswith('_'):
                 continue
-        
-        # Check for C2PA content credentials
-        for field in C2PA_FIELDS:
             try:
-                value = metadata.get_tag_string(field)
-                if value:
-                    # C2PA can indicate both real and AI - need to parse
-                    if 'ai' in value.lower() or 'generated' in value.lower():
+                value = getattr(img, tag, None)
+                if value and isinstance(value, (str, bytes)):
+                    value_str = value.decode('utf-8') if isinstance(value, bytes) else str(value)
+                    if self._contains_ai_signature(value_str):
                         return DetectionResult(
                             method=DetectionMethod.METADATA,
                             is_ai_generated=True,
-                            confidence=ConfidenceLevel.HIGH,
-                            score=0.95,
-                            evidence=f"C2PA credentials indicate AI generation: {field}",
-                            metadata={'field': field, 'value': value}
+                            confidence=ConfidenceLevel.CERTAIN,
+                            score=1.0,
+                            evidence=f"AI generator found in {tag}: {value_str}",
+                            metadata={'tag': tag, 'value': value_str}
                         )
-            except:
+            except Exception:
                 continue
+        
+        # Check specific important fields
+        software = getattr(img, 'software', None)
+        if software and self._contains_ai_signature(software):
+            return DetectionResult(
+                method=DetectionMethod.METADATA,
+                is_ai_generated=True,
+                confidence=ConfidenceLevel.CERTAIN,
+                score=1.0,
+                evidence=f"AI generator in software field: {software}",
+                metadata={'software': software}
+            )
+        
+        user_comment = getattr(img, 'user_comment', None)
+        if user_comment:
+            comment_str = user_comment.decode('utf-8') if isinstance(user_comment, bytes) else str(user_comment)
+            if self._contains_ai_signature(comment_str):
+                return DetectionResult(
+                    method=DetectionMethod.METADATA,
+                    is_ai_generated=True,
+                    confidence=ConfidenceLevel.HIGH,
+                    score=0.95,
+                    evidence=f"AI signature in user comment: {comment_str}",
+                    metadata={'user_comment': comment_str}
+                )
         
         return DetectionResult(
             method=DetectionMethod.METADATA,
             is_ai_generated=None,
+            confidence=ConfidenceLevel.NONE,
+            score=0.0,
+            evidence=""
+        )
             confidence=ConfidenceLevel.NONE,
             score=0.0,
             evidence="No AI signatures in GExiv2 metadata"
