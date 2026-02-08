@@ -63,7 +63,7 @@ class MultiLayerDetector:
         else:
             logger.warning(f"Detector {detector.name} disabled - dependencies not met")
     
-    def detect(self, image_path: str, early_stop: bool = True, original_filename: str = None) -> Dict:
+    def detect(self, image_path: str, early_stop: bool = True, original_filename: str = None, forensics_data: dict = None) -> Dict:
         """
         Run multi-layer detection on an image.
         
@@ -71,6 +71,7 @@ class MultiLayerDetector:
             image_path: Path to image file (may be temporary file)
             early_stop: Stop at first high-confidence result
             original_filename: Original filename (for pattern matching when using temp files)
+            forensics_data: Results from forensic analyzers (noise, opencv, etc.)
             
         Returns:
             Dictionary with combined results:
@@ -114,9 +115,9 @@ class MultiLayerDetector:
                 continue
         
         # Ask auditor to summarize all findings — it reads from the store
-        return self._get_audit_summary(image_path, store)
+        return self._get_audit_summary(image_path, store, forensics_data)
     
-    def _get_audit_summary(self, image_path: str, store: ResultStore) -> Dict:
+    def _get_audit_summary(self, image_path: str, store: ResultStore, forensics_data: dict = None) -> Dict:
         """
         Ask auditor to provide final summary of all findings.
         
@@ -126,6 +127,7 @@ class MultiLayerDetector:
         Args:
             image_path: Path to the analyzed image
             store: Shared ResultStore containing all detector results
+            forensics_data: Results from forensic analyzers (passed through to auditor)
             
         Returns:
             Dictionary with final verdict and all supporting data
@@ -135,7 +137,7 @@ class MultiLayerDetector:
         
         try:
             # Auditor reads from the store on its own
-            audit_result = self.auditor.detect(image_path, context=store)
+            audit_result = self.auditor.detect(image_path, context=store, forensics_data=forensics_data)
             
             return {
                 'overall_verdict': audit_result.is_fake,

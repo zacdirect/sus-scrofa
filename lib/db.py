@@ -12,6 +12,34 @@ from pymongo import MongoClient
 from pymongo.database import Database
 from pymongo.errors import ConnectionFailure
 
+try:
+    import numpy as np
+    _HAS_NUMPY = True
+except ImportError:
+    _HAS_NUMPY = False
+
+
+def _sanitize_for_mongo(obj):
+    """Recursively convert numpy types to native Python types for MongoDB.
+
+    pymongo/BSON cannot encode numpy scalars (np.int64, np.float64, etc.).
+    This walks the document tree and converts them to plain int/float/bool/list.
+    """
+    if _HAS_NUMPY:
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.bool_):
+            return bool(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+    if isinstance(obj, dict):
+        return {k: _sanitize_for_mongo(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_sanitize_for_mongo(v) for v in obj]
+    return obj
+
 # Lazy MongoDB connection
 _db = None
 _fs = None
@@ -113,6 +141,7 @@ def save_results(results):
     @return: object id
     """
     db = get_db()
+    results = _sanitize_for_mongo(results)
     result = db.analyses.insert_one(results)
     return result.inserted_id
 
@@ -122,6 +151,7 @@ def update_results(analysis_id, results):
     @param results: new data dict to replace
     """
     db = get_db()
+    results = _sanitize_for_mongo(results)
     db.analyses.replace_one(
         {"_id": ObjectId(analysis_id)},
         results

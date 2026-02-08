@@ -238,6 +238,10 @@ class ComplianceAuditor:
         # Check 12: Noise consistency analysis
         if forensics_data:
             findings.extend(self._check_noise_consistency(forensics_data))
+            
+        # Check 13: OpenCV and other forensic method findings
+        if forensics_data:
+            findings.extend(self._check_opencv_findings(forensics_data))
         
         # === CALCULATE AUTHENTICITY SCORE ===
         
@@ -846,6 +850,102 @@ class ComplianceAuditor:
                     category="Low Noise Variation",
                     description=f"Few noise anomalies ({anomaly_count}) - unusually uniform",
                     score_impact=-10
+                ))
+        
+        return findings
+
+    def _check_opencv_findings(self, forensics_data: dict) -> List[Finding]:
+        """
+        Check OpenCV manipulation detection results.
+        
+        Translates OpenCV confidence scores into Finding objects based on
+        what each method detected. The auditor categorizes these findings
+        rather than using OpenCV's internal weighted average.
+        """
+        findings = []
+        
+        opencv_data = forensics_data.get('opencv_manipulation', {})
+        if not opencv_data or not opencv_data.get('enabled'):
+            return findings
+        
+        # Gaussian Blur manipulation detection
+        manip = opencv_data.get('manipulation_detection', {})
+        if manip:
+            confidence = manip.get('confidence', 0.0)
+            num_anomalies = manip.get('num_anomalies', 0)
+            
+            # Categorize based on confidence and anomaly count
+            if confidence > 0.7 and num_anomalies > 1000:
+                findings.append(Finding(
+                    risk_level=Finding.HIGH,
+                    category="Forensic Manipulation",
+                    description=f"Strong manipulation signals: {num_anomalies} anomalies, {confidence*100:.1f}% confidence",
+                    score_impact=-60
+                ))
+            elif confidence > 0.5 and num_anomalies > 500:
+                findings.append(Finding(
+                    risk_level=Finding.MEDIUM,
+                    category="Forensic Manipulation",
+                    description=f"Moderate manipulation signals: {num_anomalies} anomalies, {confidence*100:.1f}% confidence",
+                    score_impact=-35
+                ))
+            elif confidence > 0.3 or num_anomalies > 200:
+                findings.append(Finding(
+                    risk_level=Finding.LOW,
+                    category="Forensic Manipulation",
+                    description=f"Minor manipulation signals: {num_anomalies} anomalies, {confidence*100:.1f}% confidence",
+                    score_impact=-15
+                ))
+            else:
+                # Clean scan adds credibility
+                findings.append(Finding(
+                    risk_level=Finding.POSITIVE,
+                    category="Forensic Clean",
+                    description=f"No significant manipulation: {num_anomalies} anomalies, {confidence*100:.1f}% confidence",
+                    score_impact=+10
+                ))
+        
+        # Noise consistency (OpenCV's version - different from our noise_analysis plugin)
+        noise = opencv_data.get('noise_analysis', {})
+        if noise:
+            is_inconsistent = noise.get('is_noise_inconsistent', False)
+            consistency_score = noise.get('noise_consistency', 0.0)
+            
+            if is_inconsistent and consistency_score < 0.6:
+                findings.append(Finding(
+                    risk_level=Finding.MEDIUM,
+                    category="Forensic Manipulation",
+                    description=f"Inconsistent noise patterns: {consistency_score*100:.1f}% consistency",
+                    score_impact=-30
+                ))
+            elif consistency_score > 0.8:
+                findings.append(Finding(
+                    risk_level=Finding.POSITIVE,
+                    category="Forensic Clean",
+                    description=f"Consistent noise patterns: {consistency_score*100:.1f}% consistency",
+                    score_impact=+8
+                ))
+        
+        # JPEG artifact analysis
+        jpeg = opencv_data.get('jpeg_artifacts', {})
+        if jpeg:
+            is_inconsistent = jpeg.get('has_inconsistent_artifacts', False)
+            confidence = jpeg.get('confidence', 0.0)
+            compression_var = jpeg.get('compression_variation', 0.0)
+            
+            if is_inconsistent and confidence > 0.7:
+                findings.append(Finding(
+                    risk_level=Finding.MEDIUM,
+                    category="Forensic Manipulation",
+                    description=f"Inconsistent JPEG compression: {compression_var:.2f} variation, {confidence*100:.1f}% confidence",
+                    score_impact=-25
+                ))
+            elif is_inconsistent and confidence > 0.5:
+                findings.append(Finding(
+                    risk_level=Finding.LOW,
+                    category="Forensic Manipulation",
+                    description=f"Minor JPEG inconsistencies: {compression_var:.2f} variation, {confidence*100:.1f}% confidence",
+                    score_impact=-12
                 ))
         
         return findings

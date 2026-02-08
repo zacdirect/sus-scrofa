@@ -239,7 +239,7 @@ class PerceptualHashAnalyzer(BaseAnalyzerModule):
         for i in range(len(types)):
             for j in range(i + 1, len(types)):
                 key = f"{types[i]}_vs_{types[j]}"
-                inter_distances[key] = hash_values[types[i]] - hash_values[types[j]]
+                inter_distances[key] = int(hash_values[types[i]] - hash_values[types[j]])
 
         return inter_distances
 

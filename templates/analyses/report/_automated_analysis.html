@@ -447,8 +447,8 @@
                     </table>
 
                     <p class="muted" style="font-size: 10px; margin: 0;">
-                        <strong>Overall:</strong> {{ analysis.report.opencv_manipulation.overall_confidence|pct:1 }}% confidence
-                        — {{ analysis.report.opencv_manipulation.interpretation }}
+                        <strong>Overall:</strong> {{ analysis.report.confidence.confidence_score|floatformat:1 }}% manipulation probability
+                        — Auditor verdict based on {{ analysis.report.opencv_manipulation.methods|length }} forensic methods
                         &nbsp;|&nbsp;
                         <strong>Service:</strong> {{ analysis.report.opencv_manipulation.service }}
                     </p>

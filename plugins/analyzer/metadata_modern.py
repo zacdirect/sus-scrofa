@@ -392,27 +392,30 @@ class MetadataModernAnalyzer(BaseAnalyzerModule):
                 
                 for ns_uri, ns_name in namespaces:
                     try:
-                        # Iterate through all properties in this namespace
-                        iterator = xmp.iterator(ns_uri)
-                        # Check if iterator is not None and is iterable
-                        if iterator is not None:
-                            try:
-                                for prop in iterator:
-                                    if prop and len(prop) >= 2:
-                                        prop_path = prop[0]
-                                        prop_value = prop[1]
-                                        
-                                        if prop_value:
-                                            if ns_name not in self.results["metadata"]["XMP"]:
-                                                self.results["metadata"]["XMP"][ns_name] = {}
-                                            
-                                            # Extract property name from path
-                                            prop_name = prop_path.split('/')[-1] if '/' in prop_path else prop_path
-                                            self.results["metadata"]["XMP"][ns_name][prop_name] = to_unicode(str(prop_value))
-                            except TypeError:
-                                # Iterator returned None or is not iterable
-                                pass
+                        # xmp.iterator can be None if the XMP object
+                        # exists but has no data for this namespace
+                        iterator_fn = getattr(xmp, 'iterator', None)
+                        if iterator_fn is None or not callable(iterator_fn):
+                            continue
+                        iterator = iterator_fn(ns_uri)
+                        if iterator is None:
+                            continue
+                        for prop in iterator:
+                            if prop and len(prop) >= 2:
+                                prop_path = prop[0]
+                                prop_value = prop[1]
                                 
+                                if prop_value:
+                                    if ns_name not in self.results["metadata"]["XMP"]:
+                                        self.results["metadata"]["XMP"][ns_name] = {}
+                                    
+                                    # Extract property name from path
+                                    prop_name = prop_path.split('/')[-1] if '/' in prop_path else prop_path
+                                    self.results["metadata"]["XMP"][ns_name][prop_name] = to_unicode(str(prop_value))
+                                
+                    except (TypeError, StopIteration):
+                        # Iterator returned None or is not iterable
+                        pass
                     except Exception as e:
                         logger.debug(f"Error extracting XMP namespace {ns_name}: {e}")
                 

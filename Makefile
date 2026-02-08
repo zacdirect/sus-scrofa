@@ -275,15 +275,26 @@ reset-db: stop
 	@$(MAKE) migrate
 fresh: reset-db
 	@echo ""
+	@echo "$(YELLOW)Clearing MongoDB analysis data...$(NC)"
+	@$(PYTHON) -c "\
+import os, sys, django; \
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'sus_scrofa.settings'); \
+django.setup(); \
+from analyses.models import Analysis; \
+from lib.db import get_db; \
+db = get_db(); \
+result = db.analyses.delete_many({}) if db is not None else None; \
+count = Analysis.objects.all().count(); \
+Analysis.objects.all().delete(); \
+print(f'Deleted {result.deleted_count if result else 0} MongoDB documents'); \
+print(f'Deleted {count} Analysis records from SQLite')" 2>/dev/null || echo "$(YELLOW)MongoDB clear skipped (not connected)$(NC)"
+	@echo "$(GREEN)✓ MongoDB analysis data cleared$(NC)"
+	@echo ""
 	@echo "$(GREEN)Database reset complete!$(NC)"
 	@echo ""
 	@echo "Next steps:"
 	@echo "  1. Create superuser: make superuser"
 	@echo "  2. Start development: make dev"
-	@echo ""
-	@echo "$(YELLOW)Tip: To also clear MongoDB analysis data:$(NC)"
-	@echo "  podman rm -f ghiro-mongodb"
-	@echo "  podman volume rm ghiro-mongodb-data"
 	@echo ""
 
 # AI Detection Setup
@@ -338,15 +349,7 @@ photoholmes-verify:
 	@$(PYTHON) -c "from photoholmes.methods.factory import MethodFactory; print('✓ photoholmes library OK')" 2>/dev/null || echo "$(RED)✗ photoholmes not installed$(NC)"
 	@$(PYTHON) -c "import torch; print(f'✓ PyTorch {torch.__version__} (CUDA: {torch.cuda.is_available()})')" 2>/dev/null || echo "$(RED)✗ PyTorch not installed$(NC)"
 	@$(PYTHON) -c "import jpegio; print('✓ jpegio OK')" 2>/dev/null || echo "$(RED)✗ jpegio not installed$(NC)"
-	@$(PYTHON) -c "
-from photoholmes.methods.factory import MethodFactory
-for m in ['dq', 'zero', 'noisesniffer']:
-    try:
-        method, pp = MethodFactory.load(m)
-        print(f'  ✓ {m}: loaded')
-    except Exception as e:
-        print(f'  ✗ {m}: {e}')
-" 2>/dev/null || echo "$(RED)Method loading failed$(NC)"
+	@$(PYTHON) -c "from photoholmes.methods.factory import MethodFactory; [exec('try:\\n method, pp = MethodFactory.load(m)\\n print(f\"  ✓ {m}: loaded\")\\nexcept Exception as e:\\n print(f\"  ✗ {m}: {e}\")') for m in ['dq', 'zero', 'noisesniffer']]" 2>/dev/null || echo "$(RED)Method loading failed$(NC)"
 
 photoholmes-clean:
 	@echo "$(YELLOW)Removing photoholmes...$(NC)"

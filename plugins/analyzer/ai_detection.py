@@ -120,14 +120,20 @@ class AIDetection(BaseAnalyzerModule):
             tmp_file.flush()  # Ensure data is written
             image_path = tmp_file.name
             
+            # Gather forensics data from prior analyzers
+            forensics_data = {
+                'noise_analysis': self.data.get('noise_analysis', {}),
+                'frequency_analysis': self.data.get('frequency_analysis', {}),
+                'opencv_manipulation': self.data.get('opencv_manipulation', {}),
+            }
+            
             # Run multi-layer detection
             logger.info(f"[Task {task.id}]: Running multi-layer AI detection on {task.file_name}")
-            detection_result = self._detector.detect(image_path, early_stop=True)
+            detection_result = self._detector.detect(image_path, early_stop=True, forensics_data=forensics_data)
             
             # Extract results (handle both individual detector and audit aggregated results)
             verdict = detection_result.get('overall_verdict')
             confidence = detection_result.get('overall_confidence', 'NONE')
-            score = detection_result.get('overall_score', 0.0)
             authenticity_score = detection_result.get('authenticity_score')  # 0-100 from audit
             evidence = detection_result.get('evidence', 'No evidence')
             detected_types = detection_result.get('detected_types', [])
@@ -138,8 +144,17 @@ class AIDetection(BaseAnalyzerModule):
             results["ai_detection"]["enabled"] = detection_result.get('enabled', True)
             results["ai_detection"]["verdict"] = "AI-Generated" if verdict else "Real" if verdict is False else "Unknown"
             results["ai_detection"]["confidence"] = confidence.lower() if confidence != 'AUDIT' else 'high'
-            results["ai_detection"]["ai_probability"] = round(score * 100.0, 2)
             results["ai_detection"]["likely_ai"] = verdict is True
+            
+            # Use the auditor's three-bucket probabilities when available.
+            # ai_probability comes from the auditor — it examines findings
+            # categorized as "AI" specifically, NOT the overall authenticity score.
+            if audit_metadata.get('ai_probability') is not None:
+                results["ai_detection"]["ai_probability"] = round(audit_metadata['ai_probability'], 2)
+            else:
+                # Fallback for non-audit results (e.g., single-detector early stop)
+                score = detection_result.get('overall_score', 0.0)
+                results["ai_detection"]["ai_probability"] = round(score * 100.0, 2)
             
             # Add authenticity score if available (from compliance audit)
             if authenticity_score is not None:
