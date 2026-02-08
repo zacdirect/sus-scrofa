@@ -11,6 +11,7 @@ from pathlib import Path
 
 from .base import BaseDetector, DetectionResult, ConfidenceLevel
 from .metadata import MetadataDetector
+from .compliance_audit import ComplianceAuditDetector
 from .spai_detector import SPAIDetector
 
 
@@ -42,6 +43,9 @@ class MultiLayerDetector:
         
         if enable_ml:
             self._register_detector(SPAIDetector())
+        
+        # Compliance audit runs last to review all other results
+        self._register_detector(ComplianceAuditDetector())
     
     def _register_detector(self, detector: BaseDetector):
         """Register a detector if its dependencies are available."""

@@ -394,23 +394,32 @@ class MetadataModernAnalyzer(BaseAnalyzerModule):
                     try:
                         # Iterate through all properties in this namespace
                         iterator = xmp.iterator(ns_uri)
-                        if iterator:
-                            for prop in iterator:
-                                prop_path = prop[0]
-                                prop_value = prop[1]
-                                
-                                if prop_value:
-                                    if ns_name not in self.results["metadata"]["XMP"]:
-                                        self.results["metadata"]["XMP"][ns_name] = {}
-                                    
-                                    # Extract property name from path
-                                    prop_name = prop_path.split('/')[-1] if '/' in prop_path else prop_path
-                                    self.results["metadata"]["XMP"][ns_name][prop_name] = to_unicode(str(prop_value))
+                        # Check if iterator is not None and is iterable
+                        if iterator is not None:
+                            try:
+                                for prop in iterator:
+                                    if prop and len(prop) >= 2:
+                                        prop_path = prop[0]
+                                        prop_value = prop[1]
+                                        
+                                        if prop_value:
+                                            if ns_name not in self.results["metadata"]["XMP"]:
+                                                self.results["metadata"]["XMP"][ns_name] = {}
+                                            
+                                            # Extract property name from path
+                                            prop_name = prop_path.split('/')[-1] if '/' in prop_path else prop_path
+                                            self.results["metadata"]["XMP"][ns_name][prop_name] = to_unicode(str(prop_value))
+                            except TypeError:
+                                # Iterator returned None or is not iterable
+                                pass
                                 
                     except Exception as e:
                         logger.debug(f"Error extracting XMP namespace {ns_name}: {e}")
                 
-                logger.debug(f"Extracted XMP metadata with {len(self.results['metadata']['XMP'])} namespaces")
+                # Only log if we actually found XMP data
+                xmp_ns_count = len(self.results['metadata']['XMP'])
+                if xmp_ns_count > 0:
+                    logger.debug(f"Extracted XMP metadata with {xmp_ns_count} namespaces")
                 
             xmpfile.close_file()
             
@@ -454,7 +463,11 @@ class MetadataModernAnalyzer(BaseAnalyzerModule):
                     logger.debug("No EXIF data found in image")
                     
             except Exception as e:
-                logger.debug(f"Could not extract EXIF with exif library: {e}")
+                # Some images have corrupted or non-standard EXIF data
+                if 'TiffByteOrder' in str(e) or 'unpack' in str(e):
+                    logger.debug(f"Image has corrupted or non-standard EXIF data")
+                else:
+                    logger.debug(f"Could not extract EXIF: {e}")
         
         # Try HEIF-specific extraction
         if image_format in ['HEIF', 'HEIC'] or (image_format is None and HAS_HEIF):
@@ -487,16 +500,23 @@ class MetadataModernAnalyzer(BaseAnalyzerModule):
                         pass
         
         # Log what we found
+        has_data = False
         if self.results["metadata"]:
-            logger.info(f"Extracted metadata from {image_format or 'unknown'} format")
-            if 'Exif' in self.results["metadata"]:
+            if 'Exif' in self.results["metadata"] and self.results["metadata"]["Exif"]:
                 exif_keys = sum(len(group) for group in self.results["metadata"]["Exif"].values() 
                               if isinstance(group, dict))
-                logger.info(f"Found {exif_keys} EXIF tags")
-            if 'XMP' in self.results["metadata"]:
+                if exif_keys > 0:
+                    logger.info(f"Found {exif_keys} EXIF tags")
+                    has_data = True
+            if 'XMP' in self.results["metadata"] and self.results["metadata"]["XMP"]:
                 xmp_namespaces = len(self.results["metadata"]["XMP"])
-                logger.info(f"Found XMP metadata with {xmp_namespaces} namespaces")
+                if xmp_namespaces > 0:
+                    logger.info(f"Found XMP metadata with {xmp_namespaces} namespaces")
+                    has_data = True
+        
+        if has_data:
+            logger.info(f"Extracted metadata from {image_format or 'unknown'} format")
         else:
-            logger.warning("No metadata extracted from image")
+            logger.info(f"No metadata found in {image_format or 'unknown'} image (may be AI-generated or edited)")
         
         return self.results

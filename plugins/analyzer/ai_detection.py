@@ -80,12 +80,20 @@ class AIDetection(BaseAnalyzerModule):
                 self._detector_available = False
                 return False
             
-            logger.info(f"AI detection initialized with {len(self._detector.detectors)} methods")
+            detector_names = [d.name for d in self._detector.detectors]
+            logger.info(f"AI detection initialized with {len(self._detector.detectors)} methods: {', '.join(detector_names)}")
             self._detector_available = True
             return True
             
+        except ImportError as e:
+            logger.warning(f"AI detection module not available: {e}")
+            logger.info("Run: make ai-setup to enable AI detection")
+            self._detector_available = False
+            return False
         except Exception as e:
             logger.error(f"Error initializing AI detection: {e}")
+            import traceback
+            logger.debug(traceback.format_exc())
             self._detector_available = False
             return False
 

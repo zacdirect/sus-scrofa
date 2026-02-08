@@ -260,11 +260,7 @@ class MetadataDetector(BaseDetector):
             is_ai_generated=None,
             confidence=ConfidenceLevel.NONE,
             score=0.0,
-            evidence=""
-        )
-            confidence=ConfidenceLevel.NONE,
-            score=0.0,
-            evidence="No AI signatures in GExiv2 metadata"
+            evidence="No AI signatures found in metadata"
         )
     
     def _check_with_pil(self, image_path: str) -> DetectionResult:
