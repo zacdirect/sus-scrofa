@@ -23,7 +23,7 @@ import json
 import os
 from pathlib import Path
 
-from ai_detection.detectors.compliance_audit import ComplianceAuditDetector
+from ai_detection.detectors.compliance_audit import ComplianceAuditor
 
 
 class ForensicsIntegrationTestCase(unittest.TestCase):
@@ -36,7 +36,7 @@ class ForensicsIntegrationTestCase(unittest.TestCase):
         with open(fixture_path, 'r') as f:
             cls.test_data = json.load(f)
         
-        cls.detector = ComplianceAuditDetector()
+        cls.detector = ComplianceAuditor()
     
     def test_real_photos_unedited(self):
         """Test that unedited real photos are correctly identified as authentic."""

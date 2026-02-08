@@ -16,7 +16,7 @@ from PIL import Image
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from ai_detection.detectors.compliance_audit import ComplianceAuditDetector, Finding
+from ai_detection.detectors.compliance_audit import ComplianceAuditor, Finding
 
 
 class ComplianceAuditTestCase(unittest.TestCase):
@@ -24,7 +24,7 @@ class ComplianceAuditTestCase(unittest.TestCase):
 
     def setUp(self):
         """Create test fixtures."""
-        self.detector = ComplianceAuditDetector()
+        self.detector = ComplianceAuditor()
         self.temp_dir = tempfile.mkdtemp()
 
     def tearDown(self):
@@ -41,10 +41,10 @@ class ComplianceAuditTestCase(unittest.TestCase):
         return filepath
 
     def test_detector_initialization(self):
-        """Test detector initializes correctly."""
+        """Test auditor initializes correctly."""
         self.assertEqual(self.detector.name, "Compliance Audit")
-        self.assertEqual(self.detector.get_order(), 200)
-        self.assertTrue(self.detector.check_deps())
+        # Auditor is not a detector, so it doesn't have get_order() or check_deps()
+        self.assertIsNotNone(self.detector)
 
     def test_ai_dimension_detection(self):
         """Test detection of perfect square AI dimensions."""
@@ -329,7 +329,7 @@ class NoiseAnalysisThresholdTestCase(unittest.TestCase):
 
     def setUp(self):
         """Initialize detector."""
-        self.detector = ComplianceAuditDetector()
+        self.detector = ComplianceAuditor()
 
     def test_real_photo_noise_ranges(self):
         """Test noise thresholds match real photo characteristics."""

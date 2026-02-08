@@ -126,6 +126,7 @@ class AIDetection(BaseAnalyzerModule):
             authenticity_score = detection_result.get('authenticity_score')  # 0-100 from audit
             evidence = detection_result.get('evidence', 'No evidence')
             detected_types = detection_result.get('detected_types', [])
+            audit_metadata = detection_result.get('audit_metadata', {})  # Three-bucket probabilities
             layer_results = detection_result.get('layer_results', [])
             
             # Format for SusScrofa
@@ -139,6 +140,7 @@ class AIDetection(BaseAnalyzerModule):
             if authenticity_score is not None:
                 results["ai_detection"]["authenticity_score"] = authenticity_score
                 results["ai_detection"]["detected_types"] = detected_types
+                results["ai_detection"]["audit_metadata"] = audit_metadata  # Pass through three-bucket data
             
             # Add evidence
             results["ai_detection"]["evidence"] = evidence
@@ -162,6 +164,7 @@ class AIDetection(BaseAnalyzerModule):
                     layer_info['authenticity_score'] = layer.get('authenticity_score')
                     layer_info['is_fake'] = layer.get('is_fake')
                     layer_info['detected_types'] = layer.get('detected_types', [])
+                    layer_info['metadata'] = layer.get('metadata', {})  # Include metadata with probabilities
                 
                 results["ai_detection"]["detection_layers"].append(layer_info)
             

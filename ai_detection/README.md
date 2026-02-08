@@ -1,24 +1,59 @@
-# SusScrofa AI Detection Module
+# AI Detection System
 
-Multi-layer AI-generated image detection combining metadata analysis with machine learning models.
+Multi-layer AI-generated image detection using a **gatekeeper architecture**.
 
-## Architecture
+## Architecture: Three Components
 
-The detection system uses a layered approach:
+```
+┌──────────────┐
+│ Orchestrator │ ← Runs detectors efficiently
+└──────┬───────┘
+       │
+       ├─▶ Detector 1 (fast) → findings
+       ├─▶ Auditor: should_stop_early()? ← GATEKEEPER
+       │   ├─ YES: stop
+       │   └─ NO: continue
+       ├─▶ Detector 2 (slower) → findings
+       └─▶ Auditor: detect() → FINAL VERDICT
+```
 
-1. **Metadata Layer (order=0)** - Fast, certain detection
-   - Checks EXIF/XMP metadata for AI generator signatures
-   - Detects 20+ known AI generators (Midjourney, DALL-E, Stable Diffusion, etc.)
-   - C2PA content credentials support
-   - Returns CERTAIN confidence when AI signature found
-   - Execution time: <100ms
+### 1. 🎯 Orchestrator (`MultiLayerDetector`)
+- Runs detectors in efficient order (fast → slow)
+- Consults auditor after each detector
+- Pure operational logic - no decisions
 
-2. **ML Model Layer (order=100)** - Fallback for stripped metadata
-   - SPAI (Spectral Prediction and Analysis of AI-generated Images)
-   - CVPR 2025 model by Karageorgiou et al.
-   - ViT-B/16 + Frequency Restoration Estimator
-   - Analyzes spectral/frequency domain patterns
-   - Execution time: ~3-5s per image
+### 2. 🔍 Detectors (Specialized Analyzers)
+Detectors focus on what they know - they don't decide "fake or real":
+
+- **AI-Focused**: `SPAIDetector` - reports AI generation evidence
+- **Manipulation-Focused**: Future ELA/forensic detectors - report editing evidence
+- **Multi-Aspect**: `MetadataDetector` - may find AI tags OR manipulation signs
+
+Each returns: confidence + score + detected_types (what they found)
+
+**Key**: Detectors are specialized - some only see AI, some only see edits, some see both
+
+### 3. ⚖️ Auditor (`ComplianceAuditor`)
+**THE GATEKEEPER** - Not a detector!
+- Reviews results after each detector
+- Decides when to stop early (saves compute)
+- Performs final compliance audit
+- **Consolidates varied findings into three buckets**:
+  1. Authenticity Score (0-100): fake ← → real
+  2. AI Generation Probability: synthetic content evidence
+  3. Manipulation Probability: traditional editing evidence
+
+**Why consolidation matters**: Different detectors report different things (AI, manipulation, both). Auditor unifies into consistent three-bucket output.
+
+## Key Design Principle
+
+> **The auditor is NOT a detector.** It's a separate gatekeeper component that reviews detectors and makes all decisions.
+
+```python
+# Clear separation
+orchestrator.detectors = [MetadataDetector(), SPAIDetector()]
+orchestrator.auditor = ComplianceAuditor()  # Not in detectors list!
+```
 
 ## Structure
 
@@ -30,9 +65,10 @@ ai_detection/
 ├── spai_infer.py         # Standalone inference script
 ├── detectors/            # Detection framework
 │   ├── __init__.py
-│   ├── base.py           # BaseDetector, DetectionResult
+│   ├── base.py           # BaseDetector interface
 │   ├── metadata.py       # MetadataDetector (EXIF/XMP)
-│   ├── spai_detector.py  # SPAIDetector (ML model wrapper)
+│   ├── spai_detector.py  # SPAIDetector (ML wrapper)
+│   ├── compliance_audit.py  # ComplianceAuditor (THE GATEKEEPER)
 │   └── orchestrator.py   # MultiLayerDetector
 ├── spai/                 # SPAI model implementation
 │   ├── config.py         # Model configuration
@@ -40,6 +76,22 @@ ai_detection/
 │   ├── models/           # Architecture (ViT + FRE)
 │   └── data/             # Data loaders
 └── .venv/                # Isolated Python environment (gitignored)
+```
+
+## Quick Start
+
+```python
+from ai_detection.detectors.orchestrator import MultiLayerDetector
+
+# Initialize (creates detectors + auditor)
+detector = MultiLayerDetector()
+
+# Run detection
+result = detector.detect('image.jpg')
+
+# Get final verdict (from auditor)
+print(f"Authenticity: {result['authenticity_score']}/100")
+print(f"Verdict: {'FAKE' if result['overall_verdict'] else 'REAL'}")
 ```
 
 ## Detection Framework

@@ -69,6 +69,13 @@ def calculate_manipulation_confidence(results):
             confidence['authenticity_score'] = auth_score
             confidence['detected_types'] = ai_det.get('detected_types', [])
             
+            # Extract component probabilities from audit metadata (three-bucket consolidation)
+            audit_metadata = ai_det.get('audit_metadata', {})
+            
+            # Set AI and manipulation probabilities from audit calculations
+            confidence['ai_generated_probability'] = round(audit_metadata.get('ai_probability', 0.0), 1)
+            confidence['confidence_score'] = round(audit_metadata.get('manipulation_probability', 0.0), 1)
+            
             # Convert authenticity score to verdict
             # 0-40: Fake, 41-59: Uncertain, 60-100: Real
             if auth_score <= 40:

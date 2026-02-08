@@ -1,0 +1,161 @@
+# AI Detection Architecture Summary
+
+## Component Roles
+
+### 🎯 Orchestrator (`MultiLayerDetector`)
+**Responsibility**: Run detectors in operationally efficient order
+
+**What it does:**
+- ✅ Runs detectors (fast → slow)
+- ✅ Passes results to auditor for review
+- ✅ Stops early if auditor says so
+
+**What it does NOT do:**
+- ❌ Make decisions about confidence
+- ❌ Interpret detection results
+- ❌ Calculate final verdict
+
+### 🔍 Detectors (`MetadataDetector`, `SPAIDetector`, etc.)
+**Responsibility**: Analyze specific aspects - report what they find
+
+**Specializations** (detectors focus on what they know):
+- **AI-Focused**: Only detect AI generation (e.g., SPAI model)
+- **Manipulation-Focused**: Only detect traditional editing (e.g., ELA, clone detection)
+- **Multi-Aspect**: Can detect both AI AND manipulation (e.g., metadata, noise analysis)
+
+**Output**: `DetectionResult` with `confidence` + `score` + `detected_types`
+
+**Key Point**: Detectors don't categorize into our three buckets - they just report findings. Some see AI evidence, some see manipulation evidence, some see both.
+
+### ⚖️ Auditor (`ComplianceAuditor`)
+**Responsibility**: Make ALL decisions about the image
+
+**NOT a detector** - it's a separate decision-making component
+
+**Two Roles:**
+
+1. **Reviewer** (called after each detector):
+   ```python
+   should_stop_early(current_results) -> bool
+   ```
+   - Reviews results so far
+   - Decides if we have enough evidence
+   - Returns True to stop early and save compute
+
+2. **Consolidator** (called once at the end):
+   ```python
+   detect(image_path) -> DetectionResult
+   ```
+   - Re-analyzes the image itself
+   - **Consolidates varied detector findings into three buckets**:
+     * Authenticity Score: fake ← → real (0-100)
+     * AI Probability: synthetic content (0-100)
+     * Manipulation Probability: traditional editing (0-100)
+   - Takes AI-focused findings → AI bucket
+   - Takes manipulation-focused findings → manipulation bucket
+   - Combines all evidence → authenticity score
+   - Returns consistent three-bucket output
+
+## Workflow
+
+```
+┌────────────┐
+│ 1. Upload  │
+└─────┬──────┘
+      │
+      ▼
+┌─────────────────────────────────┐
+│ 2. Orchestrator: Run Detector 1│ ──▶ MetadataDetector
+└─────┬───────────────────────────┘
+      │
+      ▼
+┌─────────────────────────────────┐
+│ 3. Auditor: Review Results      │ ──▶ should_stop_early()?
+└─────┬───────────────────────────┘
+      │
+      ├─ YES (Stop) ──────────────┐
+      │                            │
+      └─ NO (Continue)             │
+         │                         │
+         ▼                         │
+┌─────────────────────────────────┐│
+│ 4. Orchestrator: Run Detector 2││ ──▶ SPAIDetector
+└─────┬───────────────────────────┘│
+      │                            │
+      ▼                            │
+┌─────────────────────────────────┐│
+│ 5. Auditor: Review Results      ││ ──▶ should_stop_early()?
+└─────┬───────────────────────────┘│
+      │                            │
+      └─ (All detectors done) ─────┤
+                                   │
+                                   ▼
+                     ┌──────────────────────────────┐
+                     │ 6. Auditor: Final Summary    │
+                     │    - Re-analyze image        │
+                     │    - Aggregate findings      │
+                     │    - Calculate score         │
+                     │    - Return verdict          │
+                     └──────────────────────────────┘
+```
+
+## Key Principles
+
+1. **Separation of Concerns**
+   - Orchestrator = operational (runs things)
+   - Detectors = analysis (find evidence)
+   - Auditor = decision-making (interprets evidence)
+
+2. **Auditor is Special**
+   - NOT in the detectors list
+   - Consulted after every detector
+   - Always provides final summary
+   - Single source of truth for verdicts
+
+3. **Early Stopping**
+   - Auditor decides when to stop
+   - Orchestrator just executes the decision
+   - Saves compute on obvious cases
+
+4. **Always Complete**
+   - Even if stopped early, auditor provides final summary
+   - Ensures consistent output format
+   - Re-analyzes image for complete findings
+
+## Adding New Detectors
+
+```python
+# 1. Create detector
+class MyDetector(BaseDetector):
+    def detect(self, image_path: str) -> DetectionResult:
+        # Your analysis
+        return DetectionResult(
+            confidence=90,
+            score=0.75,
+            detected_types=['my_finding']
+        )
+
+# 2. Register in orchestrator
+# Edit orchestrator.__init__():
+self._register_detector(MyDetector())
+
+# That's it! Auditor automatically reviews its results.
+```
+
+## Testing New Detectors
+
+```python
+from ai_detection.detectors.orchestrator import MultiLayerDetector
+
+orch = MultiLayerDetector()
+result = orch.detect('test_image.jpg')
+
+# Check what ran
+print(f"Detectors run: {len(result['layer_results'])}")
+for layer in result['layer_results']:
+    print(f"  - {layer['method']}: {layer['confidence']}")
+
+# Check final verdict
+print(f"Authenticity: {result['authenticity_score']}/100")
+print(f"Verdict: {'FAKE' if result['overall_verdict'] else 'REAL'}")
+```

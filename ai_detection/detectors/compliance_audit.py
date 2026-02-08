@@ -49,14 +49,19 @@ class Finding:
         self.score_impact = score_impact  # Negative = suspicious, Positive = trust
 
 
-class ComplianceAuditDetector(BaseDetector):
+class ComplianceAuditor:
     """
-    Compliance audit approach to AI detection.
+    Compliance auditor - the gatekeeper for all detection decisions.
     
-    Starts with zero trust and builds confidence through verified evidence.
+    This is NOT a detector. It's a separate component that:
+    - Reviews detector results and decides when to stop
+    - Performs final compliance audit of the image
+    - Aggregates all findings into a single verdict
+    
+    Philosophy: Start with zero trust, build confidence through verified evidence.
     """
     
-    name = "ComplianceAuditDetector"
+    name = "Compliance Audit"
     
     # Known legitimate camera manufacturers
     LEGITIMATE_CAMERAS = {
@@ -98,6 +103,53 @@ class ComplianceAuditDetector(BaseDetector):
         (1536, 1536), (2048, 2048),
     ]
     
+    @classmethod
+    def should_stop_early(cls, current_results: List[DetectionResult]) -> bool:
+        """
+        Centralized decision logic for early stopping.
+        
+        Determines if we have enough evidence to skip remaining detectors
+        and save compute resources.
+        
+        Stop early if:
+        1. HIGH confidence (>90) with clear AI indicators
+        2. CERTAIN confidence (>95) with definitive evidence
+        3. Clear authenticity evidence (confidence >95, no suspicious findings)
+        
+        Args:
+            current_results: Results from detectors run so far
+            
+        Returns:
+            True if analysis can stop early, False to continue
+        """
+        if not current_results:
+            return False
+        
+        for result in current_results:
+            # Check for definitive findings from individual detectors
+            if result.confidence is None:
+                continue
+            
+            confidence_value = result.confidence if isinstance(result.confidence, (int, float)) else 0
+            
+            # Definitive AI detection
+            if confidence_value >= 90 and result.score and result.score >= 0.7:
+                # High confidence AND high suspicion score
+                detected = result.detected_types or []
+                ai_indicators = ['ai_generation', 'ai_dimensions', 'ai_tool', 'metadata_stripped']
+                if any(ind in detected for ind in ai_indicators):
+                    logger.info(f"Early stop: HIGH confidence AI detection ({confidence_value}%)")
+                    return True
+            
+            # Definitive authenticity
+            if confidence_value >= 95 and result.score and result.score <= 0.3:
+                # Very high confidence AND low suspicion
+                logger.info(f"Early stop: CERTAIN authenticity ({confidence_value}%)")
+                return True
+        
+        # Continue to next detector
+        return False
+    
     # Common real camera resolutions (aspect ratios)
     CAMERA_RESOLUTIONS = {
         '4:3': [(640, 480), (800, 600), (1024, 768), (1600, 1200), (2048, 1536), (4000, 3000)],
@@ -106,17 +158,10 @@ class ComplianceAuditDetector(BaseDetector):
         '1:1': [(1080, 1080),],  # Instagram, but also AI
     }
     
+    name = "Compliance Audit"
+    
     def __init__(self):
-        super().__init__()
-        self.name = "Compliance Audit"
-    
-    def check_deps(self) -> bool:
-        """Compliance audit has no external dependencies."""
-        return True
-    
-    def get_order(self) -> int:
-        """Run last after all other detectors to make final decision."""
-        return 200
+        pass
     
     def detect(self, image_path: str, original_filename: str = None, previous_results: List = None, forensics_data: dict = None) -> DetectionResult:
         """
@@ -198,11 +243,20 @@ class ComplianceAuditDetector(BaseDetector):
         detected_types = self._collect_detector_types(findings)
         evidence = self._format_evidence(findings, authenticity_score)
         
+        # Calculate component probabilities for display
+        ai_probability = self._calculate_ai_probability(findings)
+        manipulation_probability = self._calculate_manipulation_probability(findings)
+        
         return DetectionResult(
             method=DetectionMethod.HEURISTIC,
             authenticity_score=authenticity_score,
             evidence=evidence,
-            detected_types=detected_types
+            detected_types=detected_types,
+            metadata={
+                'ai_probability': ai_probability,  # 0-100: likelihood of AI generation
+                'manipulation_probability': manipulation_probability,  # 0-100: likelihood of manipulation
+                'findings_count': len(findings)
+            }
         )
     
     def _check_ai_indicators(self, filename: str, image_path: str) -> List[Finding]:
@@ -523,6 +577,117 @@ class ComplianceAuditDetector(BaseDetector):
                         detected_types.append('frequency_analysis')
         
         return detected_types
+    
+    def _calculate_ai_probability(self, findings: List[Finding]) -> float:
+        """
+        Calculate AI generation probability (0-100) based on AI-specific findings.
+        
+        Focuses on evidence that specifically indicates AI generation:
+        - AI indicators in filename/metadata
+        - Perfect square dimensions (common in AI)
+        - Synthetic noise patterns
+        - ML model detections
+        """
+        ai_score = 0.0
+        max_possible = 0.0
+        
+        for finding in findings:
+            # Weight findings by risk level and AI relevance
+            if 'AI' in finding.category or 'Synthetic' in finding.category or 'ML Model' in finding.category:
+                weight = {
+                    Finding.HIGH: 40.0,
+                    Finding.MEDIUM: 25.0,
+                    Finding.LOW: 10.0,
+                    Finding.POSITIVE: 0.0  # Positive findings reduce AI probability
+                }.get(finding.risk_level, 0)
+                
+                max_possible += weight
+                if finding.risk_level != Finding.POSITIVE:
+                    ai_score += weight
+            
+            # Dimension findings contribute to AI probability
+            elif 'dimension' in finding.description.lower() and finding.risk_level in [Finding.HIGH, Finding.MEDIUM]:
+                weight = 30.0 if finding.risk_level == Finding.HIGH else 15.0
+                max_possible += weight
+                ai_score += weight
+            
+            # Very low noise is AI-like
+            elif 'noise' in finding.category.lower() and 'uniform' in finding.description.lower():
+                if finding.risk_level == Finding.HIGH:
+                    weight = 35.0
+                    max_possible += weight
+                    ai_score += weight
+        
+        # If we found AI-relevant evidence, calculate probability
+        if max_possible > 0:
+            probability = (ai_score / max_possible) * 100
+            return min(100.0, probability)
+        
+        # No AI-specific evidence found
+        return 0.0
+    
+    def _calculate_manipulation_probability(self, findings: List[Finding]) -> float:
+        """
+        Calculate manipulation probability (0-100) based on forensic findings.
+        
+        Focuses on evidence of editing/tampering:
+        - Noise inconsistencies
+        - Frequency anomalies
+        - Metadata stripping
+        - Forensic method detections
+        
+        Note: POSITIVE findings (evidence of authenticity) REDUCE probability.
+        """
+        manip_score = 0.0
+        max_possible = 0.0
+        
+        for finding in findings:
+            # Weight findings by risk level and manipulation relevance
+            if 'Forensic' in finding.category or 'Manipulation' in finding.category:
+                if finding.risk_level == Finding.POSITIVE:
+                    # Positive evidence reduces manipulation probability
+                    continue
+                    
+                weight = {
+                    Finding.HIGH: 40.0,
+                    Finding.MEDIUM: 25.0,
+                    Finding.LOW: 10.0,
+                }.get(finding.risk_level, 0)
+                
+                max_possible += weight
+                manip_score += weight
+            
+            # Noise analysis (excluding very uniform which is more AI-like)
+            elif 'noise' in finding.category.lower() and 'uniform' not in finding.description.lower():
+                if finding.risk_level == Finding.POSITIVE:
+                    # High noise variance is GOOD (authentic) - skip
+                    continue
+                elif finding.risk_level in [Finding.HIGH, Finding.MEDIUM]:
+                    weight = 30.0 if finding.risk_level == Finding.HIGH else 20.0
+                    max_possible += weight
+                    manip_score += weight
+            
+            # Frequency anomalies
+            elif 'frequency' in finding.category.lower():
+                if finding.risk_level in [Finding.HIGH, Finding.MEDIUM]:
+                    weight = 25.0 if finding.risk_level == Finding.HIGH else 15.0
+                    max_possible += weight
+                    manip_score += weight
+            
+            # Metadata anomalies
+            elif 'metadata' in finding.category.lower():
+                if finding.risk_level in [Finding.MEDIUM, Finding.LOW]:
+                    weight = 15.0 if finding.risk_level == Finding.MEDIUM else 5.0
+                    max_possible += weight
+                    manip_score += weight
+        
+        # If we found manipulation-relevant evidence, calculate probability
+        if max_possible > 0:
+            probability = (manip_score / max_possible) * 100
+            return min(100.0, probability)
+        
+        # No manipulation-specific evidence found
+        return 0.0
     
     def _format_evidence(self, findings: List[Finding], authenticity_score: int) -> str:
         """Format findings into human-readable evidence string."""
