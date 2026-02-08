@@ -1,0 +1,16 @@
+# Requirements for AI detection model
+# Add your model's dependencies here
+
+# Common dependencies (adjust versions as needed)
+numpy>=1.20.0
+Pillow>=9.0.0
+
+# Uncomment if using PyTorch
+# torch>=2.0.0
+# torchvision>=0.15.0
+
+# Uncomment if using TensorFlow
+# tensorflow>=2.13.0
+
+# Add any other model-specific dependencies
+# your-model-package>=1.0.0
