@@ -91,8 +91,8 @@ class MultiLayerDetector:
                 
                 logger.debug(f"{detector.name}: {result.evidence}")
                 
-                # Early stopping: if we have high confidence, stop
-                if early_stop and result.confidence in [ConfidenceLevel.CERTAIN, ConfidenceLevel.HIGH]:
+                # Early stopping: if we have high confidence from individual detector, stop
+                if early_stop and result.confidence and result.confidence in [ConfidenceLevel.CERTAIN, ConfidenceLevel.HIGH]:
                     logger.info(f"Early stop: {detector.name} provided {result.confidence.name} confidence")
                     break
                     
@@ -108,13 +108,31 @@ class MultiLayerDetector:
         Combine results from multiple detectors into final verdict.
         
         Decision logic:
-        1. If any CERTAIN verdict, use that
-        2. If any HIGH confidence, use that
-        3. Otherwise, weighted average of scores
+        1. If compliance audit present, use that (it aggregates all other results)
+        2. If any CERTAIN verdict from detector, use that
+        3. If any HIGH confidence from detector, use that
+        4. Otherwise, weighted average of detector scores
         """
         if not results:
             return self._error_result("No detection methods available")
         
+        # Priority 1: Compliance audit result (already aggregates everything)
+        audit_results = [r for r in results if r.authenticity_score is not None]
+        if audit_results:
+            audit = audit_results[0]  # Should only be one
+            return {
+                'overall_verdict': audit.is_fake,
+                'overall_confidence': 'AUDIT',  # Special marker for audit
+                'overall_score': audit.authenticity_score / 100.0,  # Convert to 0-1
+                'authenticity_score': audit.authenticity_score,  # Keep 0-100
+                'evidence': audit.evidence,
+                'detection_method': audit.method.value,
+                'detected_types': audit.detected_types or [],
+                'layer_results': [r.to_dict() for r in results],
+                'enabled': True
+            }
+        
+        # Priority 2-4: Combine individual detector results
         # Check for certain/high confidence results
         for conf_level in [ConfidenceLevel.CERTAIN, ConfidenceLevel.HIGH]:
             certain_results = [r for r in results if r.confidence == conf_level]

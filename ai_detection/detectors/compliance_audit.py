@@ -18,11 +18,11 @@ This approach is resilient to:
 
 import logging
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Optional
 from PIL import Image
 import exif
 
-from .base import BaseDetector, DetectionResult, ConfidenceLevel
+from .base import BaseDetector, DetectionResult, DetectionMethod
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +86,7 @@ class ComplianceAuditDetector(BaseDetector):
     
     # AI generator indicators in filenames/metadata
     AI_INDICATORS = [
-        'midjourney', 'dall-e', 'dalle', 'stable-diffusion', 'sd-',
+        'midjourney', 'dall-e', 'dalle', 'stable_diffusion', 'stable-diffusion', 'sd-',
         'gemini_generated', 'chatgpt', 'gpt-', 'ai-generated', 'ai_generated',
         'generated_image', 'synthetic', 'deepdream', 'artbreeder',
         'nightcafe', 'craiyon', 'lexica', 'playground-ai', 'firefly',
@@ -108,6 +108,7 @@ class ComplianceAuditDetector(BaseDetector):
     
     def __init__(self):
         super().__init__()
+        self.name = "Compliance Audit"
     
     def check_deps(self) -> bool:
         """Compliance audit has no external dependencies."""
@@ -117,7 +118,7 @@ class ComplianceAuditDetector(BaseDetector):
         """Run last after all other detectors to make final decision."""
         return 200
     
-    def detect(self, image_path: str, original_filename: str = None, previous_results: List = None) -> DetectionResult:
+    def detect(self, image_path: str, original_filename: str = None, previous_results: List = None, forensics_data: dict = None) -> DetectionResult:
         """
         Run compliance audit on image.
         
@@ -125,6 +126,7 @@ class ComplianceAuditDetector(BaseDetector):
             image_path: Path to image file
             original_filename: Original filename for pattern matching
             previous_results: Results from previous detectors (metadata, SPAI, etc.)
+            forensics_data: Results from forensics analyzers (noise, frequency, etc.)
             
         Returns:
             DetectionResult with trust score
@@ -186,17 +188,21 @@ class ComplianceAuditDetector(BaseDetector):
         if previous_results:
             findings.extend(self._check_ml_model_results(previous_results))
         
-        # === CALCULATE RISK SCORE ===
+        # Check 12: Noise consistency analysis
+        if forensics_data:
+            findings.extend(self._check_noise_consistency(forensics_data))
         
-        risk_score = self._calculate_risk_score(findings)
-        verdict, confidence = self._determine_verdict(findings, risk_score)
-        evidence = self._format_evidence(findings, risk_score)
+        # === CALCULATE AUTHENTICITY SCORE ===
+        
+        authenticity_score = self._calculate_authenticity_score(findings)
+        detected_types = self._collect_detector_types(findings)
+        evidence = self._format_evidence(findings, authenticity_score)
         
         return DetectionResult(
-            is_ai_generated=verdict,
-            confidence=confidence,
-            score=risk_score,
-            evidence=evidence
+            method=DetectionMethod.HEURISTIC,
+            authenticity_score=authenticity_score,
+            evidence=evidence,
+            detected_types=detected_types
         )
     
     def _check_ai_indicators(self, filename: str, image_path: str) -> List[Finding]:
@@ -246,13 +252,13 @@ class ComplianceAuditDetector(BaseDetector):
         """Check for AI-typical dimensions."""
         findings = []
         
-        # Perfect square power-of-2 (VERY suspicious)
+        # Perfect square power-of-2 (VERY suspicious but easily defeated)
         if width == height and (width, height) in self.AI_TYPICAL_DIMENSIONS:
             findings.append(Finding(
-                risk_level=Finding.HIGH,
+                risk_level=Finding.MEDIUM,
                 category="AI Dimensions",
                 description=f"Perfect square power-of-2 dimensions: {width}x{height} (typical AI generation size)",
-                score_impact=-80  # Increased from -40
+                score_impact=-60  # Reduced from -80, easy to defeat with crop
             ))
         
         return findings
@@ -454,70 +460,74 @@ class ComplianceAuditDetector(BaseDetector):
                     findings.append(Finding(
                         risk_level=Finding.POSITIVE,
                         category="Natural Aspect Ratio",
-                        description=f"Aspect ratio {aspect_ratio:.2f}:1 is typical for photos (not perfect square)\",
+                        description=f"Aspect ratio {aspect_ratio:.2f}:1 is typical for photos (not perfect square)",
                         score_impact=+10
                     ))
         
         return findings
     
-    def _calculate_risk_score(self, findings: List[Finding]) -> float:
+    def _calculate_authenticity_score(self, findings: List[Finding]) -> int:
         """
-        Calculate overall risk score from findings.
+        Calculate overall authenticity score (0-100).
         
-        Score ranges:
-        - 0.0-0.2: Highly authentic (strong positive evidence)
-        - 0.2-0.4: Probably authentic
-        - 0.4-0.6: Inconclusive
-        - 0.6-0.8: Possibly AI/manipulated
-        - 0.8-1.0: Likely AI/manipulated
+        Pure fake-to-real scale:
+        - 0: Definitely fake (high confidence, severe findings)
+        - 50: Uncertain/unknown
+        - 100: Definitely real (high confidence, strong evidence)
+        
+        Score does NOT indicate type of manipulation, only fake vs real.
+        
+        Note: score_impact values are designed as risk impacts:
+        - Negative impact = suspicious = lowers authenticity
+        - Positive impact = evidence of authenticity = raises authenticity
         """
-        # Start at neutral (0.5 = 50% risk)
+        # Start at neutral (50 = uncertain)
         base_score = 50
         
         # Apply all finding impacts
+        # Negative impacts (suspicious) LOWER the score
+        # Positive impacts (authentic evidence) RAISE the score
         for finding in findings:
             base_score += finding.score_impact
         
-        # Clamp to 0-100
-        final_score = max(0, min(100, base_score))
-        
-        # Convert to 0.0-1.0 range (risk probability)
-        return final_score / 100.0
+        # Clamp to 0-100 and return as authenticity
+        # After applying impacts: low score = suspicious, high score = authentic
+        return max(0, min(100, base_score))
     
-    def _determine_verdict(self, findings: List[Finding], risk_score: float) -> Tuple[Optional[bool], ConfidenceLevel]:
-        """Determine verdict and confidence from findings and risk score."""
+    def _collect_detector_types(self, findings: List[Finding]) -> List[str]:
+        """Collect detector types that triggered for informational purposes."""
+        detected_types = []
         
-        # Check for HIGH-risk findings (automatic fail)
-        high_risk_findings = [f for f in findings if f.risk_level == Finding.HIGH]
-        if high_risk_findings:
-            return True, ConfidenceLevel.HIGH  # Definitely AI/manipulated
+        # Check what types of detection triggered
+        for finding in findings:
+            if finding.risk_level in [Finding.HIGH, Finding.MEDIUM]:
+                # Map findings to detector types
+                if 'AI' in finding.category or 'Synthetic' in finding.category:
+                    if 'ai_generation' not in detected_types:
+                        detected_types.append('ai_generation')
+                
+                if 'dimension' in finding.description.lower() and '1024' in finding.description:
+                    if 'ai_dimensions' not in detected_types:
+                        detected_types.append('ai_dimensions')
+                
+                if 'noise' in finding.category.lower():
+                    if 'noise_analysis' not in detected_types:
+                        detected_types.append('noise_analysis')
+                
+                if 'metadata' in finding.category.lower() or 'EXIF' in finding.description:
+                    if 'metadata_anomaly' not in detected_types:
+                        detected_types.append('metadata_anomaly')
+                
+                if 'frequency' in finding.category.lower():
+                    if 'frequency_analysis' not in detected_types:
+                        detected_types.append('frequency_analysis')
         
-        # Check for multiple MEDIUM-risk findings
-        medium_risk_findings = [f for f in findings if f.risk_level == Finding.MEDIUM]
-        if len(medium_risk_findings) >= 2:
-            return True, ConfidenceLevel.HIGH  # Likely AI/manipulated (increased confidence)
-        
-        # Use risk score for verdict (adjusted thresholds)
-        if risk_score >= 0.6:  # Lowered from 0.7 - be more aggressive
-            confidence = ConfidenceLevel.HIGH if risk_score >= 0.75 else ConfidenceLevel.MEDIUM
-            return True, confidence
-        elif risk_score <= 0.35:  # Raised from 0.3 - give more benefit of doubt
-            # Check if we have positive evidence
-            positive_findings = [f for f in findings if f.risk_level == Finding.POSITIVE]
-            if len(positive_findings) >= 2:
-                return False, ConfidenceLevel.HIGH  # Definitely real
-            elif len(positive_findings) >= 1:
-                return False, ConfidenceLevel.MEDIUM  # Probably real (increased confidence)
-            else:
-                return False, ConfidenceLevel.LOW  # Probably real but weak evidence
-        else:
-            # Inconclusive
-            return None, ConfidenceLevel.NONE
+        return detected_types
     
-    def _format_evidence(self, findings: List[Finding], risk_score: float) -> str:
+    def _format_evidence(self, findings: List[Finding], authenticity_score: int) -> str:
         """Format findings into human-readable evidence string."""
         if not findings:
-            return f"No significant findings. Risk score: {risk_score:.1%}"
+            return f"No significant findings. Authenticity: {authenticity_score}/100"
         
         # Group by risk level
         by_risk = {
@@ -530,7 +540,7 @@ class ComplianceAuditDetector(BaseDetector):
         for finding in findings:
             by_risk[finding.risk_level].append(finding)
         
-        parts = [f"Compliance Audit - Risk Score: {risk_score:.1%}"]
+        parts = [f"Compliance Audit - Authenticity: {authenticity_score}/100"]
         
         if by_risk[Finding.HIGH]:
             parts.append("\n🚨 HIGH RISK:")
@@ -596,5 +606,76 @@ class ComplianceAuditDetector(BaseDetector):
                 
                 # ML model is uncertain or gave weak signal - ignore it
                 # (Don't penalize for ML uncertainty - that's expected with new AI types)
+        
+        return findings
+    
+    def _check_noise_consistency(self, forensics_data: dict) -> List[Finding]:
+        """
+        Check noise analysis results from forensics plugin.
+        
+        AI images have unnaturally LOW inconsistency (uniform synthetic noise).
+        Real photos have HIGHER inconsistency (natural sensor noise variation).
+        
+        This is the OPPOSITE of manipulation detection, where high inconsistency
+        indicates spliced/pasted regions.
+        """
+        findings = []
+        
+        noise_data = forensics_data.get('noise_analysis', {})
+        if not noise_data:
+            return findings
+        
+        inconsistency = noise_data.get('inconsistency_score')
+        mean_variance = noise_data.get('mean_variance')
+        anomaly_count = noise_data.get('anomaly_count')
+        
+        if inconsistency is not None:
+            # AI images: inconsistency < 4.0 (uniform noise)
+            if inconsistency < 3.0:
+                findings.append(Finding(
+                    risk_level=Finding.HIGH,
+                    category="Synthetic Noise Pattern",
+                    description=f"Unnaturally uniform noise (inconsistency: {inconsistency:.2f}) - typical of AI generation",
+                    score_impact=-70
+                ))
+            elif inconsistency < 4.2:
+                findings.append(Finding(
+                    risk_level=Finding.MEDIUM,
+                    category="Suspicious Noise Pattern",
+                    description=f"Low noise inconsistency ({inconsistency:.2f}) - may indicate synthetic origin",
+                    score_impact=-40
+                ))
+            # Real photos: inconsistency > 5.0 (natural sensor noise)
+            elif inconsistency > 5.5:
+                findings.append(Finding(
+                    risk_level=Finding.POSITIVE,
+                    category="Natural Noise Pattern",
+                    description=f"Natural noise variation ({inconsistency:.2f}) - consistent with real camera",
+                    score_impact=+35
+                ))
+            elif inconsistency > 4.8:
+                findings.append(Finding(
+                    risk_level=Finding.POSITIVE,
+                    category="Moderate Noise Variation",
+                    description=f"Moderate noise variation ({inconsistency:.2f}) - likely authentic",
+                    score_impact=+20
+                ))
+        
+        # Check anomaly count (real photos have more noise outliers)
+        if anomaly_count is not None:
+            if anomaly_count > 500:
+                findings.append(Finding(
+                    risk_level=Finding.POSITIVE,
+                    category="High Noise Variation",
+                    description=f"Many noise anomalies ({anomaly_count}) - typical of real sensor",
+                    score_impact=+15
+                ))
+            elif anomaly_count < 100:
+                findings.append(Finding(
+                    risk_level=Finding.LOW,
+                    category="Low Noise Variation",
+                    description=f"Few noise anomalies ({anomaly_count}) - unusually uniform",
+                    score_impact=-10
+                ))
         
         return findings

@@ -119,19 +119,26 @@ class AIDetection(BaseAnalyzerModule):
             logger.info(f"[Task {task.id}]: Running multi-layer AI detection on {task.file_name}")
             detection_result = self._detector.detect(image_path, early_stop=True)
             
-            # Extract results
+            # Extract results (handle both individual detector and audit aggregated results)
             verdict = detection_result.get('overall_verdict')
             confidence = detection_result.get('overall_confidence', 'NONE')
             score = detection_result.get('overall_score', 0.0)
+            authenticity_score = detection_result.get('authenticity_score')  # 0-100 from audit
             evidence = detection_result.get('evidence', 'No evidence')
+            detected_types = detection_result.get('detected_types', [])
             layer_results = detection_result.get('layer_results', [])
             
             # Format for SusScrofa
             results["ai_detection"]["enabled"] = detection_result.get('enabled', True)
             results["ai_detection"]["verdict"] = "AI-Generated" if verdict else "Real" if verdict is False else "Unknown"
-            results["ai_detection"]["confidence"] = confidence.lower()
+            results["ai_detection"]["confidence"] = confidence.lower() if confidence != 'AUDIT' else 'high'
             results["ai_detection"]["ai_probability"] = round(score * 100.0, 2)
             results["ai_detection"]["likely_ai"] = verdict is True
+            
+            # Add authenticity score if available (from compliance audit)
+            if authenticity_score is not None:
+                results["ai_detection"]["authenticity_score"] = authenticity_score
+                results["ai_detection"]["detected_types"] = detected_types
             
             # Add evidence
             results["ai_detection"]["evidence"] = evidence
@@ -139,16 +146,39 @@ class AIDetection(BaseAnalyzerModule):
             # Add layer-by-layer results
             results["ai_detection"]["detection_layers"] = []
             for layer in layer_results:
-                results["ai_detection"]["detection_layers"].append({
+                layer_info = {
                     'method': layer.get('method'),
-                    'verdict': "AI" if layer.get('is_ai_generated') else "Real" if layer.get('is_ai_generated') is False else "Unknown",
-                    'confidence': layer.get('confidence'),
-                    'score': layer.get('score', 0.0),
                     'evidence': layer.get('evidence', '')
-                })
+                }
+                
+                # Handle individual detector format
+                if 'is_ai_generated' in layer:
+                    layer_info['verdict'] = "AI" if layer.get('is_ai_generated') else "Real" if layer.get('is_ai_generated') is False else "Unknown"
+                    layer_info['confidence'] = layer.get('confidence')
+                    layer_info['score'] = layer.get('score', 0.0)
+                
+                # Handle compliance audit format
+                if 'authenticity_score' in layer:
+                    layer_info['authenticity_score'] = layer.get('authenticity_score')
+                    layer_info['is_fake'] = layer.get('is_fake')
+                    layer_info['detected_types'] = layer.get('detected_types', [])
+                
+                results["ai_detection"]["detection_layers"].append(layer_info)
             
             # Add interpretation
-            if confidence == 'CERTAIN':
+            if confidence == 'AUDIT':
+                # Audit-based interpretation using authenticity_score
+                if authenticity_score <= 20:
+                    interpretation = "Definitive: AI-generated or heavily manipulated"
+                elif authenticity_score <= 40:
+                    interpretation = "High confidence: Likely AI-generated or manipulated"
+                elif authenticity_score >= 80:
+                    interpretation = "High confidence: Likely authentic photograph"
+                elif authenticity_score >= 60:
+                    interpretation = "Moderate confidence: Possibly authentic"
+                else:
+                    interpretation = "Low confidence: Uncertain origin"
+            elif confidence == 'CERTAIN':
                 interpretation = "Definitive: " + ("AI-generated" if verdict else "Authentic photograph")
             elif confidence == 'HIGH':
                 interpretation = "High confidence: " + ("Likely AI-generated" if verdict else "Likely authentic")

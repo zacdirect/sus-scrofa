@@ -5,15 +5,25 @@
 """
 Confidence scoring system for aggregating detection results.
 
-NEW Architecture (2026):
-    PRIORITY 1: Compliance Audit Authenticity Score (0-100)
-    - When available, this is the PRIMARY metric displayed at top
-    - Aggregates ALL evidence: forensics + detectors
-    - 0 = definitely fake, 100 = definitely real
-    
-    PRIORITY 2: Legacy forensic methods (for context)
-    - Individual detector results shown as supporting evidence
-    - Displayed below authenticity score for transparency
+Architecture:
+    Two independent verdicts are computed:
+
+    1. AI GENERATION VERDICT
+       - Deterministic proof (metadata/filename) is treated as an override —
+         a filename like "gemini_generated_xxx.jpg" is near-certain evidence.
+       - ML model probability is the primary probabilistic signal.
+       - OpenCV corroboration can boost the probability when ML alone is low.
+       - Absence of deterministic markers is NOT evidence against AI — removing
+         metadata is trivial.
+
+    2. MANIPULATION VERDICT
+       - Weighted aggregate of forensic methods: ELA, noise, frequency,
+         OpenCV manipulation detection.
+       - Metadata absence contributes weakly (it's common in non-manipulated
+         images too).
+
+    The final verdict picks the stronger signal: if AI detection fires with
+    high confidence, that overrides the manipulation score.
 """
 
 import logging
@@ -21,7 +31,18 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def calculate_manipulation_confidence(results):
+def _collect_legacy_indicators(results, confidence, override_verdict=True):
+    """
+    Collect forensic indicators from legacy methods.
+    
+    Args:
+        results: Detection results dict
+        confidence: Confidence dict to populate
+        override_verdict: If False, only collect indicators without changing verdict
+    """
+    # ================================================================
+    # PHASE 1: Collect forensic evidence (manipulation suspicion score)
+    # ================================================================
     """
     Aggregate all detection methods into overall confidence score.
 
@@ -109,101 +130,18 @@ def calculate_manipulation_confidence(results):
                 'type': 'audit'
             })
             
-            # Still collect legacy indicators for display as supporting evidence
-            _collect_legacy_indicators(results, confidence)
+            # Still collect legacy indicators for display, but audit is primary
+            # Continue to phases 1-2 but don't override verdict
+            _collect_legacy_indicators(results, confidence, override_verdict=False)
             return confidence
 
-    # No compliance audit available - fall back to legacy logic
-    return _legacy_confidence_calculation(results, confidence)
+    # ================================================================
+    # PHASE 1: Collect forensic evidence (manipulation suspicion score)
+    # ================================================================
+    # This is a weighted aggregate of image forensic methods.
+    # It answers: "Does this image show signs of editing/tampering?"
+    # AI detection is NOT included here — it's a separate question.
 
-
-def _collect_legacy_indicators(results, confidence):
-    """Collect forensic indicators from legacy methods for display only."""
-    # Just collect indicators, don't modify verdict (audit already set it)
-    _add_forensic_indicators(results, confidence)
-    _add_ai_detection_indicators(results, confidence)
-
-
-def _legacy_confidence_calculation(results, confidence):
-    """
-    Original confidence calculation logic (fallback when no compliance audit).
-    
-    This maintains backward compatibility with existing systems that don't have
-    the compliance audit detector enabled.
-    """
-    # Add all forensic indicators and calculate scores
-    forensic_score = _add_forensic_indicators(results, confidence)
-    confidence['confidence_score'] = round(min(forensic_score * 100.0, 100.0), 1)
-    
-    # AI detection
-    ai_probability = _add_ai_detection_indicators(results, confidence)
-    confidence['ai_generated_probability'] = round(ai_probability, 1)
-    
-    # Determine final verdict based on thresholds
-    manipulation_threshold = 55.0
-    ai_threshold = 50.0
-
-    if ai_probability >= ai_threshold:
-        confidence['verdict'] = 'ai_generated'
-        confidence['manipulation_detected'] = True
-        confidence['verdict_confidence'] = round(ai_probability, 1)
-        
-        if ai_probability >= 80:
-            confidence['verdict_certainty'] = 'high'
-            confidence['verdict_label'] = 'Likely AI-Generated'
-        elif ai_probability >= 65:
-            confidence['verdict_certainty'] = 'moderate'
-            confidence['verdict_label'] = 'Possibly AI-Generated'
-        else:
-            confidence['verdict_certainty'] = 'low'
-            confidence['verdict_label'] = 'Suspected AI-Generated'
-
-    elif confidence['confidence_score'] > manipulation_threshold:
-        confidence['verdict'] = 'manipulated'
-        confidence['manipulation_detected'] = True
-        score = confidence['confidence_score']
-        distance = score - manipulation_threshold
-        max_distance = 100.0 - manipulation_threshold
-        confidence['verdict_confidence'] = round(min(distance / max_distance * 100.0, 100.0), 1)
-        
-        if confidence['verdict_confidence'] >= 80:
-            confidence['verdict_certainty'] = 'high'
-            confidence['verdict_label'] = 'Manipulation Detected'
-        elif confidence['verdict_confidence'] >= 45:
-            confidence['verdict_certainty'] = 'moderate'
-            confidence['verdict_label'] = 'Likely Manipulated'
-        else:
-            confidence['verdict_certainty'] = 'low'
-            confidence['verdict_label'] = 'Possibly Manipulated'
-
-    else:
-        confidence['verdict'] = 'authentic'
-        confidence['manipulation_detected'] = False
-        manip_distance = manipulation_threshold - confidence['confidence_score']
-        ai_distance = ai_threshold - ai_probability
-        closest_distance = min(manip_distance, ai_distance)
-        closest_threshold = manipulation_threshold if manip_distance <= ai_distance else ai_threshold
-        verdict_conf = min(closest_distance / closest_threshold * 100.0, 100.0)
-        confidence['verdict_confidence'] = round(verdict_conf, 1)
-        
-        if verdict_conf >= 80:
-            confidence['verdict_certainty'] = 'high'
-            confidence['verdict_label'] = 'Image Appears Authentic'
-        elif verdict_conf >= 45:
-            confidence['verdict_certainty'] = 'moderate'
-            confidence['verdict_label'] = 'Probably Authentic'
-        elif verdict_conf >= 15:
-            confidence['verdict_certainty'] = 'low'
-            confidence['verdict_label'] = 'Possibly Authentic'
-        else:
-            confidence['verdict_certainty'] = 'inconclusive'
-            confidence['verdict_label'] = 'Inconclusive'
-
-    return confidence
-
-
-def _add_forensic_indicators(results, confidence):
-    """Add forensic method indicators and return aggregate score."""
     forensic_score = 0.0
     forensic_weights = {
         'ela': 0.20,
@@ -213,7 +151,7 @@ def _add_forensic_indicators(results, confidence):
         'opencv': 0.40,
     }
 
-    # ELA
+    # --- ELA ---
     if 'ela' in results and 'max_difference' in results['ela']:
         ela_score = min(results['ela']['max_difference'] / 100.0, 1.0)
         if ela_score > 0.3:
@@ -226,11 +164,11 @@ def _add_forensic_indicators(results, confidence):
                 'type': 'deterministic'
             })
 
-    # Noise
+    # --- Noise ---
     if 'noise_analysis' in results:
         raw_inconsistency = results['noise_analysis'].get('inconsistency_score', 0)
         is_suspicious = results['noise_analysis'].get('suspicious', False)
-        
+
         if is_suspicious:
             noise_score = min(raw_inconsistency / 100.0, 1.0)
         elif raw_inconsistency > 2.0:
@@ -249,7 +187,7 @@ def _add_forensic_indicators(results, confidence):
                 'type': 'deterministic'
             })
 
-    # Frequency
+    # --- Frequency ---
     if 'frequency_analysis' in results:
         freq = results['frequency_analysis']
         freq_signals = []
@@ -283,7 +221,7 @@ def _add_forensic_indicators(results, confidence):
                 'type': 'deterministic'
             })
 
-    # Metadata
+    # --- Metadata (weak signal for manipulation) ---
     if 'metadata' in results:
         meta = results['metadata']
         meta_signals = []
@@ -314,7 +252,8 @@ def _add_forensic_indicators(results, confidence):
                 'type': 'deterministic'
             })
 
-    # OpenCV
+    # --- OpenCV manipulation ---
+    opencv_suspicious_count = 0
     if 'opencv_manipulation' in results and results['opencv_manipulation'].get('enabled', False):
         opencv_suspicious = results['opencv_manipulation'].get('is_suspicious', False)
         opencv_score = results['opencv_manipulation'].get('overall_confidence', 0)
@@ -328,12 +267,15 @@ def _add_forensic_indicators(results, confidence):
             if results['opencv_manipulation'].get('manipulation_detection', {}).get('is_manipulated'):
                 manip_conf = results['opencv_manipulation']['manipulation_detection']['confidence']
                 evidence_parts.append(f"Gaussian blur analysis: {manip_conf*100:.1f}%")
+                opencv_suspicious_count += 1
             if results['opencv_manipulation'].get('noise_analysis', {}).get('is_noise_inconsistent'):
                 noise_conf = results['opencv_manipulation']['noise_analysis'].get('confidence', 0)
                 evidence_parts.append(f"Noise consistency: {noise_conf*100:.1f}%")
+                opencv_suspicious_count += 1
             if results['opencv_manipulation'].get('jpeg_artifacts', {}).get('has_inconsistent_artifacts'):
                 jpeg_conf = results['opencv_manipulation']['jpeg_artifacts']['confidence']
                 evidence_parts.append(f"JPEG artifacts: {jpeg_conf*100:.1f}%")
+                opencv_suspicious_count += 1
 
             evidence = "; ".join(evidence_parts) if evidence_parts else f"Overall suspicion: {opencv_score*100:.1f}%"
             confidence['indicators'].append({
@@ -342,19 +284,27 @@ def _add_forensic_indicators(results, confidence):
                 'type': 'ai_ml'
             })
 
-    return forensic_score
+    # Store forensic manipulation score (0-100)
+    confidence['confidence_score'] = round(min(forensic_score * 100.0, 100.0), 1)
 
+    # ================================================================
+    # PHASE 2: AI Generation Detection (separate from manipulation)
+    # ================================================================
+    # This answers: "Was this image created by an AI generator?"
+    # Deterministic proof (metadata/filename) is an OVERRIDE, not a weight.
+    # ML model is the primary probabilistic signal.
+    # OpenCV can corroborate but not override.
 
-def _add_ai_detection_indicators(results, confidence):
-    """Add AI detection indicators and return AI probability."""
     ai_probability = 0.0
-    
+    ai_deterministic_proof = False
+    ai_detection_confidence = 'unknown'
+
     if 'ai_detection' in results and results['ai_detection'].get('enabled', False):
         ai_det = results['ai_detection']
-        ai_pct = ai_det.get('ai_probability', 0)
+        ai_pct = ai_det.get('ai_probability', 0)  # 0-100
         ai_detection_confidence = ai_det.get('confidence', 'unknown')
 
-        # Check for deterministic proof
+        # Check if we have deterministic proof (metadata/filename match)
         has_deterministic_layer = False
         if ai_det.get('detection_layers'):
             for layer in ai_det['detection_layers']:
@@ -364,10 +314,16 @@ def _add_ai_detection_indicators(results, confidence):
                     break
 
         if has_deterministic_layer and ai_det.get('likely_ai', False):
-            ai_probability = max(ai_pct, 95.0)
+            # Deterministic proof of AI generation.
+            # This is near-certain — filename/metadata containing generator
+            # names is planted by the tool itself. Confidence is high.
+            ai_deterministic_proof = True
+            ai_probability = max(ai_pct, 95.0)  # Floor at 95%
         else:
+            # Probabilistic only — use ML model output directly
             ai_probability = ai_pct
 
+        # Record indicator
         if ai_probability > 20:
             detection_method = "Unknown"
             if ai_det.get('detection_layers'):
@@ -382,4 +338,111 @@ def _add_ai_detection_indicators(results, confidence):
                 'type': 'ai_ml'
             })
 
-    return ai_probability
+    # OpenCV corroboration boost (only when ML model alone is uncertain)
+    if opencv_suspicious_count >= 2 and ai_probability < 50.0:
+        flagged_confs = []
+        ocv = results.get('opencv_manipulation', {})
+        if ocv.get('manipulation_detection', {}).get('is_manipulated'):
+            flagged_confs.append(ocv['manipulation_detection']['confidence'])
+        if ocv.get('noise_analysis', {}).get('is_noise_inconsistent'):
+            flagged_confs.append(ocv['noise_analysis'].get('confidence', 0))
+        if ocv.get('jpeg_artifacts', {}).get('has_inconsistent_artifacts'):
+            flagged_confs.append(ocv['jpeg_artifacts']['confidence'])
+
+        if flagged_confs:
+            avg_conf = sum(flagged_confs) / len(flagged_confs)
+            method_ratio = opencv_suspicious_count / 3.0
+            opencv_ai_boost = avg_conf * method_ratio * 40.0
+            ai_probability = max(ai_probability, round(opencv_ai_boost, 1))
+
+    confidence['ai_generated_probability'] = round(ai_probability, 1)
+
+    # ================================================================
+    # PHASE 3: Final verdict — pick the strongest signal
+    # ================================================================
+    # Three possible verdicts:
+    #   'ai_generated'  — AI detector fired with confidence
+    #   'manipulated'   — forensic score above threshold
+    #   'authentic'     — nothing significant found
+    #
+    # AI detection overrides the forensic score when confident, because
+    # "this is AI-generated" is a more specific and actionable finding
+    # than "this shows signs of manipulation."
+
+    manipulation_threshold = 55.0
+    ai_threshold = 50.0
+
+    if ai_probability >= ai_threshold:
+        # --- AI Generated verdict ---
+        confidence['verdict'] = 'ai_generated'
+        confidence['manipulation_detected'] = True  # legacy compat
+
+        if ai_deterministic_proof:
+            # Deterministic proof — very high certainty
+            confidence['verdict_confidence'] = min(ai_probability, 99.0)
+            confidence['verdict_certainty'] = 'high'
+            confidence['verdict_label'] = 'AI-Generated Image'
+        elif ai_probability >= 80:
+            confidence['verdict_confidence'] = round(ai_probability, 1)
+            confidence['verdict_certainty'] = 'high'
+            confidence['verdict_label'] = 'Likely AI-Generated'
+        elif ai_probability >= 65:
+            confidence['verdict_confidence'] = round(ai_probability, 1)
+            confidence['verdict_certainty'] = 'moderate'
+            confidence['verdict_label'] = 'Possibly AI-Generated'
+        else:
+            confidence['verdict_confidence'] = round(ai_probability, 1)
+            confidence['verdict_certainty'] = 'low'
+            confidence['verdict_label'] = 'Suspected AI-Generated'
+
+    elif confidence['confidence_score'] > manipulation_threshold:
+        # --- Manipulation verdict ---
+        confidence['verdict'] = 'manipulated'
+        confidence['manipulation_detected'] = True
+
+        score = confidence['confidence_score']
+        distance = score - manipulation_threshold
+        max_distance = 100.0 - manipulation_threshold
+        confidence['verdict_confidence'] = round(min(distance / max_distance * 100.0, 100.0), 1)
+
+        if confidence['verdict_confidence'] >= 80:
+            confidence['verdict_certainty'] = 'high'
+            confidence['verdict_label'] = 'Manipulation Detected'
+        elif confidence['verdict_confidence'] >= 45:
+            confidence['verdict_certainty'] = 'moderate'
+            confidence['verdict_label'] = 'Likely Manipulated'
+        else:
+            confidence['verdict_certainty'] = 'low'
+            confidence['verdict_label'] = 'Possibly Manipulated'
+
+    else:
+        # --- Authentic verdict ---
+        confidence['verdict'] = 'authentic'
+        confidence['manipulation_detected'] = False
+
+        # Certainty is based on how far we are from both thresholds.
+        # Take the closer threat (manipulation or AI) and measure distance.
+        manip_distance = manipulation_threshold - confidence['confidence_score']
+        ai_distance = ai_threshold - ai_probability
+
+        # Use the closer threat to determine certainty
+        closest_distance = min(manip_distance, ai_distance)
+        closest_threshold = manipulation_threshold if manip_distance <= ai_distance else ai_threshold
+
+        verdict_conf = min(closest_distance / closest_threshold * 100.0, 100.0)
+        confidence['verdict_confidence'] = round(verdict_conf, 1)
+
+        if verdict_conf >= 80:
+            confidence['verdict_certainty'] = 'high'
+            confidence['verdict_label'] = 'Image Appears Authentic'
+        elif verdict_conf >= 45:
+            confidence['verdict_certainty'] = 'moderate'
+            confidence['verdict_label'] = 'Probably Authentic'
+        elif verdict_conf >= 15:
+            confidence['verdict_certainty'] = 'low'
+            confidence['verdict_label'] = 'Possibly Authentic'
+        else:
+            confidence['verdict_certainty'] = 'inconclusive'
+            confidence['verdict_label'] = 'Inconclusive'
+
+    return confidence
