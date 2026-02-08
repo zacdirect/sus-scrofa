@@ -1,0 +1,18 @@
+# Photoholmes forgery detection dependencies
+# Install via: make photoholmes-setup
+# These are OPTIONAL — SusScrofa works without them, but with reduced
+# forgery detection capability.
+
+# PyTorch — photoholmes requires torch >= 2.1
+# For CPU-only (smaller download, sufficient for DQ/ZERO/Noisesniffer):
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+# For GPU (CUDA) support:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+torch>=2.1.0
+torchvision>=0.16.0
+
+# JPEG DCT coefficient extraction (required for DQ method)
+jpegio>=0.4.0
+
+# Photoholmes library (installed from local clone)
+# -e ./temp/photoholmes

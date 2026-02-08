@@ -7,6 +7,25 @@ from django import forms
 
 from hashes.models import List
 
+# Validation patterns for each hash type
+# Format: (regex_pattern, expected_description)
+HASH_PATTERNS = {
+    "md5":    (r"^([a-fA-F\d]{32})$",  "MD5 hash format: [a-fA-F\\d]{32}"),
+    "crc32":  (r"^([a-fA-F\d]{8})$",   "CRC32 hash format: [a-fA-F\\d]{8}"),
+    "sha1":   (r"^([a-fA-F\d]{40})$",  "SHA1 hash format: [a-fA-F\\d]{40}"),
+    "sha224": (r"^([a-fA-F\d]{56})$",  "SHA224 hash format: [a-fA-F\\d]{56}"),
+    "sha256": (r"^([a-fA-F\d]{64})$",  "SHA256 hash format: [a-fA-F\\d]{64}"),
+    "sha384": (r"^([a-fA-F\d]{96})$",  "SHA384 hash format: [a-fA-F\\d]{96}"),
+    "sha512": (r"^([a-fA-F\d]{128})$", "SHA512 hash format: [a-fA-F\\d]{128}"),
+    # Perceptual hashes: hex string, length depends on hash_size (default 8 = 16 hex chars)
+    # We accept 8-64 hex chars to accommodate different hash sizes
+    "a_hash": (r"^([a-fA-F\d]{8,64})$", "Average Hash: 8-64 hex characters"),
+    "p_hash": (r"^([a-fA-F\d]{8,64})$", "Perceptual Hash: 8-64 hex characters"),
+    "d_hash": (r"^([a-fA-F\d]{8,64})$", "Difference Hash: 8-64 hex characters"),
+    "w_hash": (r"^([a-fA-F\d]{8,64})$", "Wavelet Hash: 8-64 hex characters"),
+}
+
+
 class ListForm(forms.ModelForm):
     """Hash list form."""
     hash_list = forms.FileField(required=True)
@@ -19,6 +38,12 @@ class ListForm(forms.ModelForm):
     def clean_hash_list(self):
         file = self.cleaned_data["hash_list"]
         cipher = self.cleaned_data["cipher"].lower()
+
+        pattern_info = HASH_PATTERNS.get(cipher)
+        if not pattern_info:
+            raise forms.ValidationError(f"Unknown hash cipher type: {cipher}")
+
+        regex, description = pattern_info
 
         # Checks file for validation line by line.
         for row in file.readlines():
@@ -35,33 +60,10 @@ class ListForm(forms.ModelForm):
             # Skip empty lines.
             if len(row) == 0:
                 continue
-            # MD5.
-            if cipher == "md5":
-                if not re.match(r"^([a-fA-F\d]{32})$", row):
-                    raise forms.ValidationError("Uploaded file does not met MD5 hash format: [a-fA-F\\d]{32}")
-            # CRC32
-            elif cipher == "crc32":
-                if not re.match(r"^([a-fA-F\d]{8})$", row):
-                    raise forms.ValidationError("Uploaded file does not met CRC32 hash format: [a-fA-F\\d]{8}")
-            # SHA1.
-            elif cipher == "sha1":
-                if not re.match(r"^([a-fA-F\d]{40})$", row):
-                    raise forms.ValidationError("Uploaded file does not met SHA1 hash format: [a-fA-F\\d]{40}")
-            # SHA224.
-            elif cipher == "sha224":
-                if not re.match(r"^([a-fA-F\d]{56})$", row):
-                    raise forms.ValidationError("Uploaded file does not met SHA224 hash format: [a-fA-F\\d]{56}")
-            # SHA384.
-            elif cipher == "sha384":
-                if not re.match(r"^([a-fA-F\d]{96})$", row):
-                    raise forms.ValidationError("Uploaded file does not met SHA386 hash format: [a-fA-F\\d]{96}")
-            # SHA256.
-            elif cipher == "sha256":
-                if not re.match(r"^([a-fA-F\d]{64})$", row):
-                    raise forms.ValidationError("Uploaded file does not met SHA256 hash format: [a-fA-F\\d]{64}")
-            # SHA512.
-            elif cipher == "sha512":
-                if not re.match(r"^([a-fA-F\d]{128})$", row):
-                    raise forms.ValidationError("Uploaded file does not met SHA512 hash format: [a-fA-F\\d]{128}")
+            # Validate against the pattern for this cipher type.
+            if not re.match(regex, row):
+                raise forms.ValidationError(
+                    f"Uploaded file does not meet {description}"
+                )
 
         return file

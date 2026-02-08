@@ -24,3 +24,8 @@ imagehash>=4.3.0
 # SPAI installation: see AI_DETECTION_SETUP.md for complete instructions
 # Model weights (~100MB) must be downloaded separately
 # Optional but highly recommended for AI-generated image detection
+
+# Photoholmes image forgery detection (optional, requires torch)
+# Install via: make photoholmes-setup
+# Methods include DQ, ZERO, Noisesniffer (CPU), plus GPU methods
+# See MODERNIZATION.md for full details

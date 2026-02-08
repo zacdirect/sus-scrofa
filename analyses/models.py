@@ -3,16 +3,20 @@
 # See the file 'docs/LICENSE.txt' for license terms.
 
 import json
+import os
 import gridfs
 
 from bson.objectid import ObjectId
 from django.db import models
 from django.conf import settings
-from django.db.models.signals import pre_delete
+from django.db.models.signals import pre_delete, post_save
 from django.dispatch import receiver
 
 from users.models import Profile
-from lib.db import get_file, get_file_length, get_db, get_fs
+from lib.db import get_file, get_file_length, get_db, get_fs, save_file
+from lib.utils import create_thumb, get_content_type_from_file
+from sus_scrofa.common import check_allowed_content
+from lib.exceptions import GhiroValidationException
 
 # Lazy load DB and FS when needed
 # db = mongo_connect()
@@ -36,6 +40,39 @@ class Case(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+
+    def is_owner(self, user):
+        """Checks if a user is the owner of this object.
+        @param user: user instance
+        @return: boolean permission
+        """
+        return user == self.owner
+
+    def is_in_users(self, user):
+        """Checks if a user is in the allowed user list for this object.
+        @param user: user instance
+        @return: boolean permission
+        """
+        return user in self.users.all()
+
+    def can_read(self, user):
+        """Checks if a user is allowed to read this object.
+        @param user: user instance
+        @return: boolean permission
+        """
+        return user.is_superuser or self.is_in_users(user) or self.is_owner(user)
+
+    def can_write(self, user):
+        """Checks if a user is allowed to write (create, edit, delete) this object.
+        @param user: user instance
+        @return: boolean permission
+        """
+        return user.is_superuser or self.is_in_users(user) or self.is_owner(user)
+
+    @property
+    def directory_name(self):
+        """Returns directory name used in auto upload."""
+        return "Case_id_%s" % self.id
 
     def save(self, *args, **kwargs):
         self.name = self.name.strip()
@@ -65,6 +102,27 @@ class Analysis(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+
+    def is_owner(self, user):
+        """Checks if a user is the owner of this object.
+        @param user: user instance
+        @return: boolean permission
+        """
+        return user == self.owner
+
+    def can_read(self, user):
+        """Checks if a user is allowed to read this object.
+        @param user: user instance
+        @return: boolean permission
+        """
+        return user.is_superuser or self.is_owner(user)
+
+    def can_write(self, user):
+        """Checks if a user is allowed to write (create, edit, delete) this object.
+        @param user: user instance
+        @return: boolean permission
+        """
+        return user.is_superuser or self.is_owner(user)
 
     @property
     def latitude(self):
@@ -124,6 +182,54 @@ class Analysis(models.Model):
             return json.dumps(data, sort_keys=False, indent=4)
         else:
             return json.dumps({})
+
+    @staticmethod
+    def add_task(file_path, file_name=None, case=None, user=None, content_type=None, image_id=None, thumb_id=None):
+        """Adds a new task to database.
+        @param file_path: file path
+        @param file_name: file name
+        @param case: case id
+        @param user: user id
+        @param content_type: file content type
+        @param image_id: original image gridfs id
+        @param thumb_id: thumbnail gridfs id
+        """
+        assert isinstance(file_path, str)
+
+        # File name.
+        if not file_name:
+            file_name = os.path.basename(file_path)
+
+        # File type check.
+        if not content_type:
+            content_type = get_content_type_from_file(file_path)
+
+        # If image is not already stored on gridfs.
+        if not image_id:
+            image_id = save_file(file_path=file_path, content_type=content_type)
+
+        # If image thumbnail is available.
+        if not thumb_id:
+            thumb_id = create_thumb(file_path)
+
+        # Check on allowed file type.
+        if not check_allowed_content(content_type):
+            raise GhiroValidationException("Skipping %s: file type not allowed." % file_name)
+        else:
+            # Add to analysis queue.
+            return Analysis.objects.create(owner=user, case=case, file_name=file_name,
+                                           image_id=image_id, thumb_id=thumb_id)
+
+@receiver(post_save, sender=Case)
+def auto_upload_sync(sender, instance, **kwargs):
+    """When a new case is created syncs file system auto upload directories."""
+    if settings.AUTO_UPLOAD_DIR:
+        dir_path = os.path.join(settings.AUTO_UPLOAD_DIR, instance.directory_name)
+        if not os.path.exists(dir_path):
+            try:
+                os.mkdir(dir_path)
+            except (IOError, OSError):
+                pass
 
 @receiver(pre_delete, sender=Analysis)
 def delete_mongo_analysis(sender, instance, **kwargs):

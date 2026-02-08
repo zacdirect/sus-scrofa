@@ -2,17 +2,15 @@
 # This file is part of SusScrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
-from django.core.management.base import NoArgsCommand
+from django.core.management.base import BaseCommand
 
 from users.models import Activity
 
 
-class Command(NoArgsCommand):
+class Command(BaseCommand):
     """Purge auditing table."""
 
     help = "Purge auditing table"
-
-    option_list = NoArgsCommand.option_list
 
     def handle(self, *args, **options):
         """Runs command."""
@@ -20,11 +18,11 @@ class Command(NoArgsCommand):
         print("Audit log purge")
         print("WARNING: this will permanently delete all your audit logs!")
 
-        ans = raw_input("Do you want to continue? [y/n]")
+        ans = input("Do you want to continue? [y/n] ")
 
         if ans.strip().lower() == "y":
             print("Purging audit log... (it could take several minutes)")
-            Auditing.objects.all().delete()
+            Activity.objects.all().delete()
             print("Done.")
         else:
             print("Please use only y/n")

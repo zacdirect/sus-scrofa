@@ -222,7 +222,7 @@ class ComplianceAuditTestCase(unittest.TestCase):
         """Test that ML model AI detection creates HIGH risk finding."""
         previous_results = [
             {
-                'method': 'SPAI_ML_Model',
+                'method': 'ml_model',
                 'is_ai_generated': True,
                 'score': 0.85,
                 'confidence': 'HIGH'
@@ -239,7 +239,7 @@ class ComplianceAuditTestCase(unittest.TestCase):
         """Test that ML model authentic verdict gives small positive boost."""
         previous_results = [
             {
-                'method': 'SPAI_ML_Model',
+                'method': 'ml_model',
                 'is_ai_generated': False,
                 'score': 0.15,
                 'confidence': 'HIGH'

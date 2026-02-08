@@ -1,4 +1,4 @@
-.PHONY: help start stop status logs clean mongodb web processor dev run setup install check-deps venv reset-db fresh ai-setup ai-verify ai-clean
+.PHONY: help start stop status logs clean mongodb web processor dev run setup install check-deps venv reset-db fresh ai-setup ai-verify ai-clean photoholmes-setup photoholmes-verify photoholmes-clean
 
 # Colors for output
 RED := \033[0;31m
@@ -32,6 +32,11 @@ help:
 	@echo "  make ai-setup    - Setup AI detection (SPAI + HuggingFace models)"
 	@echo "  make ai-verify   - Verify AI detection installation"
 	@echo "  make ai-clean    - Remove AI detection environment"
+	@echo ""
+	@echo "$(YELLOW)Photoholmes Forgery Detection (Optional):$(NC)"
+	@echo "  make photoholmes-setup    - Install photoholmes + torch (CPU) + jpegio"
+	@echo "  make photoholmes-verify   - Verify photoholmes installation"
+	@echo "  make photoholmes-clean    - Remove photoholmes from environment"
 	@echo ""
 	@echo "$(YELLOW)OpenCV Service (Container):$(NC)"
 	@echo "  make opencv-build   - Build OpenCV service container"
@@ -304,6 +309,50 @@ ai-clean:
 	@echo "$(YELLOW)Cleaning AI detection module...$(NC)"
 	@cd ai_detection && $(MAKE) clean
 	@echo "$(GREEN)✓ AI detection cleaned$(NC)"
+
+# Photoholmes Forgery Detection
+photoholmes-setup:
+	@echo "$(GREEN)Setting up photoholmes forgery detection...$(NC)"
+	@echo ""
+	@echo "Installing PyTorch (CPU-only)..."
+	$(PIP) install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+	@echo ""
+	@echo "Installing jpegio (JPEG DCT extraction)..."
+	$(PIP) install jpegio>=0.4.0
+	@echo ""
+	@echo "Installing photoholmes from local clone..."
+	$(PIP) install -e ./temp/photoholmes
+	@echo ""
+	@echo "$(GREEN)========================================$(NC)"
+	@echo "$(GREEN)✓ Photoholmes ready!$(NC)"
+	@echo "$(GREEN)========================================$(NC)"
+	@echo ""
+	@echo "CPU methods available: DQ, ZERO, Noisesniffer"
+	@echo "GPU methods: set SUSSCROFA_PHOTOHOLMES_GPU=1 and download weights"
+	@echo ""
+	@echo "Verify installation:"
+	@echo "  make photoholmes-verify"
+
+photoholmes-verify:
+	@echo "$(GREEN)Verifying photoholmes installation...$(NC)"
+	@$(PYTHON) -c "from photoholmes.methods.factory import MethodFactory; print('✓ photoholmes library OK')" 2>/dev/null || echo "$(RED)✗ photoholmes not installed$(NC)"
+	@$(PYTHON) -c "import torch; print(f'✓ PyTorch {torch.__version__} (CUDA: {torch.cuda.is_available()})')" 2>/dev/null || echo "$(RED)✗ PyTorch not installed$(NC)"
+	@$(PYTHON) -c "import jpegio; print('✓ jpegio OK')" 2>/dev/null || echo "$(RED)✗ jpegio not installed$(NC)"
+	@$(PYTHON) -c "
+from photoholmes.methods.factory import MethodFactory
+for m in ['dq', 'zero', 'noisesniffer']:
+    try:
+        method, pp = MethodFactory.load(m)
+        print(f'  ✓ {m}: loaded')
+    except Exception as e:
+        print(f'  ✗ {m}: {e}')
+" 2>/dev/null || echo "$(RED)Method loading failed$(NC)"
+
+photoholmes-clean:
+	@echo "$(YELLOW)Removing photoholmes...$(NC)"
+	$(PIP) uninstall -y photoholmes 2>/dev/null || true
+	@echo "$(GREEN)✓ Photoholmes removed$(NC)"
+	@echo "$(YELLOW)Note: torch/torchvision left installed (may be used by other modules)$(NC)"
 
 # OpenCV Service (Container-based)
 opencv-build:

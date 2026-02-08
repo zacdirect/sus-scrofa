@@ -3,13 +3,13 @@
 # See the file 'docs/LICENSE.txt' for license terms.
 
 from io import BytesIO, StringIO
+import magic
 import tempfile
 import logging
 import logging.handlers
 
 from PIL import Image
 
-from analyses.models import AnalysisMetadataDescription
 from lib.db import save_file, get_file
 
 
@@ -111,6 +111,9 @@ def add_metadata_description(key, description):
     @param key: fully qualified metadata key
     @param description: key description
     """
+    # Lazy import to avoid circular dependency (analyses.models -> lib.utils -> analyses.models)
+    from analyses.models import AnalysisMetadataDescription
+
     # Skip if no description is provided.
     if description:
         try:
@@ -216,3 +219,11 @@ def deps_check():
         dep["available"] = import_is_available(dep["module"])
 
     return deps
+
+def get_content_type_from_file(file_path):
+    """Returns content type of a file.
+    @param file_path: file path
+    @return: content type
+    """
+    mime = magic.Magic(mime=True)
+    return mime.from_file(file_path)

@@ -38,19 +38,13 @@ ALLOWED_EXT = ['image/bmp', 'image/x-canon-cr2', 'image/jpeg', 'image/png',
                'application/postscript', 'image/gif', 'image/x-minolta-mrw',
                'image/x-olympus-orf', 'image/x-photoshop', 'image/x-fuji-raf',
                'image/x-panasonic-raw2', 'image/x-tga', 'image/tiff', 'image/pjpeg',
-               'image/x-x3f', 'image/x-portable-pixmap',
-               # Modern image formats
-               'image/webp', 'image/heif', 'image/heic', 'image/avif',
-               'image/heif-sequence', 'image/heic-sequence']
+               'image/x-x3f', 'image/x-portable-pixmap']
 
-# Auto upload from directory.
-# Set a directory path to enable auto upload from file system.
-# Set to None to disable.
+# Auto upload settings.
+# Set this to a directory path to enable automatic image upload monitoring.
 AUTO_UPLOAD_DIR = None
-# Delete a file after upload and submission.
+# Delete original files after auto upload processing.
 AUTO_UPLOAD_DEL_ORIGINAL = True
-# Clean up AUTO_UPLOAD_DIR on startup.
-AUTO_UPLOAD_STARTUP_CLEANUP = True
 
 # Override default secret key stored in secret_key.py
 # Make this unique, and don't share it with anybody.
