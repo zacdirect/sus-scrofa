@@ -241,3 +241,78 @@ Engine Orchestrator
             ├─ SDXLDetector
             └─ SPAIDetector
 ```
+
+# Phase 1c — Research Tier: Image Content Analysis (February 2026)
+
+### Overview
+
+Phase 1c introduces a **Research Tier** — a third plugin tier running after the
+AI/ML phase.  Research plugins perform content-level analysis (object detection,
+person attributes, photorealism classification) using deep-learning models.
+Their findings are intentionally segregated from the main forensic report; they
+populate a **dedicated Research Findings page** with annotated debug images
+and structured person-attribute data for the forensic researcher.
+
+### Architecture
+
+```
+Processing Pipeline:
+
+  Phase 1a  Static plugins       (metadata, hashes, ELA, noise, signatures)
+       ↓
+  ── Auditor checkpoint ──       if image is already clearly fake → skip 1b
+       ↓
+  Phase 1b  AI/ML plugins        (SDXL, SPAI, OpenCV manipulation, photoholmes)
+       ↓
+  ── Research gate ──            if image is likely NOT genuine → skip 1c
+       ↓
+  Phase 1c  Research plugins     (content analysis, person attributes)
+       ↓
+  Phase 2   Engine post-proc     (compliance auditor + confidence scoring)
+```
+
+Phase 1c is **gated by a confidence threshold** (`RESEARCH_CONFIDENCE_THRESHOLD`,
+default 40).  After Phases 1a and 1b, the engine runs a preliminary audit.  If
+the authenticity score falls **below** the threshold the image is likely fake and
+research analysis is skipped — there is no point cataloguing person attributes
+on a fabricated image.  Research runs only when the evidence so far suggests the
+image is genuine (or still uncertain).
+
+This mirrors the AI/ML gate in `should_skip_ai_ml()` but inverts the logic:
+AI/ML is skipped when the image is **already clearly fake**; research is skipped
+when the image is **already clearly not genuine**.
+
+### Storage Model
+
+Research results are stored alongside the main analysis in MongoDB, under the
+key `content_analysis`.  Annotation images (annotated overlays with bounding
+boxes, keypoints, and zone highlights) are stored in **MongoDB GridFS** —
+there is no filesystem fallback.  The GridFS UUID is recorded at
+`content_analysis.annotation_gridfs_id` for retrieval.
+
+### Detection Models
+
+| Model | Purpose | Source |
+|-------|---------|--------|
+| FasterRCNN_ResNet50_FPN_V2 | COCO 91-class object detection | torchvision |
+| KeypointRCNN_ResNet50_FPN | 17-point body keypoints per person | torchvision |
+| YuNet (ONNX) | 5-landmark face detection | OpenCV contrib, auto-downloaded |
+
+### Person Attribute Pipeline
+
+```
+Per detected person (KeypointRCNN):
+  ├── Distance gate: person_h >= 120px?
+  │     no  → skip hair + piercings (person too distant)
+  │     yes ↓
+  ├── Hair color   (keypoint-guided head crop → dominant HSV cluster)
+  ├── Piercings    (YuNet face only — no body-keypoint fallback)
+  │     ├── YuNet face matched? → 6 zone checks (nose, lip, ears, eyebrow, bridge)
+  │     └── No face match → skip (note: no_yunet_face_match)
+  └── Tattoos      (limb-strip skin analysis, runs at any person size)
+```
+
+Piercings are **YuNet-only** — if YuNet does not detect a face for a person,
+piercing analysis is cleanly skipped rather than falling back to imprecise
+body-keypoint-derived face geometry.  This eliminates false positives from
+distant or occluded subjects.

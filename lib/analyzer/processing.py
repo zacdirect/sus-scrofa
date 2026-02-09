@@ -10,7 +10,8 @@ from django.utils.timezone import now
 from django.conf import settings
 
 from lib.analyzer.orchestrator import (
-    discover_plugins, check_deps, should_skip_ai_ml, run_plugins,
+    discover_plugins, check_deps, should_skip_ai_ml, should_skip_research,
+    run_plugins,
 )
 from lib.analyzer.auditor import audit
 from lib.forensics.confidence import calculate_manipulation_confidence
@@ -23,11 +24,13 @@ logger = logging.getLogger(__name__)
 class AnalysisRunner(Process):
     """Run an analysis process."""
 
-    def __init__(self, tasks, static_plugins=None, ai_ml_plugins=None):
+    def __init__(self, tasks, static_plugins=None, ai_ml_plugins=None,
+                 research_plugins=None):
         Process.__init__(self)
         self.tasks = tasks
         self.static_plugins = static_plugins or []
         self.ai_ml_plugins = ai_ml_plugins or []
+        self.research_plugins = research_plugins or []
         logger.debug("AnalysisRunner started")
 
     def run(self):
@@ -42,7 +45,7 @@ class AnalysisRunner(Process):
     def _process_image(self, task):
         """Process an image.
 
-        Three-phase architecture:
+        Four-phase architecture:
 
           Phase 1a — Static plugins:
                      Fast, deterministic analysers (metadata, hashes,
@@ -56,6 +59,14 @@ class AnalysisRunner(Process):
                      Heavier detectors (SDXL, SPAI, OpenCV manipulation,
                      photoholmes, …).  Only run when Phase 1a didn't
                      already produce a clear verdict.
+
+          Phase 1c — Research plugins:
+                     Content analysis, object detection, person
+                     attributes.  Gated by confidence threshold —
+                     only runs when the image appears genuine or
+                     uncertain.  Minimal auditor impact (LOW only).
+                     Results populate a dedicated research page,
+                     not the main analysis report.
 
           Phase 2  — Engine post-processing (NOT plugins):
                      a) Compliance Auditor → results['audit']
@@ -80,6 +91,28 @@ class AnalysisRunner(Process):
             else:
                 # ── Phase 1b: AI/ML plugins ───────────────────────
                 run_plugins(self.ai_ml_plugins, results, task)
+
+            # ── Research gate ─────────────────────────────────────
+            # Only run research plugins when the image is likely
+            # genuine (authenticity score >= threshold).  There is no
+            # forensic value in cataloguing person attributes on a
+            # fabricated image.
+            skipped_research = False
+            if self.research_plugins:
+                if should_skip_research(results):
+                    skipped_research = True
+                    results.setdefault("_engine", {})
+                    results["_engine"]["research_skipped"] = True
+                    results["_engine"]["research_skip_reason"] = (
+                        "image likely not genuine (below confidence threshold)")
+                    results["content_analysis"] = {
+                        "enabled": False,
+                        "reason": "Skipped: image likely not genuine",
+                    }
+                    logger.info("Task %s: Research tier skipped (image not genuine)", task.id)
+                else:
+                    # ── Phase 1c: Research plugins ────────────────
+                    run_plugins(self.research_plugins, results, task)
 
             # ── Phase 2: Engine post-processing ───────────────────
             try:
@@ -122,11 +155,13 @@ class AnalysisManager():
     def __init__(self):
         logger.debug("Using pool on %i core" % self.get_parallelism())
         # Discover and validate plugins via engine orchestrator.
-        static_raw, ai_ml_raw = discover_plugins()
+        static_raw, ai_ml_raw, research_raw = discover_plugins()
         self.static_plugins = check_deps(static_raw)
         self.ai_ml_plugins = check_deps(ai_ml_raw)
-        logger.info("Loaded %d static plugins, %d AI/ML plugins",
-                     len(self.static_plugins), len(self.ai_ml_plugins))
+        self.research_plugins = check_deps(research_raw)
+        logger.info("Loaded %d static plugins, %d AI/ML plugins, %d research plugins",
+                     len(self.static_plugins), len(self.ai_ml_plugins),
+                     len(self.research_plugins))
         # Starting worker pool.
         self.workers = []
         self.tasks = JoinableQueue(self.get_parallelism())
@@ -135,7 +170,8 @@ class AnalysisManager():
     def workers_start(self):
         """Start workers pool."""
         for _ in range(self.get_parallelism()):
-            runner = AnalysisRunner(self.tasks, self.static_plugins, self.ai_ml_plugins)
+            runner = AnalysisRunner(self.tasks, self.static_plugins,
+                                    self.ai_ml_plugins, self.research_plugins)
             runner.start()
             self.workers.append(runner)
 

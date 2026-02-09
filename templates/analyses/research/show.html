@@ -1,0 +1,328 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="span11">
+    <div class="content content-large">
+        <div class="content-header">
+            <h2><i class="icon-beaker"></i> Research Findings<small></small></h2>
+        </div>
+        <div class="content-breadcrumb">
+            <ul class="breadcrumb">
+                <li>
+                    <a href="/"><i class="icon-home"></i> Dashboard</a><span class="divider">&rsaquo;</span>
+                </li>
+                <li>
+                    <a href="{% url "list_cases" %}"><i class="icon-briefcase"></i> Cases</a><span class="divider">&rsaquo;</span>
+                </li>
+                <li>
+                    <a href="{% url "show_case" analysis.case.id "list" %}"><i class="icon-book"></i>
+                        {% if analysis.case.name|length > 70 %}
+                            {{ analysis.case.name|slice:":70" }} …
+                        {% else %}
+                            {{ analysis.case.name }}
+                        {% endif %}
+                    </a><span class="divider">&rsaquo;</span>
+                </li>
+                <li>
+                    <a href="{% url "show_analysis" analysis.id %}"><i class="icon-file-text-alt"></i> Report</a><span class="divider">&rsaquo;</span>
+                </li>
+                <li class="active">
+                    Research Findings
+                </li>
+            </ul>
+        </div>
+        <div class="content-body">
+            <div class="container-fluid">
+
+                {# ======== Back link ======== #}
+                <div class="row-fluid" style="margin-bottom: 15px;">
+                    <a href="{% url "show_analysis" analysis.id %}" class="btn"><i class="icon-arrow-left"></i> Back to Report</a>
+                </div>
+
+                {# ======== SECTION 1: Photorealism ======== #}
+                {% if content.photorealism %}
+                <div class="row-fluid">
+                    <div class="span12">
+                        <div class="box">
+                            <div class="wdgt-header">
+                                <i class="icon-camera"></i> Photorealism Classification
+                            </div>
+                            <div class="wdgt-body">
+                                {% with photo=content.photorealism %}
+                                <div class="row-fluid">
+                                    <div class="span6">
+                                        <table class="table table-condensed">
+                                            <tr>
+                                                <td><strong>Classification</strong></td>
+                                                <td>
+                                                    {% if photo.is_photorealistic %}
+                                                        <span class="label label-success">Photorealistic</span>
+                                                    {% else %}
+                                                        <span class="label label-warning">Non-Photorealistic</span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Composite Score</strong></td>
+                                                <td>{{ photo.composite_score }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Confidence</strong></td>
+                                                <td>{{ photo.confidence }}</td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                    <div class="span6">
+                                        {% if photo.signals %}
+                                        <h5>Signal Breakdown</h5>
+                                        <table class="table table-condensed table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>Signal</th>
+                                                    <th>Value</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for key, val in photo.signals.items %}
+                                                <tr>
+                                                    <td>{{ key }}</td>
+                                                    <td>{{ val }}</td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endwith %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {# ======== SECTION 2: Object Detection ======== #}
+                {% if content.objects %}
+                <div class="row-fluid">
+                    <div class="span12">
+                        <div class="box">
+                            <div class="wdgt-header">
+                                <i class="icon-eye-open"></i> Object Detection
+                                {% if content.objects.total_detections %}
+                                    <span class="label label-info" style="margin-left: 5px;">{{ content.objects.total_detections }} detected</span>
+                                {% endif %}
+                            </div>
+                            <div class="wdgt-body">
+                                {% if content.objects.class_counts %}
+                                <table class="table table-condensed table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Object Class</th>
+                                            <th>Count</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for cls, count in content.objects.class_counts.items %}
+                                        <tr>
+                                            <td>{{ cls }}</td>
+                                            <td><span class="badge badge-info">{{ count }}</span></td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                                {% else %}
+                                <p class="muted">No objects detected.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {# ======== SECTION 3: Person Analysis ======== #}
+                {% if content.persons %}
+                <div class="row-fluid">
+                    <div class="span12">
+                        <div class="box">
+                            <div class="wdgt-header">
+                                <i class="icon-user"></i> Person Analysis
+                                <span class="label label-info" style="margin-left: 5px;">{{ content.persons|length }} person{{ content.persons|length|pluralize }}</span>
+                                {% if content.yunet_faces %}
+                                    <span class="label" style="margin-left: 5px;">{{ content.yunet_faces }} YuNet face{{ content.yunet_faces|pluralize }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="wdgt-body">
+                                {% for person in content.persons %}
+                                <div class="well well-small" style="margin-bottom: 10px;">
+                                    <h5>
+                                        Person {{ forloop.counter }}
+                                        {% if person.detection_confidence %}
+                                            <small class="muted">(confidence: {{ person.detection_confidence }})</small>
+                                        {% endif %}
+                                        {% if person.too_small %}
+                                            <span class="label label-default">Too small to analyse</span>
+                                        {% endif %}
+                                    </h5>
+
+                                    {% if not person.too_small %}
+                                    <div class="row-fluid">
+                                        {# -- Hair -- #}
+                                        <div class="span4">
+                                            <h6><i class="icon-tint"></i> Hair</h6>
+                                            {% with hair=person.hair_color %}
+                                            {% if hair %}
+                                                {% if hair.color and hair.color != "unknown" and hair.color != "?" %}
+                                                    <span class="label label-info">{{ hair.color }}</span>
+                                                    {% if hair.confidence %}
+                                                        <small class="muted">({{ hair.confidence }})</small>
+                                                    {% endif %}
+                                                {% elif hair.reason %}
+                                                    <span class="muted">{{ hair.reason }}</span>
+                                                {% else %}
+                                                    <span class="muted">Unknown</span>
+                                                {% endif %}
+                                            {% endif %}
+                                            {% endwith %}
+                                        </div>
+
+                                        {# -- Tattoos -- #}
+                                        <div class="span4">
+                                            <h6><i class="icon-star"></i> Tattoos</h6>
+                                            {% with tat=person.tattoo_analysis %}
+                                            {% if tat.detected_regions %}
+                                                {% for region in tat.detected_regions %}
+                                                    <span class="label label-warning">{{ region }}</span>
+                                                {% endfor %}
+                                            {% else %}
+                                                <span class="muted">None detected</span>
+                                            {% endif %}
+                                            {% endwith %}
+                                        </div>
+
+                                        {# -- Piercings -- #}
+                                        <div class="span4">
+                                            <h6><i class="icon-circle-blank"></i> Piercings</h6>
+                                            {% with pier=person.piercing_analysis %}
+                                            {% if pier.piercings %}
+                                                {% for p in pier.piercings %}
+                                                    <span class="label label-important">{{ p }}</span>
+                                                {% endfor %}
+                                                {% if pier.inter_eye_dist %}
+                                                    <br><small class="muted">inter-eye dist: {{ pier.inter_eye_dist }}</small>
+                                                {% endif %}
+                                            {% elif pier.note %}
+                                                <span class="muted">Skipped ({{ pier.note }})</span>
+                                            {% else %}
+                                                <span class="muted">None detected</span>
+                                            {% endif %}
+                                            {% endwith %}
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {# ======== SECTION 4: Annotated Image ======== #}
+                {% if content.annotation_gridfs_id %}
+                <div class="row-fluid">
+                    <div class="span12">
+                        <div class="box">
+                            <div class="wdgt-header">
+                                <i class="icon-picture"></i> Annotated Image
+                            </div>
+                            <div class="wdgt-body" style="text-align: center;">
+                                <p class="muted" style="margin-bottom: 10px;">
+                                    Overlay showing detected persons (green), keypoints (cyan), YuNet faces (magenta),
+                                    piercings (red), tattoos (orange), and hair regions (blue).
+                                </p>
+                                <a href="{% url "research_annotation" analysis.id %}" class="fancybox">
+                                    <img src="{% url "research_annotation" analysis.id %}"
+                                         style="max-width: 100%; border: 1px solid #ddd; border-radius: 4px; padding: 4px;"
+                                         alt="Annotated research image">
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {# ======== SECTION 5: Audit Findings ======== #}
+                {% if content.audit_findings %}
+                <div class="row-fluid">
+                    <div class="span12">
+                        <div class="box">
+                            <div class="wdgt-header">
+                                <i class="icon-list-alt"></i> Research Audit Findings
+                            </div>
+                            <div class="wdgt-body">
+                                <table class="table table-condensed table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Level</th>
+                                            <th>Category</th>
+                                            <th>Description</th>
+                                            <th>Direction</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for finding in content.audit_findings %}
+                                        <tr>
+                                            <td>
+                                                {% if finding.level == "HIGH" %}
+                                                    <span class="label label-important">{{ finding.level }}</span>
+                                                {% elif finding.level == "MEDIUM" %}
+                                                    <span class="label label-warning">{{ finding.level }}</span>
+                                                {% else %}
+                                                    <span class="label">{{ finding.level }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ finding.category }}</td>
+                                            <td>{{ finding.description }}</td>
+                                            <td>
+                                                {% if finding.positive %}
+                                                    <span class="text-success"><i class="icon-plus-sign"></i> Genuine</span>
+                                                {% else %}
+                                                    <span class="text-error"><i class="icon-minus-sign"></i> Suspicious</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {# ======== SECTION 6: Image Metadata ======== #}
+                {% if content.image_size %}
+                <div class="row-fluid">
+                    <div class="span12">
+                        <div class="box">
+                            <div class="wdgt-header">
+                                <i class="icon-info-sign"></i> Image Info
+                            </div>
+                            <div class="wdgt-body">
+                                <table class="table table-condensed" style="width: auto;">
+                                    <tr>
+                                        <td><strong>Dimensions</strong></td>
+                                        <td>{{ content.image_size.width }} × {{ content.image_size.height }}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

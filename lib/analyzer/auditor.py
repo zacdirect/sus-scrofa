@@ -644,6 +644,8 @@ def _collect_plugin_findings(results: dict) -> List[Finding]:
         'signatures',
         'hash',
         'similar',
+        # Phase 1c research plugins
+        'content_analysis',
     ]
     
     for plugin_name in plugin_names:

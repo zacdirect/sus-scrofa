@@ -52,6 +52,31 @@ AUTO_UPLOAD_DEL_ORIGINAL = True
 # Clean up AUTO_UPLOAD_DIR on startup.
 AUTO_UPLOAD_STARTUP_CLEANUP = True
 
+# ── Plugin Configuration ──────────────────────────────────────────
+
+# Photoholmes forgery detection (AI/ML tier plugin)
+# Set to False to disable photoholmes even if the library is installed.
+# Photoholmes can take 15-20 minutes per image on CPU-only systems.
+# Default: True (enabled if photoholmes library is available)
+ENABLE_PHOTOHOLMES = False
+
+# Research-tier image content analysis (Phase 1c plugin)
+# Object detection, person attributes, photorealism classification.
+# Uses torchvision FasterRCNN — moderate CPU cost (~30-60s per image).
+# Default: True (enabled if torch/torchvision are available)
+ENABLE_RESEARCH_CONTENT_ANALYSIS = True
+
+# Minimum authenticity score (0-100) after Phase 1a+1b to run research.
+# Below this threshold, the image is likely fake and research is skipped.
+# Default: 40 (skip research only for images that are clearly failing)
+RESEARCH_CONFIDENCE_THRESHOLD = 40
+
+# Save annotated debug images for researcher review.
+# When enabled, generates images with bounding boxes, keypoints, zone circles,
+# and detection highlights overlaid for visual verification.
+# Stored in MongoDB GridFS alongside the analysis results.
+RESEARCH_SAVE_ANNOTATIONS = True
+
 # Override default secret key stored in secret_key.py
 # Make this unique, and don't share it with anybody.
 # SECRET_KEY = "YOUR_RANDOM_KEY"

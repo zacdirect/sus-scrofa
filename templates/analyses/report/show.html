@@ -139,6 +139,11 @@
                                     <a href="#signs" data-toggle="tab">Signatures</a>
                                 </li>
                                 {% endif %}
+                                {% if anal.content_analysis.enabled %}
+                                <li>
+                                    <a href="{% url "show_research" analysis.id %}"><i class="icon-beaker"></i> Research Findings</a>
+                                </li>
+                                {% endif %}
                             </ul>
                             <div class="tab-content">
                                 <div class="active tab-pane" id="dash">

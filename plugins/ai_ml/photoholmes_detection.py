@@ -23,6 +23,12 @@ Methods NOT included due to restrictive licenses:
   TruFor          — Research-only license
   CAT-Net         — Research-only license
 
+Configuration:
+  - Set ENABLE_PHOTOHOLMES=False in sus_scrofa/local_settings.py to disable
+  - CPU-only methods (DQ, ZERO, Noisesniffer) take ~15-20 minutes per image
+  - Set SUSSCROFA_PHOTOHOLMES_GPU=1 to enable GPU methods (requires weights)
+  - Set SUSSCROFA_PHOTOHOLMES_WEIGHTS=/path/to/weights for custom weight location
+
 Design:
   - CPU-only methods (DQ, ZERO, Noisesniffer) run by default
   - GPU methods are opt-in and only load when weights are available
@@ -278,6 +284,17 @@ class PhotoholmesDetector(BaseAnalyzerModule):
 
     def run(self, task):
         """Run all enabled photoholmes forgery detection methods."""
+        # Check if photoholmes is enabled in settings
+        from django.conf import settings
+        if not getattr(settings, 'ENABLE_PHOTOHOLMES', True):
+            logger.info("Photoholmes disabled via ENABLE_PHOTOHOLMES setting")
+            self.results["photoholmes"] = {
+                "enabled": False,
+                "reason": "Disabled in settings (ENABLE_PHOTOHOLMES=False)",
+                "methods": {},
+            }
+            return self.results
+
         enabled = self._get_enabled_methods()
         if not enabled:
             logger.info(f"[Task {task.id}]: No photoholmes methods available")

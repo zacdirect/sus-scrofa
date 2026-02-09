@@ -439,6 +439,79 @@ def show_analysis(request, analysis_id):
 
 @require_safe
 @login_required
+def show_research(request, analysis_id):
+    """Shows the research findings page for a completed analysis.
+
+    Displays content analysis results (photorealism, object detection,
+    person attributes) and annotated images on a dedicated page,
+    separate from the main forensic report.
+    """
+    analysis = get_object_or_404(Analysis, pk=analysis_id)
+
+    # Security check.
+    if not(request.user.is_superuser or request.user in analysis.case.users.all()):
+        return render(request, "error.html",
+                                  {"error": "You are not authorized to view this."})
+
+    if analysis.state != "C":
+        return render(request, "error.html",
+                                  {"error": "Analysis not yet complete."})
+
+    try:
+        anal = get_db().analyses.find_one(ObjectId(analysis.analysis_id))
+        if not anal:
+            return render(request, "error.html",
+                                      {"error": "Analysis not present in database."})
+    except InvalidId:
+        return render(request, "error.html",
+                                  {"error": "Analysis not found."})
+
+    content = anal.get("content_analysis", {})
+    if not content or not content.get("enabled"):
+        return render(request, "error.html",
+                                  {"error": "No research data available for this image."})
+
+    return render(request, "analyses/research/show.html",
+                              {"analysis": analysis,
+                               "content": content,
+                               "anal": anal})
+
+@require_safe
+@login_required
+def research_annotation(request, analysis_id):
+    """Serve the annotated research image from GridFS."""
+    analysis = get_object_or_404(Analysis, pk=analysis_id)
+
+    # Security check.
+    if not(request.user.is_superuser or request.user in analysis.case.users.all()):
+        return render(request, "error.html",
+                                  {"error": "You are not authorized to view this."})
+
+    try:
+        anal = get_db().analyses.find_one(ObjectId(analysis.analysis_id))
+        if not anal:
+            return render(request, "error.html",
+                                      {"error": "Analysis not found."})
+    except InvalidId:
+        return render(request, "error.html",
+                                  {"error": "Analysis not found."})
+
+    content = anal.get("content_analysis", {})
+    gridfs_id = content.get("annotation_gridfs_id")
+    if not gridfs_id:
+        return render(request, "error.html",
+                                  {"error": "No annotation image available."})
+
+    try:
+        file = get_file(gridfs_id)
+        data = file.read()
+        return HttpResponse(data, content_type="image/png")
+    except Exception:
+        return render(request, "error.html",
+                                  {"error": "Unable to load annotation image."})
+
+@require_safe
+@login_required
 def delete_analysis(request, analysis_id):
     """Deletes a report."""
     analysis = get_object_or_404(Analysis, pk=analysis_id)

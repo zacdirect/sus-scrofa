@@ -1,4 +1,4 @@
-.PHONY: help start stop status logs clean mongodb web processor dev run setup install check-deps venv reset-db fresh ai-setup ai-verify ai-clean photoholmes-setup photoholmes-verify photoholmes-clean detect-system
+.PHONY: help start stop status logs clean mongodb web processor dev run setup install check-deps venv reset-db fresh ai-setup ai-verify ai-clean photoholmes-setup photoholmes-verify photoholmes-clean research-setup research-verify research-clean detect-system
 
 # Colors for output
 RED := \033[0;31m
@@ -38,6 +38,11 @@ help:
 	@echo "  make photoholmes-setup    - Install photoholmes + torch (CPU) + jpegio"
 	@echo "  make photoholmes-verify   - Verify photoholmes installation"
 	@echo "  make photoholmes-clean    - Remove photoholmes from environment"
+	@echo ""
+	@echo "$(YELLOW)Research Content Analysis (Optional):$(NC)"
+	@echo "  make research-setup      - Install torch + download pretrained models"
+	@echo "  make research-verify     - Verify models are cached and ready"
+	@echo "  make research-clean      - Remove cached model weights"
 	@echo ""
 	@echo "$(YELLOW)OpenCV Service (Container):$(NC)"
 	@echo "  make opencv-build   - Build OpenCV service container"
@@ -382,6 +387,59 @@ photoholmes-clean:
 	@echo "$(YELLOW)Removing photoholmes...$(NC)"
 	$(PIP) uninstall -y photoholmes 2>/dev/null || true
 	@echo "$(GREEN)✓ Photoholmes removed$(NC)"
+	@echo "$(YELLOW)Note: torch/torchvision left installed (may be used by other modules)$(NC)"
+
+# Research Content Analysis (Phase 1c)
+research-setup: venv
+	@echo "$(GREEN)Setting up research content analysis models...$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Detecting system configuration...$(NC)"
+	@INDEX_URL=$$($(SYSTEM_PYTHON) scripts/detect_system.py --index-url); \
+	BACKEND=$$($(SYSTEM_PYTHON) scripts/detect_system.py --backend); \
+	echo "Backend: $$BACKEND"; \
+	echo "PyTorch Index: $$INDEX_URL"; \
+	echo ""; \
+	if $(PYTHON) -c "import torch" 2>/dev/null; then \
+		echo "$(GREEN)✓ PyTorch already installed$(NC)"; \
+	else \
+		echo "$(YELLOW)Installing PyTorch ($$BACKEND)...$(NC)"; \
+		echo "  This may take several minutes..."; \
+		$(PIP) install --extra-index-url $$INDEX_URL torch torchvision; \
+	fi
+	@echo ""
+	@echo "$(YELLOW)Downloading pretrained models (~395 MB)...$(NC)"
+	@$(PYTHON) scripts/download_research_models.py
+	@echo "$(GREEN)========================================$(NC)"
+	@echo "$(GREEN)✓ Research content analysis ready!$(NC)"
+	@echo "$(GREEN)========================================$(NC)"
+	@echo ""
+	@echo "Models: FasterRCNN, KeypointRCNN, YuNet face detector"
+	@echo "Enable in settings: ENABLE_RESEARCH_CONTENT_ANALYSIS = True"
+	@echo ""
+	@echo "Verify installation:"
+	@echo "  make research-verify"
+
+research-verify: venv
+	@echo "$(GREEN)Verifying research content analysis...$(NC)"
+	@echo ""
+	@echo "$(YELLOW)1. Checking PyTorch...$(NC)"
+	@$(PYTHON) -c "import torch; print(f'  ✓ PyTorch {torch.__version__}')" 2>/dev/null || \
+		(echo "  ✗ PyTorch not installed. Run: make research-setup" && exit 1)
+	@$(PYTHON) -c "import torchvision; print(f'  ✓ torchvision {torchvision.__version__}')" 2>/dev/null || \
+		(echo "  ✗ torchvision not installed. Run: make research-setup" && exit 1)
+	@echo ""
+	@echo "$(YELLOW)2. Checking OpenCV...$(NC)"
+	@$(PYTHON) -c "import cv2; print(f'  ✓ OpenCV {cv2.__version__}')" 2>/dev/null || \
+		(echo "  ✗ OpenCV not installed" && exit 1)
+	@echo ""
+	@echo "$(YELLOW)3. Checking pretrained model cache...$(NC)"
+	@$(PYTHON) scripts/download_research_models.py --verify
+	@echo "$(GREEN)✓ Research content analysis is ready$(NC)"
+
+research-clean:
+	@echo "$(YELLOW)Removing cached research models...$(NC)"
+	@$(PYTHON) scripts/download_research_models.py --clean 2>/dev/null || \
+		echo "$(YELLOW)Could not run cleanup script (torch not installed?)$(NC)"
 	@echo "$(YELLOW)Note: torch/torchvision left installed (may be used by other modules)$(NC)"
 
 # OpenCV Service (Container-based)
