@@ -130,6 +130,8 @@ install: venv
 		(echo "$(RED)  ✗ Scientific libraries not found. Run 'make install' again.$(NC)" && exit 1)
 	@echo ""
 	@echo "$(GREEN)✓ All dependencies installed$(NC)"
+	@echo ""
+	@$(MAKE) ai-setup
 
 setup: check-deps install mongodb
 	@echo ""
