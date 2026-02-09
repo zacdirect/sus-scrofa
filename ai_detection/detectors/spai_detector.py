@@ -82,11 +82,14 @@ class SPAIDetector(BaseDetector):
             infer_script = self._ai_detection_dir / 'spai_infer.py'
             weights_path = self._ai_detection_dir / 'weights' / 'spai.pth'
             
+            # No timeout - let model finish inference once loaded
+            # CPU: ~60s model load + ~30-60s inference = ~90-120s total
+            # GPU: ~3-5s total
+            logger.info("Starting SPAI inference (may take 1-2 minutes on CPU)...")
             result = subprocess.run(
                 [str(venv_python), str(infer_script), str(weights_path), image_path],
                 capture_output=True,
                 text=True,
-                timeout=30,
                 cwd=str(self._ai_detection_dir)
             )
             
@@ -111,11 +114,17 @@ class SPAIDetector(BaseDetector):
                     score=0.0,
                     evidence=f"SPAI error: {error_msg}"
                 )
-            
             # Extract results
             probability = inference_result['score']
             logit = inference_result['logit']
+            timing = inference_result.get('timing', {})
             
+            if timing:
+                logger.info(f"SPAI completed: load={timing.get('load_time')}s, "
+                          f"inference={timing.get('inference_time')}s, "
+                          f"total={timing.get('total_time')}s")
+            
+            # Map probability to confidence level
             # Map probability to confidence level
             # Note: SPAI tends to produce very low probabilities for AI images
             # in our tests, so we use logit for better discrimination
@@ -137,20 +146,11 @@ class SPAIDetector(BaseDetector):
                 score=float(probability),
                 evidence=f"SPAI spectral analysis: {probability*100:.4f}% AI probability (logit: {logit:.2f})",
                 metadata={
-                    'model': 'SPAI',
                     'logit': logit,
-                    'probability': probability
+                    'timing': timing
                 }
             )
             
-        except subprocess.TimeoutExpired:
-            return DetectionResult(
-                method=DetectionMethod.ML_MODEL,
-                is_ai_generated=None,
-                confidence=ConfidenceLevel.NONE,
-                score=0.0,
-                evidence="SPAI inference timed out (>30s)"
-            )
         except Exception as e:
             logger.error(f"SPAI detection error: {e}")
             return DetectionResult(

@@ -132,6 +132,7 @@ install: venv
 	@echo "$(GREEN)✓ All dependencies installed$(NC)"
 	@echo ""
 	@$(MAKE) ai-setup
+	@$(MAKE) research-setup
 
 setup: check-deps install mongodb
 	@echo ""

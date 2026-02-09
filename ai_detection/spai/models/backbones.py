@@ -16,7 +16,11 @@
 
 import torch
 from torch import nn
-import clip
+try:
+    import open_clip
+    HAS_OPEN_CLIP = True
+except ImportError:
+    HAS_OPEN_CLIP = False
 
 
 CLIP_MEAN: tuple[float, ...] = (0.48145466, 0.4578275, 0.40821073)
@@ -43,10 +47,20 @@ class CLIPBackbone(nn.Module):
         device: str = "cpu"
     ) -> None:
         super().__init__()
+        
+        if not HAS_OPEN_CLIP:
+            raise ImportError(
+                "open_clip is required for CLIPBackbone. "
+                "Install with: pip install open-clip-torch"
+            )
 
-        # Load and freeze CLIP
-        self.clip, self.preprocess = clip.load(clip_model, device=device)
-        # self.clip = self.clip.float()
+        # Load and freeze CLIP using open_clip
+        # Map old model names to open_clip format
+        model_name = clip_model.replace("/", "-")  # "ViT-B/16" -> "ViT-B-16"
+        self.clip, _, self.preprocess = open_clip.create_model_and_transforms(
+            model_name, pretrained='openai', device=device
+        )
+        
         for name, param in self.clip.named_parameters():
             param.requires_grad = False
 
@@ -64,7 +78,7 @@ class CLIPBackbone(nn.Module):
         # always converts the input to LayerNorm to FP32.
         if self.clip.visual.transformer.resblocks[1].ln_1.weight.dtype != torch.float32:
             for m in self.clip.modules():
-                if isinstance(m, clip.model.LayerNorm):
+                if isinstance(m, (nn.LayerNorm, open_clip.model.LayerNorm)):
                     m.float()
 
         self.clip.encode_image(x)
