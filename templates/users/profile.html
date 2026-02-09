@@ -1,112 +1,126 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="span11">
-    <div class="content content-large">
-        <div class="content-header">
-            <h2><i class="icon-user"> </i> Profile</h2>
+<div class="row mb-4 animate__animated animate__fadeIn">
+    <div class="col-12">
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">
+                <i class="fa-solid fa-id-card text-secondary me-2"></i> Profile 
+                <small class="text-muted fs-6">User details</small>
+            </h1>
+            <div class="btn-toolbar mb-2 mb-md-0">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="/" class="text-decoration-none"><i class="fa-solid fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Profile</li>
+                    </ol>
+                </nav>
+            </div>
         </div>
-        <div class="content-breadcrumb">
-            <ul class="breadcrumb">
-                <li>
-                    <a href="/"><i class="icon-home"> </i> Dashboard</a><span class="divider">&rsaquo;</span>
-                </li>
-                <li class="active">
-                    Profile
-                </li>
-            </ul>
-        </div>
-        <div class="content-body" id="resume-content">
-            <div class="row-fluid profile">
-                <div class="span6">
-                    <div class="left">
-                        <h3 class="title-icon pull-left"><i class="icon-user"> </i></h3>
-                        <div class="title">
-                            <h3>{{ user.username }}</h3>
-                        </div>
-                        <a href="{% url "django.contrib.auth.views.password_change" %}"><i class="icon-key"> </i> Change password</a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- User Information Card -->
+    <div class="col-md-6">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0 bg-light rounded-circle p-3 me-3">
+                        <i class="fa-solid fa-user fa-2x text-primary"></i>
                     </div>
-                </div>
-                <div class="span6">
-                    <div class="right">
-                        <div class="title display-table">
-                            <p>
-                                Name
-                            </p>
-                            <span class="pull-right">{{ user.first_name }}</span>
-                        </div>
-                        <div class="title display-table">
-                            <p>
-                                Last name
-                            </p>
-                            <span class="pull-right">{{ user.last_name }}</span>
-                        </div>
-                        <div class="title display-table">
-                            <p>
-                                Email
-                            </p>
-                            <span class="pull-right">{{ user.email }}</span>
-                        </div>
-                        <div class="title display-table">
-                            <p>
-                                API key
-                            </p>
-                            <span class="pull-right">{{ user.api_key }}</span>
-                        </div>
+                    <div>
+                        <h4 class="mb-0">{{ user.username }}</h4>
+                        <a href="{% url "django.contrib.auth.views.password_change" %}" class="small text-decoration-none"><i class="fa-solid fa-key me-1"></i> Change password</a>
                     </div>
                 </div>
             </div>
-            <div class="row-fluid profile">
-                <div class="span6">
-                    <div class="left">
-                        <h3 class="title-icon pull-left"><i class="icon-bar-chart"> </i></h3>
-                        <div class="title">
-                            <h3>Stats</h3>
-                        </div>
-                        <dl class="dl-horizontal">
-                            <dt>Case opened:</dt>
-                            <dd><span class="badge badge-important">{{ user.owned_cases.all|length }}</span> </dd>
-                            <dt>My analyses:</dt>
-                            <dd><span class="badge badge-success">{{ user.owned_images.all|length }}</span> </dd>
-                            <dt>My hash lists:</dt>
-                            <dd><span class="badge badge-warning">{{ user.owned_hashes.all|length }}</span> </dd>
-                        </dl>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
+                        <span class="text-muted">First Name</span>
+                        <span class="fw-medium">{{ user.first_name|default:"-" }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
+                        <span class="text-muted">Last Name</span>
+                        <span class="fw-medium">{{ user.last_name|default:"-" }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
+                        <span class="text-muted">Email</span>
+                        <span class="fw-medium">{{ user.email }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
+                        <span class="text-muted">API Key</span>
+                        <code class="text-break user-select-all bg-light px-2 py-1 rounded">{{ user.api_key }}</code>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats & Account Status Card -->
+    <div class="col-md-6">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0 bg-light rounded-circle p-3 me-3">
+                        <i class="fa-solid fa-chart-bar fa-2x text-success"></i>
+                    </div>
+                     <div>
+                        <h4 class="mb-0">Statistics</h4>
+                        <span class="small text-muted">Activity overview</span>
                     </div>
                 </div>
-                <div class="span6">
-                    <div class="right">
-                        <div class="title display-table">
-                            <p>
-                                Last login
-                            </p>
-                            <span class="pull-right">{{ user.last_login }}</span>
+            </div>
+            <div class="card-body">
+                 <div class="row g-2 mb-4 text-center">
+                    <div class="col-4">
+                        <div class="p-3 border rounded bg-light h-100">
+                            <h3 class="mb-0 text-primary">{{ user.owned_cases.all|count }}</h3>
+                            <small class="text-muted">Cases</small>
                         </div>
-                        <div class="title display-table">
-                            <p>
-                                Account created
-                            </p>
-                            <span class="pull-right">{{ user.date_joined }}</span>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-3 border rounded bg-light h-100">
+                            <h3 class="mb-0 text-success">{{ user.owned_images.all|count }}</h3>
+                            <small class="text-muted">Analyses</small>
                         </div>
-                        <div class="title display-table">
-                            <p>
-                                Account active
-                            </p>
-                            <span class="pull-right">{%if user.is_active%}<i class="icon-ok text-success"> </i>{%else%}<i class="icon-remove text-error"></i>{%endif%}</span>
-                        </div>
-                        <div class="title display-table">
-                            <p>
-                                Superuser
-                            </p>
-                            <span class="pull-right">
-                                {% if user.is_superuser %}
-                                    <i class="icon-ok text-success"> </i>
-                                {% else %}
-                                    <i class="icon-remove text-error"> </i>
-                                {% endif %}
-                            </span>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-3 border rounded bg-light h-100">
+                            <h3 class="mb-0 text-warning">{{ user.owned_hashes.all|count }}</h3>
+                            <small class="text-muted">Hash Lists</small>
                         </div>
                     </div>
                 </div>
+
+                <h6 class="text-muted text-uppercase small fw-bold mb-3">Account Status</h6>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
+                        <span class="text-muted">Last Login</span>
+                        <span>{{ user.last_login|default:"Never" }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
+                        <span class="text-muted">Date Joined</span>
+                        <span>{{ user.date_joined|date:"M d, Y" }}</span>
+                    </li>
+                     <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
+                        <span class="text-muted">Active Status</span>
+                        {% if user.is_active %}
+                            <span class="badge bg-success rounded-pill"><i class="fa-solid fa-check me-1"></i> Active</span>
+                        {% else %}
+                            <span class="badge bg-danger rounded-pill"><i class="fa-solid fa-times me-1"></i> Inactive</span>
+                        {% endif %}
+                    </li>
+                     <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
+                        <span class="text-muted">Superuser</span>
+                        {% if user.is_superuser %}
+                            <span class="badge bg-primary rounded-pill"><i class="fa-solid fa-check me-1"></i> Yes</span>
+                        {% else %}
+                             <span class="badge bg-secondary rounded-pill">No</span>
+                        {% endif %}
+                    </li>
+                </ul>
             </div>
         </div>
     </div>

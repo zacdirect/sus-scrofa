@@ -1,41 +1,93 @@
 {% load analyses_tags %}
 
-<div id="map_canvas" style="height: 600px;"></div>
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <div id="map_canvas" style="height: 600px; width: 100%; z-index: 1;" class="rounded"></div>
+    </div>
+</div>
 
 <script type="text/javascript">
-$(document).ready(function(){
-    initializeCaseMap();
-});
+    document.addEventListener('DOMContentLoaded', function() {
+        // Function to initialize map
+        function initMap() {
+            if (window.caseMap) {
+                window.caseMap.remove(); // Prevent duplicate initialization
+            }
 
-function initializeCaseMap() {
-    // Initialize Leaflet map with OpenStreetMap
-    var map = L.map('map_canvas').setView([0, 0], 2);
-    
-    // Add OpenStreetMap tile layer
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19
-    }).addTo(map);
+            var map = L.map('map_canvas').setView([0, 0], 2);
+            window.caseMap = map; // Store globally to access for re-sizing
 
-    {% for image in images %}
-        var contentString_{{ forloop.counter }} = '<div><a href="{% url "show_analysis" image.id %}"><h4>{% if image.file_name|length > 20 %}{{ image.file_name|slice:":20" }} ...{% else %}{{ image.file_name }}{% endif %}</h4><img src="{% url "image" image.thumb_id %}" style="max-width:200px;"/><div class="tags">{% if image.report.signatures|count_severity:"1" %}<span class="label-holder"><span class="label label-success">{{ image.report.signatures|count_severity:"1" }}</span></span>{% endif %}{% if image.report.signatures|count_severity:"2" %}<span class="label-holder"><span class="label label-warning">{{ image.report.signatures|count_severity:"2" }}</span></span>{% endif %}{% if image.report.signatures|count_severity:"3" %}<span class="label-holder"><span class="label label-important">{{ image.report.signatures|count_severity:"3" }}</span></span>{% endif %}</div></a></div>';
-        
-        var marker_{{ forloop.counter }} = L.marker([{{ image.latitude|floatformat:6 }}, {{ image.longitude|floatformat:6 }}])
-            .addTo(map)
-            .bindPopup(contentString_{{ forloop.counter }});
-    {% endfor %}
-    
-    // Fit map to show all markers if there are any
-    {% if images %}
-    var markers = [
-        {% for image in images %}
-        [{{ image.latitude|floatformat:6 }}, {{ image.longitude|floatformat:6 }}]{% if not forloop.last %},{% endif %}
-        {% endfor %}
-    ];
-    if (markers.length > 0) {
-        var bounds = L.latLngBounds(markers);
-        map.fitBounds(bounds, {padding: [50, 50]});
-    }
-    {% endif %}
-}
+            // Add OpenStreetMap tile layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19
+            }).addTo(map);
+
+            var bounds = new L.LatLngBounds();
+            var markerCount = 0;
+
+            {% for image in images %}
+                {% if image.latitude and image.longitude %}
+                    var contentString = `
+                        <div class="text-center" style="min-width: 200px;">
+                            <a href="{% url "show_analysis" image.id %}" class="text-decoration-none text-dark d-block">
+                                <h6 class="mb-2 text-truncate" style="max-width: 200px;">
+                                    {% if image.file_name|length > 20 %}{{ image.file_name|slice:":20" }} ...{% else %}{{ image.file_name }}{% endif %}
+                                </h6>
+                                <img src="{% url "image" image.thumb_id %}" class="img-thumbnail mb-2" style="max-height: 150px; width: auto;"/>
+                                <div class="d-flex justify-content-center gap-1">
+                                    {% if image.report.signatures|count_severity:"1" %}
+                                        <span class="badge bg-success" title="Severity 1">{{ image.report.signatures|count_severity:"1" }}</span>
+                                    {% endif %}
+                                    {% if image.report.signatures|count_severity:"2" %}
+                                        <span class="badge bg-warning text-dark" title="Severity 2">{{ image.report.signatures|count_severity:"2" }}</span>
+                                    {% endif %}
+                                    {% if image.report.signatures|count_severity:"3" %}
+                                        <span class="badge bg-danger" title="Severity 3">{{ image.report.signatures|count_severity:"3" }}</span>
+                                    {% endif %}
+                                </div>
+                            </a>
+                        </div>
+                    `;
+                    
+                    var lat = {{ image.latitude|stringformat:"f" }};
+                    var lng = {{ image.longitude|stringformat:"f" }};
+                    
+                    var marker = L.marker([lat, lng])
+                        .addTo(map)
+                        .bindPopup(contentString);
+                        
+                    bounds.extend([lat, lng]);
+                    markerCount++;
+                {% endif %}
+            {% endfor %}
+
+            if (markerCount > 0) {
+                map.fitBounds(bounds, {padding: [50, 50]});
+            } else {
+                map.setView([0, 0], 2); // Default view if no markers
+            }
+            
+            // Force a resize check in case the container size changed
+            setTimeout(function(){ map.invalidateSize(); }, 100);
+        }
+
+        // Initialize immediately if visible
+        if (document.getElementById('map_canvas')) {
+            initMap();
+        }
+
+        // Re-initialize or resize when tab is shown (if this is inside a BS tab)
+        // This is a common pattern for tabbed maps
+        var mapTab = document.querySelector('a[href$="map"]'); // Crude selector for map tab
+        if (mapTab) {
+            mapTab.addEventListener('shown.bs.tab', function (e) {
+                if (window.caseMap) {
+                     window.caseMap.invalidateSize();
+                } else {
+                    initMap();
+                }
+            });
+        }
+    });
 </script>

@@ -1,23 +1,55 @@
-<div class="control-group">
-    <div class="controls">
-        {{ form.non_field_errors }}
-        <div class="fieldWrapper">
-            <label for="id_name">Name:</label>
-            {{ form.name }}<span class="help-inline">{{ form.name.errors }}</span>
-        </div>
-        <div class="fieldWrapper">
-            <label for="id_description">Description:</label>
-            {{ form.description }}<span class="help-inline">{{ form.description.errors }}</span>
-        </div>
-        <div class="fieldWrapper">
-            <label for="id_users">Users</label>
-            {{ form.users }}<span class="help-inline">{{ form.users.errors }}</span><em>Use the CTRL key to select multiple users.</em>
-        </div>
-        <div class="form-actions">
-            <button id="btn_submit" type="submit" class="btn btn-large btn-success">
-                Save
-            </button>
-            <a href="{% url "list_cases" %}" class="btn btn-large"> Back </a>
-        </div>
+{# templates/layout/_form.html #}
+{% if form.non_field_errors %}
+    <div class="alert alert-danger mb-3">
+        <i class="fa-solid fa-circle-exclamation me-2"></i> {{ form.non_field_errors }}
     </div>
+{% endif %}
+
+<div class="mb-3">
+    <label for="id_name" class="form-label">Name</label>
+    {{ form.name }}
+    {% if form.name.errors %}
+        <div class="text-danger small mt-1">{{ form.name.errors }}</div>
+    {% endif %}
 </div>
+
+<div class="mb-3">
+    <label for="id_description" class="form-label">Description</label>
+    {{ form.description }}
+    {% if form.description.errors %}
+        <div class="text-danger small mt-1">{{ form.description.errors }}</div>
+    {% endif %}
+</div>
+
+<div class="mb-4">
+    <label for="id_users" class="form-label">Users</label>
+    {{ form.users }}
+    <div class="form-text text-muted">Use the CTRL key to select multiple users.</div>
+    {% if form.users.errors %}
+        <div class="text-danger small mt-1">{{ form.users.errors }}</div>
+    {% endif %}
+</div>
+
+<div class="d-flex justify-content-between align-items-center">
+    <a href="{% url "list_cases" %}" class="btn btn-outline-secondary">
+        <i class="fa-solid fa-arrow-left me-2"></i> Back
+    </a>
+    <button id="btn_submit" type="submit" class="btn btn-success">
+        <i class="fa-solid fa-save me-2"></i> Save
+    </button>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add form-control or form-select to fields
+        var inputs = document.querySelectorAll('input[type="text"], textarea');
+        inputs.forEach(function(input) {
+            input.classList.add('form-control');
+        });
+        
+        var selects = document.querySelectorAll('select');
+        selects.forEach(function(select) {
+            select.classList.add('form-select');
+        });
+    });
+</script>

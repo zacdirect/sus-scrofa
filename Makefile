@@ -149,7 +149,9 @@ setup: check-deps install mongodb
 
 mongodb:
 	@echo "$(GREEN)Checking MongoDB container...$(NC)"
-	@if podman ps -a --format "{{.Names}}" | grep -q "^sus-scrofa-mongodb$$"; then \
+	@if lsof -i :27017 >/dev/null 2>&1 || nc -z localhost 27017 >/dev/null 2>&1; then \
+		echo "$(GREEN)✓ Port 27017 is already in use (assuming MongoDB is running)$(NC)"; \
+	elif podman ps -a --format "{{.Names}}" | grep -q "^sus-scrofa-mongodb$$"; then \
 		if podman ps --format "{{.Names}}" | grep -q "^sus-scrofa-mongodb$$"; then \
 			echo "$(GREEN)✓ MongoDB container is already running$(NC)"; \
 		else \

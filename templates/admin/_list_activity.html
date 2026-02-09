@@ -1,5 +1,5 @@
-<table class="table table-bordered table-striped responsive datatables">
-    <thead>
+<table class="table table-hover table-striped align-middle mb-0">
+    <thead class="table-light">
         <tr>
             <th>#</th>
             <th>Message</th>
@@ -15,28 +15,35 @@
             <td>{{ activity.id }}</td>
             <td>
                 {% if activity.message|length > 75 %}
-                    {{ activity.message|slice:":75" }} ...
+                    <span title="{{ activity.message }}">{{ activity.message|slice:":75" }} ...</span>
                 {% else %}
                     {{ activity.message }}
                 {% endif %}
             </td>
-            <td>{{ activity.get_category_display }}</td>
-            <td>{{ activity.user.username }}</td>
+            <td>
+                {% if activity.category == "I" %}
+                    <span class="badge bg-info text-dark">{{ activity.get_category_display }}</span>
+                {% elif activity.category == "W" %}
+                    <span class="badge bg-warning text-dark">{{ activity.get_category_display }}</span>
+                {% elif activity.category == "E" %}
+                    <span class="badge bg-danger">{{ activity.get_category_display }}</span>
+                {% else %}
+                    <span class="badge bg-secondary">{{ activity.get_category_display }}</span>
+                {% endif %}
+            </td>
+            <td>
+                <a href="{% url "admin_show_user" activity.user.id %}" class="text-decoration-none fw-bold">{{ activity.user.username }}</a>
+            </td>
             <td>{{ activity.source_ip }}</td>
             <td>{{ activity.created_at }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="6" class="text-center py-4 text-muted">
+                <i class="fa-solid fa-list-ul fa-2x mb-2 d-block"></i>
+                No activity logs found.
+            </td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
-
-<script type="text/javascript">
-$('.datatables').dataTable({
-    "sDom" : '<"top"f>t<"bottom"lp><"clear">',
-    "aaSorting": [[ 0, "desc" ]],
-    "language": {
-        "search": "_INPUT_"
-    }
-});
-
-$('.dataTables_filter input').attr("placeholder", "Search...");
-</script>

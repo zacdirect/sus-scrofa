@@ -1,87 +1,96 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="span11">
-    <div class="content content-large">
-        <div class="content-header">
-            <h2><i class="icon-table"> </i> {{ hash_list.name }} <small>details about this hash list</small></h2>
-        </div>
-        <div class="content-breadcrumb">
-            <ul class="breadcrumb">
-                <li>
-                    <a href="/"><i class="icon-home"> </i> Dashboard</a><span class="divider">&rsaquo;</span>
-                </li>
-                <li>
-                    <a href="{% url "list_hashes" %}"><i class="icon-table"> </i> Hashes</a>
-                    <span class="divider">&rsaquo;</span>
-                </li>
-                <li class="active">
-                    {{ hash_list.name }}
-                </li>
-            </ul>
-        </div>
-        <div class="content-body">
-            <dl class="dl-horizontal">
-                {% if hash_list.description %}
-                <dt>
-                    Description:
-                </dt>
-                <dd>
-                    {{ hash_list.description }}&nbsp;
-                </dd>
-                {% endif %}
-                <dt>
-                    Chiper:
-                </dt>
-                <dd>
-                    {{ hash_list.cipher|upper }}&nbsp;
-                </dd>
-                <dt>
-                    Public:
-                </dt>
-                <dd>
-                    {% if hash_list.public %}
-                        <i class="icon-ok text-success"> </i>
-                    {% else %}
-                        <i class="icon-remove text-error"> </i>
-                    {% endif %}
-                </dd>
-                <dt>
-                    Owner:
-                </dt>
-                <dd>
-                    {{ hash_list.owner }}&nbsp;
-                </dd>
-                <dt>
-                    Created:
-                </dt>
-                <dd>
-                    {{ hash_list.created_at }}&nbsp;
-                </dd>
-            </dl>
-            <table class="table table-bordered table-striped responsive datatables">
-                <thead>
-                    <tr>
-                        <th>Value</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for hash in hash_list.hash_set.all %}
-                    <tr>
-                        <td>{{ hash.value }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+<div class="row mb-4 animate__animated animate__fadeIn">
+    <div class="col-12">
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">
+                <i class="fa-solid fa-table text-secondary me-2"></i> {{ hash_list.name }}
+                <small class="text-muted fs-6">Details</small>
+            </h1>
+            <div class="btn-toolbar mb-2 mb-md-0">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="/" class="text-decoration-none"><i class="fa-solid fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url "list_hashes" %}" class="text-decoration-none"><i class="fa-solid fa-table"></i> Hashes</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">{{ hash_list.name }}</li>
+                    </ol>
+                </nav>
+            </div>
         </div>
     </div>
 </div>
 
-<script type="text/javascript">
-$('.datatables').dataTable({
-    "sDom" : '<"top"f>t<"bottom"lp><"clear">',
-    "aLengthMenu": [[1000, 10000, -1], [1000, 10000, "All"]]
-});
-</script>
+<div class="row g-4">
+    <!-- Info Card -->
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                <h5 class="card-title mb-0"><i class="fa-solid fa-info-circle me-2 text-primary"></i> Metadata</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                     {% if hash_list.description %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
+                        <span class="text-muted">Description</span>
+                        <span class="fw-medium text-end">{{ hash_list.description }}</span>
+                    </li>
+                    {% endif %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
+                        <span class="text-muted">Cipher</span>
+                        <span class="badge bg-secondary">{{ hash_list.cipher|upper }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
+                        <span class="text-muted">Public</span>
+                        {% if hash_list.public %}
+                            <span class="badge bg-success"><i class="fa-solid fa-check me-1"></i> Yes</span>
+                        {% else %}
+                             <span class="badge bg-danger"><i class="fa-solid fa-times me-1"></i> No</span>
+                        {% endif %}
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
+                        <span class="text-muted">Owner</span>
+                        <span class="fw-medium">{{ hash_list.owner }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
+                        <span class="text-muted">Created</span>
+                        <span class="small">{{ hash_list.created_at }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
 
-{%  endblock %}
+    <!-- Hashes Table Card -->
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white border-bottom-0 pt-4 pb-0 d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0"><i class="fa-solid fa-list me-2 text-secondary"></i> Values</h5>
+                <span class="badge bg-light text-dark border">{{ hash_list.hash_set.all|length }} entries</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                    <table class="table table-hover table-striped align-middle mb-0">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for hash in hash_list.hash_set.all %}
+                            <tr>
+                                <td class="font-monospace text-break">{{ hash.value }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td class="text-center text-muted py-4">No hash values found in this list.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,53 +1,54 @@
-<div class="span1">
-    <aside class="side-left">
-        <ul class="sidebar">
-            <li id="side-dashboard">
-                <span class="glow"> </span>
-                <a href="/" title="dashboard">
-                <div class="helper-font-24">
-                    <i class="icon-dashboard"> </i>
-                </div> <span class="sidebar-text">Dashboard</span></a>
-            </li>
-            <li id="side-cases">
-                <span class="glow"> </span>
-                <a href="{% url "list_cases" %}" title="cases">
-                <div class="helper-font-24">
-                    <i class="icon-briefcase"> </i>
-                </div> <span class="sidebar-text">Cases</span></a>
-            </li>
-            <li id="side-images">
-                <span class="glow"> </span>
-                <a href="{% url "list_images" "list" %}" title="images">
-                <div class="helper-font-24">
-                    <i class="icon-picture"> </i>
-                </div> <span class="sidebar-text">Images</span></a>
-            </li>
-            <li id="side-search">
-                <span class="glow"> </span>
-                <a href="{% url "search" "form" %}" title="search">
-                <div class="helper-font-24">
-                    <i class="icon-search"> </i>
-                </div> <span class="sidebar-text">Search</span></a>
-            </li>
-            <li id="side-hashes">
-                <span class="glow"> </span>
-                <a href="{% url "list_hashes" %}" title="hashes">
-                <div class="helper-font-24">
-                    <i class="icon-table"> </i>
-                </div> <span class="sidebar-text">Hashes</span></a>
-            </li>
-            {% if request.user.is_stuff or request.user.is_superuser %}
-                <li id="side-admin">
-                    <span class="glow"> </span>
-                    <a href="{% url "admin_list_users" %}" title="administrator">
-                    <div class="helper-font-24">
-                        <i class="icon-lock"> </i>
-                    </div> <span class="sidebar-text">Admin</span></a>
-                </li>
-            {% endif %}
-        </ul>
-    </aside>
-</div>
+<ul class="nav flex-column">
+    <li class="nav-item">
+        <a class="nav-link" id="side-dashboard" href="/">
+            <i class="fa-solid fa-tachometer-alt me-2"></i>
+            Dashboard
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" id="side-cases" href="{% url "list_cases" %}">
+            <i class="fa-solid fa-briefcase me-2"></i>
+            Cases
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" id="side-images" href="{% url "list_images" "list" %}">
+            <i class="fa-solid fa-images me-2"></i>
+            Images
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" id="side-search" href="{% url "search" "form" %}">
+            <i class="fa-solid fa-search me-2"></i>
+            Search
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" id="side-hashes" href="{% url "list_hashes" %}">
+            <i class="fa-solid fa-table me-2"></i>
+            Hashes
+        </a>
+    </li>
+    {% if request.user.is_staff or request.user.is_superuser %}
+    <li class="nav-item mt-3">
+        <h6
+            class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase">
+            <span>Administration</span>
+        </h6>
+        <a class="nav-link" id="side-admin" href="{% url "admin_list_users" %}">
+            <i class="fa-solid fa-users-cog me-2"></i>
+            Users
+        </a>
+    </li>
+    {% endif %}
+</ul>
+
 <script type="text/javascript">
-    $("#{{ request.session.sidebar_active }}").addClass("active");
+    // Simple active state handler based on the session variable provided by Django context
+    $(document).ready(function () {
+        var activeId = "{{ request.session.sidebar_active }}";
+        if (activeId) {
+            $("#" + activeId).addClass("active");
+        }
+    });
 </script>
