@@ -1,4 +1,4 @@
-# SusScrofa - Copyright (C) 2013-2016 SusScrofa Developers.
+# Sus Scrofa - Copyright (C) 2026 Sus Scrofa Developers.
 # This file is part of SusScrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
@@ -31,11 +31,11 @@ class CreateAutoUploadDirTest(TestCase):
         # Create temporary directory to store everything.
         tmp_path = tempfile.mkdtemp()
         # Build the sus_scrofa path for auto upload.
-        ghiro_path = os.path.join(tmp_path, "sus_scrofa-test")
+        sus_scrofa_path = os.path.join(tmp_path, "sus_scrofa-test")
         # Set path and test.
-        settings.AUTO_UPLOAD_DIR = ghiro_path
+        settings.AUTO_UPLOAD_DIR = sus_scrofa_path
         self.assertNotEqual(Command.create_auto_upload_dirs(), False)
-        self.assertTrue(os.path.exists(ghiro_path))
+        self.assertTrue(os.path.exists(sus_scrofa_path))
         # Cleanup.
         shutil.rmtree(tmp_path)
 
@@ -47,13 +47,13 @@ class CreateAutoUploadDirTest(TestCase):
         # Create temporary directory to store everything.
         tmp_path = tempfile.mkdtemp()
         # Build the sus_scrofa path for auto upload.
-        ghiro_path = os.path.join(tmp_path, "sus_scrofa-test")
+        sus_scrofa_path = os.path.join(tmp_path, "sus_scrofa-test")
         # Create AUTO_UPLOAD_DIR.
-        os.mkdir(ghiro_path)
+        os.mkdir(sus_scrofa_path)
         # Set path and test.
-        settings.AUTO_UPLOAD_DIR = ghiro_path
+        settings.AUTO_UPLOAD_DIR = sus_scrofa_path
         self.assertNotEqual(Command.create_auto_upload_dirs(), False)
-        self.assertTrue(os.path.exists(ghiro_path))
+        self.assertTrue(os.path.exists(sus_scrofa_path))
         # Cleanup.
         shutil.rmtree(tmp_path)
 
@@ -64,13 +64,13 @@ class CreateAutoUploadDirTest(TestCase):
         # Create temporary directory to store everything.
         tmp_path = tempfile.mkdtemp()
         # Build the sus_scrofa path for auto upload.
-        ghiro_path = os.path.join(tmp_path, "sus_scrofa-test")
+        sus_scrofa_path = os.path.join(tmp_path, "sus_scrofa-test")
         # Set path and create folders.
-        settings.AUTO_UPLOAD_DIR = ghiro_path
+        settings.AUTO_UPLOAD_DIR = sus_scrofa_path
         Command.create_auto_upload_dirs()
         # Test.
         for case in [case1, case2]:
-            case_path = os.path.join(ghiro_path, case.directory_name)
+            case_path = os.path.join(sus_scrofa_path, case.directory_name)
             self.assertTrue(os.path.exists(case_path))
         # Cleanup.
         shutil.rmtree(tmp_path)
@@ -80,12 +80,12 @@ class CreateAutoUploadDirTest(TestCase):
         # Create temporary directory to store everything.
         tmp_path = tempfile.mkdtemp()
         # Build the sus_scrofa path for auto upload.
-        ghiro_path = os.path.join(tmp_path, "sus_scrofa-test")
+        sus_scrofa_path = os.path.join(tmp_path, "sus_scrofa-test")
         # Set path and create folders.
-        settings.AUTO_UPLOAD_DIR = ghiro_path
-        os.mkdir(ghiro_path)
+        settings.AUTO_UPLOAD_DIR = sus_scrofa_path
+        os.mkdir(sus_scrofa_path)
         # Test folder.
-        test_path = os.path.join(ghiro_path, "test")
+        test_path = os.path.join(sus_scrofa_path, "test")
         os.mkdir(test_path)
         # Test 1: not cleaning.
         settings.AUTO_UPLOAD_STARTUP_CLEANUP = False

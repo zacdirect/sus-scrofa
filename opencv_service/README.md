@@ -127,34 +127,38 @@ make opencv-clean  # Removes container and image
 ```bash
 # Build
 cd opencv_service
-podman build -t sus_scrofa-opencv:latest .
+podman build -t sus-scrofa-opencv:latest .
+
+# Create network (first time only)
+podman network create sus-scrofa-net
 
 # Run
 podman run -d \
-  --name sus_scrofa-opencv \
+  --name sus-scrofa-opencv \
   -p 8080:8080 \
-  sus_scrofa-opencv:latest
+  --network sus-scrofa-net \
+  sus-scrofa-opencv:latest
 
 # Stop
-podman stop sus_scrofa-opencv
-podman rm sus_scrofa-opencv
+podman stop sus-scrofa-opencv
+podman rm sus-scrofa-opencv
 ```
 
 ### Using Docker
 ```bash
 # Build
 cd opencv_service
-docker build -t sus_scrofa-opencv:latest .
+docker build -t sus-scrofa-opencv:latest .
 
 # Run
 docker run -d \
-  --name sus_scrofa-opencv \
+  --name sus-scrofa-opencv \
   -p 8080:8080 \
-  sus_scrofa-opencv:latest
+  sus-scrofa-opencv:latest
 
 # Stop
-docker stop sus_scrofa-opencv
-docker rm sus_scrofa-opencv
+docker stop sus-scrofa-opencv
+docker rm sus-scrofa-opencv
 ```
 
 ## Testing the Service
@@ -188,12 +192,16 @@ with open('test_image.jpg', 'rb') as f:
 
 ## SusScrofa Plugin Integration
 
-The OpenCV service is automatically integrated with SusScrofa through the `opencv_analysis.py` plugin located in `plugins/analyzer/`.
+The OpenCV service is integrated with SusScrofa through the `opencv_manipulation.py`
+plugin in `plugins/ai_ml/`.  This is an **AI/ML tier** plugin (Phase 1b) — it only
+runs when the engine orchestrator's auditor checkpoint decides static evidence wasn't
+conclusive enough.
 
 ### Enable in SusScrofa
 
-1. **Start the OpenCV service:**
+1. **Build and start the OpenCV service:**
    ```bash
+   make opencv-build
    make opencv-start
    ```
 
@@ -202,43 +210,48 @@ The OpenCV service is automatically integrated with SusScrofa through the `openc
    make run
    ```
 
-3. **Upload an image** - The OpenCV analysis will automatically run if the service is available.
+3. **Upload an image** — the OpenCV plugin will automatically run if the
+   service is available.  If the service is down, the plugin gracefully
+   skips and the rest of the pipeline continues.
 
 ### Plugin Features
 
-- **Automatic service detection** - Plugin checks if service is running
-- **Graceful degradation** - If service unavailable, analysis is skipped
-- **Comprehensive results** - All three detection methods included in analysis
-- **Human-readable summaries** - Results formatted for easy interpretation
+- **Automatic service detection** — `check_deps()` pings `/health`
+- **Graceful degradation** — if service unavailable, analysis is skipped
+- **Comprehensive results** — all three detection methods in one call
+- **Human-readable interpretation** — results formatted for the report
+- **Auditor integration** — findings feed into the zero-trust scoring
 
 ### Plugin Results
 
-Results appear in the analysis under `opencv_analysis`:
+Results appear in the analysis under `opencv_manipulation`:
 
 ```python
 {
-  "opencv_analysis": {
+  "opencv_manipulation": {
     "enabled": true,
     "is_suspicious": false,
-    "overall_confidence": 15.23,
-    "verdict": "Authentic",
-    "summary": "No significant anomalies detected",
-    "manipulation": {
-      "detected": false,
-      "confidence": 23.4,
+    "overall_confidence": 0.15,
+    "interpretation": "No significant manipulation detected",
+    "manipulation_detection": {
+      "method": "gaussian_blur_difference",
+      "is_manipulated": false,
+      "confidence": 0.23,
       "num_anomalies": 3,
       "anomaly_percentage": 0.45,
       "evidence": "Found 3 anomalous regions..."
     },
-    "noise": {
-      "inconsistent": false,
-      "consistency_score": 89.2,
-      "overall_noise_level": 123.45,
+    "noise_analysis": {
+      "method": "laplacian_noise_analysis",
+      "is_noise_inconsistent": false,
+      "noise_consistency": 0.89,
+      "overall_noise": 123.45,
       "coefficient_variation": 0.12
     },
     "jpeg_artifacts": {
-      "inconsistent": false,
-      "confidence": 8.1,
+      "method": "jpeg_artifact_analysis",
+      "has_inconsistent_artifacts": false,
+      "confidence": 0.08,
       "compression_variation": 0.45,
       "evidence": "Compression variation coefficient: 0.45"
     }
@@ -251,28 +264,29 @@ Results appear in the analysis under `opencv_analysis`:
 ```
 SusScrofa Main Process (Python 3.13)
     ↓
-OpenCV Plugin (plugins/analyzer/opencv_analysis.py)
-    ↓ HTTP REST API
-OpenCV Service Container (Port 8080)
+OpenCV Plugin (plugins/ai_ml/opencv_manipulation.py)
+    ↓ HTTP REST API (localhost:8080)
+OpenCV Service Container (Python 3.12 + Flask)
     ↓
-OpenCV Python 3.11 + opencv-python-headless
+opencv-contrib-python 4.13.0.92
     ↓
 Image Analysis Results
 ```
 
 ### Why Containerized?
 
-- **Dependency isolation** - OpenCV has many system dependencies
-- **Version control** - Lock OpenCV to specific tested version
-- **Easy deployment** - Single container, no system-wide installs
-- **Scalability** - Can run multiple instances if needed
-- **Compatibility** - Works with both Podman and Docker
+- **Dependency isolation** — OpenCV has many system dependencies that conflict
+  with the main venv; the container ships its own Python 3.12 + OpenCV build
+- **Version control** — lock OpenCV to a specific tested version
+- **Easy deployment** — single container, no system-wide installs
+- **Scalability** — can run multiple instances if needed
+- **Compatibility** — works with both Podman and Docker
 
 ## Configuration
 
 ### Environment Variables
 
-- `PORT` - Service port (default: 8080)
+- `PORT` — service port (default: 8080)
 
 ### Detection Thresholds
 
@@ -292,7 +306,7 @@ has_inconsistent = cv_blocks > 1.0
 ## Performance
 
 - **Health check**: <10ms
-- **Full analysis**: 500ms - 2s per image (depends on size)
+- **Full analysis**: 500ms – 2s per image (depends on size)
 - **Memory**: ~200MB per container
 - **CPU**: Single-threaded, benefits from faster CPUs
 
@@ -342,4 +356,4 @@ curl -X POST http://localhost:8080/analyze \
 
 ## License
 
-Part of SusScrofa - see `docs/LICENSE.txt` for terms.
+Part of SusScrofa — see `docs/LICENSE.txt` for terms.

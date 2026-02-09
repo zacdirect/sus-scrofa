@@ -909,7 +909,7 @@ def static_report(request, analysis_id, report_type):
                         pdf = pdfkit.from_string(rendered, False)
                         # Create the HttpResponse object with the appropriate PDF headers.
                         response = HttpResponse(content_type="application/pdf")
-                        response["Content-Disposition"] = 'attachment; filename="Ghiro_report_%s.pdf"' % analysis_id
+                        response["Content-Disposition"] = 'attachment; filename="SusScrofa_report_%s.pdf"' % analysis_id
                         response.write(pdf)
                         return response
                     else:
@@ -943,6 +943,6 @@ def export_json(request, analysis_id):
                                   {"error": "You are not authorized to view this."})
 
     response = HttpResponse(content_type="application/json")
-    response["Content-Disposition"] = 'attachment; filename="Ghiro_export_json_%s.json"' % analysis_id
+    response["Content-Disposition"] = 'attachment; filename="SusScrofa_export_json_%s.json"' % analysis_id
     response.write(analysis.to_json)
     return response

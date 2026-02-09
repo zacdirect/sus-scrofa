@@ -1,4 +1,4 @@
-# SusScrofa - Copyright (C) 2013-2016 SusScrofa Developers.
+# Sus Scrofa - Copyright (C) 2026 Sus Scrofa Developers.
 # This file is part of SusScrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
@@ -84,9 +84,9 @@ class CaseModelTest(TestCase):
         # Create temporary directory to store everything.
         tmp_path = tempfile.mkdtemp()
         # Build the sus_scrofa path for auto upload.
-        ghiro_path = os.path.join(tmp_path, "sus_scrofa-test")
+        sus_scrofa_path = os.path.join(tmp_path, "sus_scrofa-test")
         # Set path and test.
-        settings.AUTO_UPLOAD_DIR = ghiro_path
+        settings.AUTO_UPLOAD_DIR = sus_scrofa_path
         # Create base dir.
         Command.create_auto_upload_dirs()
         # Create case.

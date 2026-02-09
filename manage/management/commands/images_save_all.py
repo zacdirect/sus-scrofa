@@ -20,9 +20,9 @@ class Command(BaseCommand):
         print("Starting")
 
         if os.path.exists(options["path"]):
-            dst_path = os.path.join(options["path"], "ghiro_output")
+            dst_path = os.path.join(options["path"], "sus_scrofa_output")
             if os.path.exists(dst_path):
-                print("ERROR: a folder 'ghiro_output' already exist in that path!")
+                print("ERROR: a folder 'sus_scrofa_output' already exist in that path!")
                 sys.exit()
             else:
                 # Create destination folder.

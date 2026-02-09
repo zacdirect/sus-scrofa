@@ -13,7 +13,7 @@ ALLOWED_HOSTS = ['*']
 SITE_ID = 1
 
 # Actual SusScrofa release.
-GHIRO_VERSION = "0.2.1"
+SUS_SCROFA_VERSION = "0.2.1"
 
 # If you set this to False, Django will make some optimizations so as not
 # to load the internationalization machinery.

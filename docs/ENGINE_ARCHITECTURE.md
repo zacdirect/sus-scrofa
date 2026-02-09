@@ -26,8 +26,7 @@ Image upload
 │     failed).  Never skip when image looks authentic.         │
 │                                                              │
 │  Phase 1b ── AI/ML plugins  (plugins/ai_ml/)                 │
-│     photoholmes, ai_detection, opencv_analysis,              │
-│     opencv_manipulation                                      │
+│     photoholmes, ai_detection, opencv_manipulation           │
 │     (only if the checkpoint says "continue")                 │
 │                                                              │
 │  Phase 2 ── Engine post-processing (NOT plugins)             │

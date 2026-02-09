@@ -24,7 +24,7 @@ class OpenCVManipulation(BaseAnalyzerModule):
     Runs as a containerized service for isolation and easy updates.
     """
     
-    order = 65
+    order = 40
     depends_on = []
     enabled = True
     description = "Image Manipulation Detection (OpenCV)"

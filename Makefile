@@ -18,7 +18,7 @@ SYSTEM_PYTHON := python3.13
 VENV_EXISTS := $(shell test -f $(VENV_DIR)/bin/pip && echo 1 || echo 0)
 
 help:
-	@echo "$(GREEN)Ghiro Development Commands$(NC)"
+	@echo "$(GREEN)Sus Scrofa Development Commands$(NC)"
 	@echo ""
 	@echo "$(YELLOW)Setup:$(NC)"
 	@echo "  make setup       - Complete setup (venv, deps, MongoDB, migrations)"
@@ -55,7 +55,7 @@ help:
 	@echo ""
 	@echo "$(YELLOW)Management:$(NC)"
 	@echo "  make status      - Check if services are running"
-	@echo "  make stop        - Stop all Ghiro services"
+	@echo "  make stop        - Stop all Sus Scrofa services"
 	@echo "  make logs        - Show recent logs"
 	@echo "  make clean       - Stop services and clean temp files"
 	@echo ""
@@ -138,18 +138,18 @@ setup: check-deps install mongodb
 
 mongodb:
 	@echo "$(GREEN)Checking MongoDB container...$(NC)"
-	@if podman ps -a --format "{{.Names}}" | grep -q "^ghiro-mongodb$$"; then \
-		if podman ps --format "{{.Names}}" | grep -q "^ghiro-mongodb$$"; then \
+	@if podman ps -a --format "{{.Names}}" | grep -q "^sus-scrofa-mongodb$$"; then \
+		if podman ps --format "{{.Names}}" | grep -q "^sus-scrofa-mongodb$$"; then \
 			echo "$(GREEN)✓ MongoDB container is already running$(NC)"; \
 		else \
 			echo "$(YELLOW)Starting existing MongoDB container...$(NC)"; \
-			podman start ghiro-mongodb; \
+			podman start sus-scrofa-mongodb; \
 		fi \
 	else \
 		echo "$(YELLOW)Creating new MongoDB container...$(NC)"; \
-		podman run -d --name ghiro-mongodb \
+		podman run -d --name sus-scrofa-mongodb \
 			-p 27017:27017 \
-			-v ghiro-mongodb-data:/data/db \
+			-v sus-scrofa-mongodb-data:/data/db \
 			docker.io/library/mongo:4.4; \
 	fi
 	@sleep 2
@@ -160,7 +160,7 @@ web: venv
 		echo "$(RED)Virtual environment not found. Run 'make setup' first.$(NC)"; \
 		exit 1; \
 	fi
-	@echo "$(GREEN)Starting Ghiro web server...$(NC)"
+	@echo "$(GREEN)Starting Sus Scrofa web server...$(NC)"
 	@$(MANAGE) runserver 0.0.0.0:8000
 
 processor: venv
@@ -168,7 +168,7 @@ processor: venv
 		echo "$(RED)Virtual environment not found. Run 'make setup' first.$(NC)"; \
 		exit 1; \
 	fi
-	@echo "$(GREEN)Starting Ghiro image processor...$(NC)"
+	@echo "$(GREEN)Starting Sus Scrofa image processor...$(NC)"
 	@$(MANAGE) process
 
 run: venv mongodb
@@ -185,7 +185,7 @@ run: venv mongodb
 		echo ""; \
 		sleep 3; \
 	fi
-	@echo "$(GREEN)Starting Ghiro in development mode...$(NC)"
+	@echo "$(GREEN)Starting Sus Scrofa in development mode...$(NC)"
 	@echo "$(YELLOW)Press Ctrl+C to stop all services$(NC)"
 	@echo ""
 	@trap 'make stop' INT; \
@@ -198,18 +198,18 @@ run: venv mongodb
 	echo "$(GREEN)✓ Services started:$(NC)"; \
 	echo "  Web Server:      http://localhost:8000 (PID: $$WEB_PID)"; \
 	echo "  Image Processor: Running (PID: $$PROC_PID)"; \
-	echo "  MongoDB:         Running on port 27017";
-
-dev: run \
+	echo "  MongoDB:         Running on port 27017"; \
 	echo ""; \
 	echo "$(YELLOW)Press Ctrl+C to stop$(NC)"; \
 	wait
 
+dev: run
+
 status:
-	@echo "$(GREEN)Ghiro Service Status:$(NC)"
+	@echo "$(GREEN)Sus Scrofa Service Status:$(NC)"
 	@echo ""
 	@echo "$(YELLOW)MongoDB Container:$(NC)"
-	@if podman ps --format "{{.Names}}\t{{.Status}}" | grep ghiro-mongodb; then \
+	@if podman ps --format "{{.Names}}\t{{.Status}}" | grep sus-scrofa-mongodb; then \
 		echo "$(GREEN)✓ Running$(NC)"; \
 	else \
 		echo "$(RED)✗ Not running$(NC)"; \
@@ -228,17 +228,24 @@ status:
 	else \
 		echo "$(RED)✗ Not running$(NC)"; \
 	fi
+	@echo ""
+	@echo "$(YELLOW)OpenCV Service:$(NC)"
+	@if podman ps --format "{{.Names}}" 2>/dev/null | grep -q sus-scrofa-opencv; then \
+		echo "$(GREEN)✓ Running$(NC) (http://localhost:8080)"; \
+	else \
+		echo "$(RED)✗ Not running$(NC) (run: make opencv-start)"; \
+	fi
 
 stop:
-	@echo "$(YELLOW)Stopping Ghiro services...$(NC)"
+	@echo "$(YELLOW)Stopping Sus Scrofa services...$(NC)"
 	@-pkill -f "manage.py runserver" 2>/dev/null && echo "$(GREEN)✓ Web server stopped$(NC)" || echo "$(YELLOW)Web server not running$(NC)"
 	@-pkill -f "manage.py process" 2>/dev/null && echo "$(GREEN)✓ Image processor stopped$(NC)" || echo "$(YELLOW)Image processor not running$(NC)"
 	@echo "$(GREEN)✓ All services stopped$(NC)"
-	@echo "$(YELLOW)Note: MongoDB container is still running. Use 'podman stop ghiro-mongodb' to stop it.$(NC)"
+	@echo "$(YELLOW)Note: MongoDB container is still running. Use 'podman stop sus-scrofa-mongodb' to stop it.$(NC)"
 
 logs:
 	@echo "$(GREEN)Recent MongoDB logs:$(NC)"
-	@podman logs --tail 20 ghiro-mongodb 2>/dev/null || echo "$(RED)MongoDB container not found$(NC)"
+	@podman logs --tail 20 sus-scrofa-mongodb 2>/dev/null || echo "$(RED)MongoDB container not found$(NC)"
 
 clean: stop
 	@echo "$(YELLOW)Cleaning temporary files...$(NC)"
@@ -360,45 +367,43 @@ photoholmes-clean:
 # OpenCV Service (Container-based)
 opencv-build:
 	@echo "$(GREEN)Building OpenCV service container...$(NC)"
-	@cd opencv_service && podman build -t ghiro-opencv:latest .
+	@cd opencv_service && podman build -t sus-scrofa-opencv:latest .
 	@echo "$(GREEN)✓ OpenCV service image built$(NC)"
 
 opencv-start:
 	@echo "$(GREEN)Starting OpenCV service...$(NC)"
-	@podman ps -a --filter name=ghiro-opencv -q | grep -q . && podman rm -f ghiro-opencv || true
+	@podman network exists sus-scrofa-net 2>/dev/null || podman network create sus-scrofa-net
+	@podman rm -f sus-scrofa-opencv 2>/dev/null || true
 	@podman run -d \
-		--name ghiro-opencv \
+		--replace \
+		--name sus-scrofa-opencv \
 		-p 8080:8080 \
-		--network ghiro-net \
-		ghiro-opencv:latest
+		--network sus-scrofa-net \
+		sus-scrofa-opencv:latest
+	@sleep 2
 	@echo "$(GREEN)✓ OpenCV service started on http://localhost:8080$(NC)"
 	@echo ""
 	@echo "Health check: curl http://localhost:8080/health"
 
 opencv-stop:
 	@echo "$(YELLOW)Stopping OpenCV service...$(NC)"
-	@podman stop ghiro-opencv 2>/dev/null || true
-	@podman rm ghiro-opencv 2>/dev/null || true
+	@podman stop sus-scrofa-opencv 2>/dev/null || true
+	@podman rm sus-scrofa-opencv 2>/dev/null || true
 	@echo "$(GREEN)✓ OpenCV service stopped$(NC)"
 
 opencv-logs:
-	@podman logs -f ghiro-opencv
+	@podman logs -f sus-scrofa-opencv
 
 opencv-restart: opencv-stop opencv-start
 
 opencv-shell:
-	@podman exec -it ghiro-opencv /bin/bash
+	@podman exec -it sus-scrofa-opencv /bin/bash
 
 opencv-test:
 	@echo "$(GREEN)Testing OpenCV service...$(NC)"
-	@curl -s http://localhost:8080/health | python -m json.tool || echo "$(RED)Service not responding$(NC)"
+	@curl -s http://localhost:8080/health | python3 -m json.tool || echo "$(RED)Service not responding$(NC)"
 
 opencv-clean: opencv-stop
 	@echo "$(YELLOW)Removing OpenCV service image...$(NC)"
-	@podman rmi ghiro-opencv:latest 2>/dev/null || true
-	@echo "$(GREEN)✓ OpenCV service cleaned$(NC)" 2. Start development: make dev"
-	@echo ""
-	@echo "$(YELLOW)Tip: To also clear MongoDB analysis data:$(NC)"
-	@echo "  podman rm -f ghiro-mongodb"
-	@echo "  podman volume rm ghiro-mongodb-data"
-	@echo ""
+	@podman rmi sus-scrofa-opencv:latest 2>/dev/null || true
+	@echo "$(GREEN)✓ OpenCV service cleaned$(NC)"

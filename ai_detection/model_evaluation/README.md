@@ -498,4 +498,4 @@ Do NOT commit:
 
 ## License
 
-This evaluation framework is part of SusScrofa/Ghiro and follows the same Apache 2.0 license. Individual models may have their own licenses - check before integration.
+This evaluation framework is part of Sus Scrofa and follows the same Apache 2.0 license. Individual models may have their own licenses - check before integration.

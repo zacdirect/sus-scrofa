@@ -24,8 +24,7 @@ Architecture::
     │                                                    │
     │  Phase 1b: AI/ML plugins   (plugins/ai_ml/)        │
     │     ai_detection (SDXL, SPAI, metadata detector),  │
-    │     opencv_manipulation, opencv_analysis,          │
-    │     photoholmes, etc.                              │
+    │     opencv_manipulation, photoholmes, etc.          │
     │                                                    │
     │  Phase 2: Engine post-processing (NOT plugins)     │
     │     a) Compliance Auditor  → results['audit']      │

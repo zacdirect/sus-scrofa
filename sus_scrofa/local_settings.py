@@ -26,7 +26,7 @@ DATABASES = {
 
 # Mongo database settings
 MONGO_URI = "mongodb://localhost/"
-MONGO_DB = "ghirodb"
+MONGO_DB = "sus_scrofa_db"
 
 # Max uploaded image size (in bytes).
 # Default is 150MB.

@@ -37,28 +37,8 @@ Plugins produce raw findings.  The auditor and confidence scorer
 
 ### Static plugins — `plugins/static/`
 
-| Order | File | Class | Result key |
-|-------|------|-------|------------|
-| 10 | `info.py` | `InfoAnalyzer` | `file_name`, `file_size` |
-| 10 | `hash.py` | `HashAnalyzer` | `hash` |
-| 10 | `mime.py` | `MimeAnalyzer` | `mime_type`, `file_type` |
-| 10 | `metadata_modern.py` | `MetadataModernAnalyzer` | `metadata` |
-| 15 | `perceptual_hash.py` | `PerceptualHashAnalyzer` | `perceptual_hash` |
-| 20 | `ela.py` | `ElaAnalyzer` | `ela` |
-| 20 | `hashcomparer.py` | `HashComparerAnalyzer` | *(ORM lookup)* |
-| 20 | `previewcomparer.py` | `PreviewComparerAnalyzer` | *(mutates metadata)* |
-| 25 | `noise_analysis.py` | `NoiseAnalysisProcessing` | `noise_analysis` |
-| 26 | `frequency_analysis.py` | `FrequencyAnalysisProcessing` | `frequency_analysis` |
-| 80 | `signatures.py` | `SignatureAnalyzer` | `signatures` |
-
 ### AI/ML plugins — `plugins/ai_ml/`
 
-| Order | File | Class | Result key |
-|-------|------|-------|------------|
-| 25 | `photoholmes_detection.py` | `PhotoholmesDetector` | `photoholmes` |
-| 30 | `ai_detection.py` | `AIDetection` | `ai_detection` |
-| 40 | `opencv_analysis.py` | `OpenCVAnalysis` | `opencv_analysis` |
-| 65 | `opencv_manipulation.py` | `OpenCVManipulation` | `opencv_manipulation` |
 
 ---
 

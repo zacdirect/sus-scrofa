@@ -22,7 +22,7 @@ class LoginTest(LiveServerTestCase):
     def test_release_in_login_footer(self):
         self.browser.get(
             self.live_server_url + reverse("django.contrib.auth.views.login"))
-        self.assertIn(settings.GHIRO_VERSION,
+        self.assertIn(settings.SUS_SCROFA_VERSION,
                       self.browser.find_element_by_tag_name("footer").text)
     
     def test_login_form_available(self):

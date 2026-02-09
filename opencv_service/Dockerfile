@@ -1,10 +1,10 @@
-# OpenCV Service for Ghiro
+# OpenCV Service for Sus Scrofa
 # Provides image manipulation detection via REST API
 # Based on: https://github.com/demisto/dockerfiles/blob/master/docker/opencv/Dockerfile
 
 FROM python:3.12-slim
 
-LABEL maintainer="Ghiro Developers"
+LABEL maintainer="Sus Scrofa Developers"
 LABEL description="OpenCV-based image manipulation detection service"
 
 # Copy requirements first for better caching
@@ -40,9 +40,6 @@ EXPOSE 8080
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
-
-# Run the service
-CMD ["python", "service.py"]
 
 # Run the service
 CMD ["python", "service.py"]

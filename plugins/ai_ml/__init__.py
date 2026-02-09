@@ -26,8 +26,7 @@ Order  Class                      Result key
 =====  =========================  =========================
 25     PhotoholmesDetector        ``photoholmes``
 30     AIDetection                ``ai_detection``
-40     OpenCVAnalysis             ``opencv_analysis``
-65     OpenCVManipulation         ``opencv_manipulation``
+40     OpenCVManipulation         ``opencv_manipulation``
 =====  =========================  =========================
 
 Adding a new AI/ML plugin

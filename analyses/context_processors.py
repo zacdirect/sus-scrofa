@@ -1,4 +1,4 @@
-# SusScrofa - Copyright (C) 2013-2016 SusScrofa Developers.
+# Sus Scrofa - Copyright (C) 2026 Sus Scrofa Developers.
 # This file is part of SusScrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
@@ -15,6 +15,6 @@ def dashboard_data(request):
             "analyses_complete_count": analyses_complete_count,
             "analyses_wait_count": analyses_wait_count}
 
-def ghiro_release(request):
+def sus_scrofa_release(request):
     """Context processor used to populate the sus_scrofa release label in all pages."""
-    return {"ghiro_release": settings.GHIRO_VERSION}
+    return {"sus_scrofa_release": settings.SUS_SCROFA_VERSION}

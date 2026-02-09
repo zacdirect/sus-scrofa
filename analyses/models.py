@@ -16,7 +16,7 @@ from users.models import Profile
 from lib.db import get_file, get_file_length, get_db, get_fs, save_file
 from lib.utils import create_thumb, get_content_type_from_file
 from sus_scrofa.common import check_allowed_content
-from lib.exceptions import GhiroValidationException
+from lib.exceptions import SusScrofaValidationException
 
 # Lazy load DB and FS when needed
 # db = mongo_connect()
@@ -214,7 +214,7 @@ class Analysis(models.Model):
 
         # Check on allowed file type.
         if not check_allowed_content(content_type):
-            raise GhiroValidationException("Skipping %s: file type not allowed." % file_name)
+            raise SusScrofaValidationException("Skipping %s: file type not allowed." % file_name)
         else:
             # Add to analysis queue.
             return Analysis.objects.create(owner=user, case=case, file_name=file_name,

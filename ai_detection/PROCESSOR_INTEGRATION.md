@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Ghiro processing system uses **analyzer modules** (processors) that run during image analysis. The AI detection architecture integrates seamlessly as one of these analyzer modules.
+The Sus Scrofa processing system uses **analyzer modules** (processors) that run during image analysis. The AI detection architecture integrates seamlessly as one of these analyzer modules.
 
 ## Architecture Fit
 
@@ -45,7 +45,7 @@ The Ghiro processing system uses **analyzer modules** (processors) that run duri
 
 ## How It Works
 
-### 1. AnalysisManager (Ghiro's Processor System)
+### 1. AnalysisManager (Sus Scrofa's Processor System)
 - Discovers and loads all analyzer modules from `plugins/analyzer/`
 - Sorts by execution order
 - Runs each module in sequence
@@ -55,7 +55,7 @@ The Ghiro processing system uses **analyzer modules** (processors) that run duri
 **Location**: `plugins/analyzer/ai_detection.py`
 **Order**: 30 (runs after basic metadata but before final scoring)
 
-**Role**: Bridge between Ghiro's processing system and our detection architecture
+**Role**: Bridge between Sus Scrofa's processing system and our detection architecture
 
 ```python
 class AIDetection(BaseAnalyzerModule):
@@ -64,7 +64,7 @@ class AIDetection(BaseAnalyzerModule):
         detector = MultiLayerDetector(enable_ml=True)
         result = detector.detect(image_path)
         
-        # Formats results for Ghiro
+        # Formats results for Sus Scrofa
         return {
             'ai_detection': {
                 'authenticity_score': result['authenticity_score'],
@@ -148,7 +148,7 @@ def calculate_manipulation_confidence(results):
    │     ├─ Authenticity: 15/100
    │     ├─ AI Probability: 85%
    │     └─ Manipulation Probability: 60%
-   └─ Returns formatted results to Ghiro
+   └─ Returns formatted results to Sus Scrofa
    
    ConfidenceScoring (order=90):
    └─ Aggregates all results
@@ -198,20 +198,20 @@ confidence['confidence_score'] = audit_metadata.get('manipulation_probability')
 ## Why This Works
 
 ### Separation of Concerns
-- **AnalysisManager**: Orchestrates all analyzer modules (Ghiro level)
+- **AnalysisManager**: Orchestrates all analyzer modules (Sus Scrofa level)
 - **AIDetection module**: Bridges to detection architecture
 - **MultiLayerDetector**: Orchestrates detectors, owns the `ResultStore` (detection level)
 - **ComplianceAuditor**: Gatekeeper for verdicts, reads from the store (decision level)
 
 Each level has clear responsibility:
-1. Ghiro: Run modules, store results
+1. Sus Scrofa: Run modules, store results
 2. AIDetection module: Call detection system, format output
 3. Orchestrator: Run detectors efficiently, maintain shared store
 4. Auditor: Make all decisions, read from store, consolidate into three buckets
 
 ### Clean Integration
 The detection architecture is **completely self-contained**:
-- Ghiro doesn't know about detectors or auditors
+- Sus Scrofa doesn't know about detectors or auditors
 - Detection system doesn't know about Django or AnalysisManager
 - AIDetection module is the clean interface between them
 
@@ -238,7 +238,7 @@ python manage.py test tests.test_forensics_integration
 ## Summary
 
 **Processors fit the architecture perfectly**:
-- Ghiro's processing system runs analyzer modules
+- Sus Scrofa's processing system runs analyzer modules
 - AIDetection module uses our detection architecture
 - Orchestrator runs detectors, consults auditor
 - Auditor consolidates into three buckets

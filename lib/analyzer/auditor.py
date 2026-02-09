@@ -70,7 +70,7 @@ class Finding:
 #   noise_analysis    (dict)  — noise plugin (order 25)
 #     .inconsistency_score, .anomaly_count, .suspicious
 #   frequency_analysis(dict)  — frequency plugin (order 26)
-#   opencv_manipulation(dict) — opencv plugin (order 65)
+#   opencv_manipulation(dict) — opencv plugin (order 40)
 #     .enabled, .manipulation_detection, .noise_analysis, .jpeg_artifacts
 #   ai_detection      (dict)  — ai_detection plugin (order 30)
 #     .enabled, .detection_layers[]

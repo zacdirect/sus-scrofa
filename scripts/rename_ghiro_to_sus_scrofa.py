@@ -62,7 +62,7 @@ RENAME_RULES = {
         # Database name in connection strings
         (r'\bghirodb\b', 'sus_scrofa_db'),
         # Echo/display text
-        (r'\bGhiro\b', 'SusScrofa'),
+        (r'\bGhiro\b', 'Sus Scrofa'),
         (r'\bghiro\b', 'sus_scrofa'),
         (r'\bGHIRO\b', 'SUS_SCROFA'),
     ],
@@ -84,7 +84,7 @@ RENAME_RULES = {
     'html_text': [
         # Display text - title case for display, lowercase for identifiers
         (r'\bGHIRO\b', 'SUS SCROFA'),
-        (r'\bGhiro\b', 'SusScrofa'),
+        (r'\bGhiro\b', 'Sus Scrofa'),
         (r'\bghiro\b', 'sus_scrofa'),
     ],
     'urls': [
@@ -94,14 +94,14 @@ RENAME_RULES = {
     ],
     'rst': [
         # ReStructuredText docs
-        (r'\bGhiro\b', 'SusScrofa'),
+        (r'\bGhiro\b', 'Sus Scrofa'),
         (r'\bghiro\b', 'sus_scrofa'),
         (r'\bGHIRO\b', 'SUS_SCROFA'),
     ],
     'migration_comments': [
         # Only touch comments in migration files, not the actual migration code
         (r'# This file is part of Ghiro\.', '# This file is part of SusScrofa.'),
-        (r'\bGhiro\b', 'SusScrofa'),
+        (r'\bGhiro\b', 'Sus Scrofa'),
         (r'\bghiro\b', 'sus_scrofa'),
     ],
 }

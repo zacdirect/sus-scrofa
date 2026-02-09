@@ -26,7 +26,7 @@ HF_MODELS := Organika/sdxl-detector
 VENV_EXISTS := $(shell test -f $(VENV_DIR)/bin/pip && echo 1 || echo 0)
 
 help:
-	@echo "$(GREEN)Ghiro AI Detection Setup$(NC)"
+	@echo "$(GREEN)Sus Scrofa AI Detection Setup$(NC)"
 	@echo ""
 	@echo "$(YELLOW)Setup:$(NC)"
 	@echo "  make setup       - Complete setup (venv + dependencies + all weights/models)"
