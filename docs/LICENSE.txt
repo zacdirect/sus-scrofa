@@ -1,4 +1,4 @@
-SusScrofa is copyrighted by SusScrofa Developers and released under the following
+Sus Scrofa is copyrighted by Sus Scrofa Developers and released under the following
 license:
 
                     GNU GENERAL PUBLIC LICENSE

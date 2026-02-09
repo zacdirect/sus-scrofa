@@ -109,13 +109,29 @@ class SPAIDetector:
                     if k.startswith('encoder.')
                 }
             
-            # Load into model
+            # Load into model — use strict=True to catch architecture mismatches
+            # With correct config (INIT_VALUES=None, etc.) all keys should match.
             missing, unexpected = model.load_state_dict(state_dict, strict=False)
             
             if missing:
-                logger.warning(f"Missing keys in checkpoint: {missing}")
+                logger.warning(
+                    f"Missing keys in checkpoint ({len(missing)}): {missing[:10]}"
+                    + (f"... and {len(missing)-10} more" if len(missing) > 10 else "")
+                )
+                # If many keys are missing, the architecture likely doesn't match
+                if len(missing) > 5:
+                    logger.error(
+                        "Too many missing keys — config likely doesn't match checkpoint. "
+                        "Check INIT_VALUES, MLP_RATIO, PATCH_VIT settings."
+                    )
             if unexpected:
-                logger.warning(f"Unexpected keys in checkpoint: {unexpected}")
+                logger.warning(
+                    f"Unexpected keys in checkpoint ({len(unexpected)}): {unexpected[:10]}"
+                    + (f"... and {len(unexpected)-10} more" if len(unexpected) > 10 else "")
+                )
+            
+            if not missing and not unexpected:
+                logger.info("All checkpoint keys matched model architecture perfectly.")
             
             return model
             
@@ -148,12 +164,17 @@ class SPAIDetector:
         """
         # Load and preprocess image
         img_tensor = self._preprocess_image(image)
-        img_tensor = img_tensor.to(self.device)
+        
+        # Move to device
+        if isinstance(img_tensor, list):
+            img_tensor = [t.to(self.device) for t in img_tensor]
+        else:
+            img_tensor = img_tensor.to(self.device)
         
         # Run inference
         with torch.no_grad():
             if isinstance(img_tensor, list):
-                # Arbitrary resolution mode
+                # Arbitrary resolution mode — PatchBasedMFViT.forward_arbitrary_resolution_batch
                 output = self.model(img_tensor, self.config.MODEL.FEATURE_EXTRACTION_BATCH)
             else:
                 # Fixed resolution mode
@@ -206,7 +227,7 @@ class SPAIDetector:
     def _preprocess_image(
         self,
         image: Union[str, pathlib.Path, np.ndarray, Image.Image]
-    ) -> torch.Tensor:
+    ) -> Union[torch.Tensor, List[torch.Tensor]]:
         """
         Preprocess image for inference.
         
@@ -214,7 +235,8 @@ class SPAIDetector:
             image: Input image in various formats
         
         Returns:
-            Preprocessed tensor ready for model input
+            For arbitrary resolution mode: list of [1, C, H, W] tensors
+            For fixed resolution mode: single [1, C, H, W] tensor
         """
         # Load image if path
         if isinstance(image, (str, pathlib.Path)):
@@ -224,12 +246,17 @@ class SPAIDetector:
         elif not isinstance(image, Image.Image):
             raise TypeError(f"Unsupported image type: {type(image)}")
         
-        # Apply transformations
+        # Apply transformations (produces [C, H, W] tensor in [0, 1])
         img_tensor = self.transform(image)
         
-        # Add batch dimension if needed
+        # Add batch dimension
         if img_tensor.dim() == 3:
-            img_tensor = img_tensor.unsqueeze(0)
+            img_tensor = img_tensor.unsqueeze(0)  # [1, C, H, W]
+        
+        # For arbitrary resolution mode, PatchBasedMFViT expects a list of tensors
+        original_resolution = getattr(self.config.TEST, 'ORIGINAL_RESOLUTION', True)
+        if original_resolution:
+            return [img_tensor]
         
         return img_tensor
     

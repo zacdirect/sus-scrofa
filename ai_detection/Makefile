@@ -92,14 +92,14 @@ install: venv
 	echo "$(YELLOW)Installing PyTorch and dependencies...$(NC)"; \
 	echo "  This may take several minutes..."; \
 	echo ""; \
-	$(PIP) install --extra-index-url $$INDEX_URL torch>=2.0.0 torchvision>=0.15.0; \
-	$(PIP) install opencv-python>=4.10.0 pyyaml>=6.0.1 scipy>=1.14.0 \
-		timm==0.4.12 yacs>=0.1.8 numpy>=1.26.4 torchmetrics>=1.4.0 \
-		tqdm>=4.66.4 pillow>=10.4.0 einops>=0.8.0 ftfy>=6.1.0 regex>=2023.0.0; \
+	$(PIP) install --extra-index-url "$$INDEX_URL" "torch>=2.0.0" "torchvision>=0.15.0"; \
+	$(PIP) install "opencv-python>=4.10.0" "pyyaml>=6.0.1" "scipy>=1.14.0" \
+		"timm==0.4.12" "yacs>=0.1.8" "numpy>=1.26.4" "torchmetrics>=1.4.0" \
+		"tqdm>=4.66.4" "pillow>=10.4.0" "einops>=0.8.0" "ftfy>=6.1.0" "regex>=2023.0.0"; \
 	echo "$(YELLOW)Installing HuggingFace Transformers...$(NC)"; \
-	$(PIP) install transformers>=4.36.0 safetensors>=0.4.0; \
+	$(PIP) install "transformers>=4.36.0" "safetensors>=0.4.0"; \
 	echo "$(YELLOW)Installing CLIP (for alternative backbones)...$(NC)"; \
-	$(PIP) install git+https://github.com/openai/CLIP.git; \
+	$(PIP) install open-clip-torch; \
 	echo ""; \
 	echo "$(GREEN)✓ Dependencies installed$(NC)"
 
