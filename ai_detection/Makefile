@@ -57,7 +57,7 @@ help:
 detect-system:
 	@echo "$(BLUE)Detecting system configuration...$(NC)"
 	@echo ""
-	@$(SYSTEM_PYTHON) detect_system.py
+	@$(SYSTEM_PYTHON) ../scripts/detect_system.py
 
 setup: detect-system venv install weights models
 	@echo ""
@@ -81,8 +81,8 @@ install: venv
 	@echo "$(GREEN)Installing AI detection dependencies...$(NC)"
 	@echo ""
 	@echo "$(BLUE)Detecting GPU/CUDA configuration...$(NC)"
-	@INDEX_URL=$$($(SYSTEM_PYTHON) detect_system.py --index-url); \
-	BACKEND=$$($(SYSTEM_PYTHON) detect_system.py --backend); \
+	@INDEX_URL=$$($(SYSTEM_PYTHON) ../scripts/detect_system.py --index-url); \
+	BACKEND=$$($(SYSTEM_PYTHON) ../scripts/detect_system.py --backend); \
 	echo "$(YELLOW)Backend: $$BACKEND$(NC)"; \
 	echo "$(YELLOW)PyTorch Index: $$INDEX_URL$(NC)"; \
 	echo ""; \

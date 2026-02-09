@@ -1,4 +1,4 @@
-.PHONY: help start stop status logs clean mongodb web processor dev run setup install check-deps venv reset-db fresh ai-setup ai-verify ai-clean photoholmes-setup photoholmes-verify photoholmes-clean
+.PHONY: help start stop status logs clean mongodb web processor dev run setup install check-deps venv reset-db fresh ai-setup ai-verify ai-clean photoholmes-setup photoholmes-verify photoholmes-clean detect-system
 
 # Colors for output
 RED := \033[0;31m
@@ -27,6 +27,7 @@ help:
 	@echo "  make install     - Install Python dependencies"
 	@echo "  make check-deps  - Check system dependencies"
 	@echo "  make mongodb     - Start MongoDB container (Podman)"
+	@echo "  make detect-system - Detect GPU/CUDA availability for AI/ML"
 	@echo ""
 	@echo "$(YELLOW)AI Detection (Optional):$(NC)"
 	@echo "  make ai-setup    - Setup AI detection (SPAI + HuggingFace models)"
@@ -83,6 +84,11 @@ check-deps:
 	@dpkg -l | grep -q libexempi8 && echo "$(GREEN)✓ Exempi found (XMP metadata)$(NC)" || echo "$(YELLOW)⚠ Exempi not found (install libexempi8 for XMP support)$(NC)"
 	@echo ""
 	@dpkg -l | grep -q python3.13-dev && echo "$(GREEN)✓ Python dev headers found$(NC)" || echo "$(RED)✗ Python dev headers not found (install python3.13-dev)$(NC)"
+
+detect-system:
+	@echo "$(GREEN)Detecting GPU/CUDA configuration for AI/ML...$(NC)"
+	@echo ""
+	@$(SYSTEM_PYTHON) scripts/detect_system.py
 
 venv:
 	@if [ $(VENV_EXISTS) -eq 1 ]; then \
@@ -332,24 +338,38 @@ ai-clean:
 photoholmes-setup:
 	@echo "$(GREEN)Setting up photoholmes forgery detection...$(NC)"
 	@echo ""
-	@echo "Installing PyTorch (CPU-only)..."
-	$(PIP) install torch torchvision --index-url https://download.pytorch.org/whl/cpu
-	@echo ""
-	@echo "Installing jpegio (JPEG DCT extraction)..."
-	$(PIP) install jpegio>=0.4.0
-	@echo ""
-	@echo "Installing photoholmes from GitHub..."
-	$(PIP) install "photoholmes @ git+https://github.com/photoholmes/photoholmes.git"
-	@echo ""
-	@echo "$(GREEN)========================================$(NC)"
-	@echo "$(GREEN)✓ Photoholmes ready!$(NC)"
-	@echo "$(GREEN)========================================$(NC)"
-	@echo ""
-	@echo "CPU methods available: DQ, ZERO, Noisesniffer"
-	@echo "GPU methods: set SUSSCROFA_PHOTOHOLMES_GPU=1 and download weights"
-	@echo ""
-	@echo "Verify installation:"
-	@echo "  make photoholmes-verify"
+	@echo "$(YELLOW)Detecting system configuration...$(NC)"
+	@INDEX_URL=$$($(SYSTEM_PYTHON) scripts/detect_system.py --index-url); \
+	BACKEND=$$($(SYSTEM_PYTHON) scripts/detect_system.py --backend); \
+	echo "Backend: $$BACKEND"; \
+	echo "PyTorch Index: $$INDEX_URL"; \
+	echo ""; \
+	echo "$(YELLOW)Step 1: Installing PyTorch ($$BACKEND)...$(NC)"; \
+	if [ "$$BACKEND" = "CPU" ]; then \
+		echo "Installing lightweight CPU-only version (~190MB)"; \
+	else \
+		echo "Installing GPU-accelerated version with CUDA support"; \
+	fi; \
+	$(PIP) install --index-url $$INDEX_URL torch torchvision; \
+	echo ""; \
+	echo "$(YELLOW)Step 2: Installing additional dependencies...$(NC)"; \
+	$(PIP) install jpegio>=0.4.0 torchmetrics torch_kmeans; \
+	echo ""; \
+	echo "$(YELLOW)Step 3: Installing photoholmes from GitHub...$(NC)"; \
+	echo "Since torch is already installed, pip won't re-download different version."; \
+	$(PIP) install --no-deps "photoholmes @ git+https://github.com/photoholmes/photoholmes.git"; \
+	echo "Installing photoholmes's other dependencies (numpy, opencv, etc)..."; \
+	$(PIP) install numpy matplotlib opencv-python scikit-learn scikit-image pydantic tqdm scipy pyyaml mpmath typer pillow wget ipykernel; \
+	echo ""; \
+	echo "$(GREEN)========================================$(NC)"; \
+	echo "$(GREEN)✓ Photoholmes ready!$(NC)"; \
+	echo "$(GREEN)========================================$(NC)"; \
+	echo ""; \
+	echo "CPU methods available: DQ, ZERO, Noisesniffer"; \
+	echo "GPU methods: set SUSSCROFA_PHOTOHOLMES_GPU=1 and download weights"; \
+	echo ""; \
+	echo "Verify installation:"; \
+	echo "  make photoholmes-verify"
 
 photoholmes-verify:
 	@echo "$(GREEN)Verifying photoholmes installation...$(NC)"

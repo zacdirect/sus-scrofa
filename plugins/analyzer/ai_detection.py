@@ -49,6 +49,7 @@ class AIDetection(BaseAnalyzerModule):
     name = "AI Generation Detection (Multi-Layer)"
     description = "Metadata + ML model detection for AI-generated images"
     order = 30
+    tier = "ai_ml"
 
     def __init__(self):
         super().__init__()

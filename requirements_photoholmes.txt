@@ -1,18 +1,48 @@
 # Photoholmes forgery detection dependencies
 # Install via: make photoholmes-setup
-# These are OPTIONAL — SusScrofa works without them, but with reduced
+# These are OPTIONAL — Sus Scrofa works without them, but with reduced
 # forgery detection capability.
 
-# PyTorch — photoholmes requires torch >= 2.1
-# For CPU-only (smaller download, sufficient for DQ/ZERO/Noisesniffer):
-#   pip install torch --index-url https://download.pytorch.org/whl/cpu
-# For GPU (CUDA) support:
-#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
-torch>=2.1.0
-torchvision>=0.16.0
+# ============================================================================
+# IMPORTANT: Installation order matters!
+# ============================================================================
+# The photoholmes library declares torch>=2.1 as a required dependency.
+# If you install photoholmes directly, pip will fetch the default (CUDA)
+# PyTorch build from PyPI, which is 2GB+ and includes GPU support you
+# likely don't need for CPU-only forgery detection.
+#
+# The Makefile uses unified GPU detection (scripts/detect_system.py) to
+# automatically choose CPU-only (~190MB) or CUDA-enabled (~2GB+) PyTorch
+# based on your system's GPU/CUDA availability.
+#
+# Installation order:
+#   1. Detect system: GPU/CUDA availability → choose PyTorch index
+#   2. torch + torchvision (from detected index: CPU or CUDA)
+#   3. photoholmes with --no-deps flag
+#   4. photoholmes's other dependencies (numpy, opencv, etc.)
+#
+# The Makefile does this automatically: `make photoholmes-setup`
+# See: docs/GPU_DETECTION.md for details
+# ============================================================================
 
-# JPEG DCT coefficient extraction (required for DQ method)
-jpegio>=0.4.0
+# Step 1: PyTorch (CPU or CUDA, auto-detected)
+# Install via: pip install --index-url <detected-index> torch torchvision
+# CPU index:  https://download.pytorch.org/whl/cpu
+# CUDA index: https://download.pytorch.org/whl/cu124 (or cu121, cu118)
+torch>=2.1
+torchvision>=0.16
 
-# Photoholmes library (from GitHub — not yet on PyPI)
+# Step 2: Additional photoholmes dependencies
+jpegio>=0.4.0          # JPEG DCT coefficient extraction (required for DQ method)
+torchmetrics           # Metrics for torch models
+torch_kmeans           # K-means clustering for torch
+
+# Step 3: Photoholmes library (install with --no-deps to avoid re-downloading torch)
+# Install via: pip install --no-deps "photoholmes @ git+https://github.com/photoholmes/photoholmes.git"
 photoholmes @ git+https://github.com/photoholmes/photoholmes.git
+
+# Step 4: Other photoholmes dependencies (safe to install normally)
+# These are likely already satisfied by Sus Scrofa's main requirements, but listed for completeness:
+# numpy, matplotlib, opencv-python, scikit-learn, scikit-image, pydantic, tqdm,
+# scipy, pyyaml, mpmath, typer, pillow, wget, ipykernel
+

@@ -1,5 +1,5 @@
 """
-SusScrofa AI Detection Module
+Sus Scrofa AI Detection Module
 
 Embedded AI detection methods for analyzing potentially AI-generated images.
 Designed to be modular and easily replaceable as the field evolves.

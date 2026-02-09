@@ -23,3 +23,31 @@ Community and reports
 
 [Coming Soon?](https://duckduckgo.com/?q=Katsuhiro+Harada+shirt&iar=images)
 
+GPU/CUDA Detection
+------------------
+
+Sus Scrofa uses unified GPU/CUDA detection to automatically optimize AI/ML installations.
+
+**Check your system:**
+```bash
+make detect-system
+```
+
+This will:
+- Detect NVIDIA GPU hardware
+- Check driver installation
+- Identify CUDA version
+- Recommend CPU or GPU PyTorch installation
+
+**AI/ML Setup:**
+```bash
+make photoholmes-setup    # Photoholmes forgery detection
+make ai-setup             # AI Detection (SPAI, SDXL)
+```
+
+Both automatically install appropriate PyTorch version:
+- **CPU-only**: ~190MB (no GPU detected)
+- **CUDA-enabled**: ~2GB+ (GPU + drivers detected)
+
+**Documentation:** See `docs/GPU_DETECTION.md` for details.
+

@@ -5,7 +5,7 @@ Production wrapper for the Organika/sdxl-detector model, integrated into
 the multi-layer detection framework.
 
 Like SPAIDetector, this runs in the ai_detection venv via subprocess
-to avoid polluting the main SusScrofa environment with torch/transformers.
+to avoid polluting the main Sus Scrofa environment with torch/transformers.
 
 Architecture: SwinForImageClassification (86.8M params, image_size=224)
 Labels: 0 = "artificial", 1 = "human"
@@ -110,7 +110,7 @@ class SDXLDetector(BaseDetector):
             infer_script = self._ai_detection_dir / "sdxl_infer.py"
 
             # Resolve to absolute path — subprocess runs with cwd=ai_detection/
-            # so relative image paths from SusScrofa's root won't work otherwise.
+            # so relative image paths from Sus Scrofa's root won't work otherwise.
             abs_image_path = str(Path(image_path).resolve())
 
             result = subprocess.run(

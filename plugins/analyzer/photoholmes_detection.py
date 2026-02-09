@@ -121,7 +121,8 @@ def _mask_to_base64_png(mask_tensor):
 class PhotoholmesDetector(BaseAnalyzerModule):
     """Image forgery detection using the photoholmes library."""
 
-    order = 25
+    order = 25  # After hashing (15), before confidence scoring (90)
+    tier = "ai_ml"
 
     # Environment variable to enable GPU methods
     ENABLE_GPU_METHODS = os.environ.get("SUSSCROFA_PHOTOHOLMES_GPU", "0") == "1"

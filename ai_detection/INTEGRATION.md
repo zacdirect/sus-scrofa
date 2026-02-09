@@ -1,6 +1,6 @@
 # AI Detection Integration Guide
 
-This document explains how the AI detection module integrates with SusScrofa.
+This document explains how the AI detection module integrates with Sus Scrofa.
 
 ## Architecture Overview
 
@@ -26,7 +26,7 @@ sus_scrofa/
 ### 1. Modularity
 - **Separate directory**: `ai_detection/` is self-contained
 - **Own build system**: Independent Makefile with `make setup`, `make verify`, `make clean`
-- **Isolated dependencies**: Separate virtual environment, doesn't pollute main SusScrofa
+- **Isolated dependencies**: Separate virtual environment, doesn't pollute main Sus Scrofa
 - **Easy replacement**: When better AI detection methods emerge, swap in new module
 
 ### 2. Performance
@@ -102,18 +102,18 @@ class SPAIDetection(AnalyzerModule):
 3. **Inference**: `run()` processes images
    - Gets detector (cached or new)
    - Calls `detector.predict(image_path)`
-   - Returns formatted results for SusScrofa
+   - Returns formatted results for Sus Scrofa
 
 ## Setup Workflow
 
 ### For Developers
 
 ```bash
-# 1. Clone SusScrofa repository
+# 1. Clone Sus Scrofa repository
 git clone <sus_scrofa-repo>
 cd sus_scrofa
 
-# 2. Main SusScrofa setup
+# 2. Main Sus Scrofa setup
 make setup
 make install
 
@@ -121,13 +121,13 @@ make install
 make ai-setup      # Creates venv, installs deps, downloads weights
 make ai-verify     # Tests installation
 
-# 4. Run SusScrofa
+# 4. Run Sus Scrofa
 make run
 ```
 
 ### For Users
 
-If AI detection is not set up, SusScrofa will:
+If AI detection is not set up, Sus Scrofa will:
 - Log warning: "AI detection module not available"
 - Continue processing without AI detection
 - Other analysis plugins work normally
@@ -326,7 +326,7 @@ self.log("INFO", f"AI detection took {elapsed:.2f}s")
 
 ### Access Control
 
-- Plugin runs with same permissions as SusScrofa
+- Plugin runs with same permissions as Sus Scrofa
 - No network access required after setup
 - No external API calls during inference
 - Model inference is local-only

@@ -100,7 +100,7 @@ RENAME_RULES = {
     ],
     'migration_comments': [
         # Only touch comments in migration files, not the actual migration code
-        (r'# This file is part of Ghiro\.', '# This file is part of SusScrofa.'),
+        (r'# This file is part of Ghiro\.', '# This file is part of Sus Scrofa.'),
         (r'\bGhiro\b', 'Sus Scrofa'),
         (r'\bghiro\b', 'sus_scrofa'),
     ],
