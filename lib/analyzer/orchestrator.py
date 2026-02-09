@@ -1,4 +1,4 @@
-# SusScrofa - Copyright (C) 2026 SusScrofa Developers.
+# Sus Scrofa - Copyright (C) 2026 Sus Scrofa Developers.
 # This file is part of Sus Scrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
@@ -69,7 +69,7 @@ TIER_AI_ML = "ai_ml"
 
 # Auditor threshold: if the auditor produces a score this far from
 # the midpoint (50), skip the AI/ML tier.  20 means ≤30 or ≥70.
-EARLY_VERDICT_MARGIN = 20
+EARLY_VERDICT_MARGIN = 30
 
 
 def discover_plugins() -> Tuple[List[Type[BaseAnalyzerModule]],

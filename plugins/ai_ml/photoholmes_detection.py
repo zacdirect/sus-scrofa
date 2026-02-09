@@ -1,4 +1,4 @@
-# SusScrofa - Copyright (C) 2026 SusScrofa Developers.
+# Sus Scrofa - Copyright (C) 2026 Sus Scrofa Developers.
 # This file is part of Sus Scrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
@@ -38,6 +38,7 @@ import tempfile
 from io import BytesIO
 
 from lib.analyzer.base import BaseAnalyzerModule
+from lib.analyzer.plugin_contract import create_finding, validate_audit_findings
 from lib.utils import str2temp_file
 
 logger = logging.getLogger(__name__)
@@ -359,4 +360,84 @@ class PhotoholmesDetector(BaseAnalyzerModule):
         else:
             logger.warning(f"[Task {task.id}]: No photoholmes methods succeeded")
 
+        # === AUDITOR INTEGRATION (Plugin Data Contract) ===
+        self.results["photoholmes"]["audit_findings"] = self._create_audit_findings(
+            all_results, methods_run, forgery_detected_count, avg_score, max_score
+        )
+
         return self.results
+
+    def _create_audit_findings(self, methods_results: dict, methods_run: int,
+                               forgery_count: int, avg_score: float, max_score: float) -> list:
+        """
+        Convert photoholmes results to standardized audit findings.
+        
+        Strategy:
+            - Each method with clear signal produces a finding
+            - Use consensus across methods for overall assessment
+            - Reserve HIGH for strong multi-method agreement
+        """
+        findings = []
+        
+        if methods_run == 0:
+            return findings
+        
+        # Per-method findings (for significant detections)
+        for method_name, result in methods_results.items():
+            if isinstance(result, dict) and not result.get("error"):
+                det_score = result.get("detection_score", 0.0)
+                forgery = result.get("forgery_detected", False)
+                
+                # Only report if detection score is significant
+                if det_score >= 0.7:
+                    findings.append(create_finding(
+                        level='MEDIUM',
+                        category='Photoholmes Forgery Detection',
+                        description=f'{result.get("method", method_name)}: '
+                                  f'{det_score*100:.1f}% forgery probability',
+                        is_positive=False,
+                        confidence=det_score
+                    ))
+                elif det_score <= 0.1 and methods_run <= 3:
+                    # If we only ran a few methods and they're clean, that's mild evidence
+                    findings.append(create_finding(
+                        level='LOW',
+                        category='Photoholmes Forgery Detection',
+                        description=f'{result.get("method", method_name)}: '
+                                  f'{det_score*100:.1f}% forgery probability (clean)',
+                        is_positive=True,
+                        confidence=1.0 - det_score
+                    ))
+        
+        # Consensus finding (multiple methods agreement)
+        if methods_run >= 3:
+            consensus_pct = forgery_count / methods_run
+            
+            if consensus_pct >= 0.67:  # 2/3+ methods agree on forgery
+                findings.append(create_finding(
+                    level='HIGH' if consensus_pct >= 0.8 else 'MEDIUM',
+                    category='Photoholmes Consensus',
+                    description=f'{forgery_count}/{methods_run} methods detected forgery '
+                              f'(avg score: {avg_score:.2f})',
+                    is_positive=False,
+                    confidence=avg_score
+                ))
+            elif consensus_pct <= 0.33 and avg_score < 0.3:  # 2/3+ methods say clean
+                findings.append(create_finding(
+                    level='MEDIUM',
+                    category='Photoholmes Consensus',
+                    description=f'{methods_run - forgery_count}/{methods_run} methods found no forgery '
+                              f'(avg score: {avg_score:.2f})',
+                    is_positive=True,
+                    confidence=1.0 - avg_score
+                ))
+        
+        # Validate before returning
+        is_valid, errors = validate_audit_findings(findings, 'photoholmes')
+        if not is_valid:
+            logger.error(f"Photoholmes audit_findings validation failed:\n" + 
+                        "\n".join(f"  - {e}" for e in errors))
+            return []
+        
+        return findings
+
