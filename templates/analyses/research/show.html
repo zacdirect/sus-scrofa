@@ -1,37 +1,13 @@
-{% extends "base.html" %}
+{% extends "analyses/report/report_base.html" %}
 
-{% block content %}
-<div class="row mb-4 animate__animated animate__fadeIn">
-    <div class="col-12">
-        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-            <h1 class="h2">
-                <i class="fa-solid fa-flask text-secondary me-2"></i> Research Findings
-            </h1>
-            <div class="btn-toolbar mb-2 mb-md-0">
-                <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb mb-0">
-                        <li class="breadcrumb-item"><a href="/" class="text-decoration-none"><i class="fa-solid fa-tachometer-alt"></i> Dashboard</a></li>
-                        <li class="breadcrumb-item"><a href="{% url "list_cases" %}" class="text-decoration-none"><i class="fa-solid fa-briefcase"></i> Cases</a></li>
-                        <li class="breadcrumb-item">
-                            <a href="{% url "show_case" analysis.case.id "list" %}" class="text-decoration-none"><i class="fa-solid fa-book"></i>
-                                {% if analysis.case.name|length > 30 %}
-                                    {{ analysis.case.name|slice:":30" }}…
-                                {% else %}
-                                    {{ analysis.case.name }}
-                                {% endif %}
-                            </a>
-                        </li>
-                        <li class="breadcrumb-item"><a href="{% url "show_analysis" analysis.id %}" class="text-decoration-none"><i class="fa-solid fa-file-text"></i> Report</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">Research Findings</li>
-                    </ol>
-                </nav>
-            </div>
-        </div>
-    </div>
-</div>
+{% block report_content %}
 
 <div class="container-fluid px-0">
-
+    <div class="alert alert-info mb-4">
+        <i class="fa-solid fa-flask me-2"></i> <strong>Experimental Features</strong>
+        <br>
+        This section contains advanced research findings including photorealism detection, object recognition, and person attribute analysis.
+    </div>
 
     {# ======== SECTION 1: Photorealism ======== #}
     {% if content.photorealism %}

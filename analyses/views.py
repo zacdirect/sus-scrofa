@@ -405,13 +405,17 @@ def new_folder(request, case_id):
                               {"form": form, "case": case})
 @require_safe
 @login_required
-def show_analysis(request, analysis_id):
-    """Shows report."""
+def _get_completed_analysis(request, analysis_id):
+    """
+    Helper to retrieve completed analysis context or return error response.
+    Returns (context_dict, error_response). If context_dict is present, proceed.
+    If error_response is present, return it immediately.
+    """
     analysis = get_object_or_404(Analysis, pk=analysis_id)
 
     # Security check.
     if not(request.user.is_superuser or request.user in analysis.case.users.all()):
-        return render(request, "error.html",
+        return None, render(request, "error.html",
                                   {"error": "You are not authorized to view this."})
 
     if analysis.state == "C":
@@ -419,62 +423,178 @@ def show_analysis(request, analysis_id):
             anal = get_db().analyses.find_one(ObjectId(analysis.analysis_id))
 
             if anal:
-                return render(request, "analyses/report/show.html",
-                                          {"anal": anal, "analysis": analysis})
+                return {"anal": anal, "analysis": analysis}, None
             else:
-                return render(request, "error.html",
+                return None, render(request, "error.html",
                                           {"error": "Analysis not present in mongo database"})
         except InvalidId:
-            return render(request, "error.html",
+            return None, render(request, "error.html",
                                       {"error": "Analysis not found"})
     elif analysis.state == "W" or analysis.state == "P" or analysis.state == "Q":
-        return render(request, "analyses/images/waiting.html",
+        return None, render(request, "analyses/images/waiting.html",
                                   {"analysis": analysis})
     elif analysis.state == "E":
-        return render(request, "error.html",
+        return None, render(request, "error.html",
                                   {"error": "Analysis ended with error."})
     else:
-        return render(request, "error.html",
+        return None, render(request, "error.html",
                                   {"error": "Analysis not found"})
 
 @require_safe
 @login_required
+def show_analysis(request, analysis_id):
+    """Shows report dashboard."""
+    context, error_response = _get_completed_analysis(request, analysis_id)
+    if error_response:
+        return error_response
+    
+    context['active_tab'] = 'dashboard'
+    return render(request, "analyses/report/show.html", context)
+
+@require_safe
+@login_required
+def show_static(request, analysis_id):
+    """Shows static analysis report."""
+    context, error_response = _get_completed_analysis(request, analysis_id)
+    if error_response:
+        return error_response
+    
+    context['active_tab'] = 'static'
+    return render(request, "analyses/report/static.html", context)
+
+@require_safe
+@login_required
+def show_exif(request, analysis_id):
+    """Shows EXIF metadata report."""
+    context, error_response = _get_completed_analysis(request, analysis_id)
+    if error_response:
+        return error_response
+    
+    context['active_tab'] = 'exif'
+    return render(request, "analyses/report/exif.html", context)
+
+@require_safe
+@login_required
+def show_iptc(request, analysis_id):
+    """Shows IPTC metadata report."""
+    context, error_response = _get_completed_analysis(request, analysis_id)
+    if error_response:
+        return error_response
+    
+    context['active_tab'] = 'iptc'
+    return render(request, "analyses/report/iptc.html", context)
+
+@require_safe
+@login_required
+def show_xmp(request, analysis_id):
+    """Shows XMP metadata report."""
+    context, error_response = _get_completed_analysis(request, analysis_id)
+    if error_response:
+        return error_response
+    
+    context['active_tab'] = 'xmp'
+    return render(request, "analyses/report/xmp.html", context)
+
+@require_safe
+@login_required
+def show_preview(request, analysis_id):
+    """Shows previews report."""
+    context, error_response = _get_completed_analysis(request, analysis_id)
+    if error_response:
+        return error_response
+    
+    context['active_tab'] = 'preview'
+    return render(request, "analyses/report/preview.html", context)
+
+@require_safe
+@login_required
+def show_location(request, analysis_id):
+    """Shows location/map report."""
+    context, error_response = _get_completed_analysis(request, analysis_id)
+    if error_response:
+        return error_response
+    
+    context['active_tab'] = 'location'
+    return render(request, "analyses/report/location.html", context)
+
+@require_safe
+@login_required
+def show_automated(request, analysis_id):
+    """Shows automated analysis report."""
+    context, error_response = _get_completed_analysis(request, analysis_id)
+    if error_response:
+        return error_response
+    
+    context['active_tab'] = 'automated'
+    return render(request, "analyses/report/automated.html", context)
+
+@require_safe
+@login_required
+def show_ela(request, analysis_id):
+    """Shows ELA report."""
+    context, error_response = _get_completed_analysis(request, analysis_id)
+    if error_response:
+        return error_response
+    
+    context['active_tab'] = 'ela'
+    return render(request, "analyses/report/ela.html", context)
+
+@require_safe
+@login_required
+def show_noise(request, analysis_id):
+    """Shows noise analysis report."""
+    context, error_response = _get_completed_analysis(request, analysis_id)
+    if error_response:
+        return error_response
+    
+    context['active_tab'] = 'noise'
+    return render(request, "analyses/report/noise.html", context)
+
+@require_safe
+@login_required
+def show_frequency(request, analysis_id):
+    """Shows frequency analysis report."""
+    context, error_response = _get_completed_analysis(request, analysis_id)
+    if error_response:
+        return error_response
+    
+    context['active_tab'] = 'frequency'
+    return render(request, "analyses/report/frequency.html", context)
+
+@require_safe
+@login_required
+def show_signatures(request, analysis_id):
+    """Shows signatures report."""
+    context, error_response = _get_completed_analysis(request, analysis_id)
+    if error_response:
+        return error_response
+    
+    context['active_tab'] = 'signatures'
+    return render(request, "analyses/report/signatures.html", context)
+
+@require_safe
+@login_required
+@require_safe
+@login_required
 def show_research(request, analysis_id):
-    """Shows the research findings page for a completed analysis.
-
-    Displays content analysis results (photorealism, object detection,
-    person attributes) and annotated images on a dedicated page,
-    separate from the main forensic report.
     """
-    analysis = get_object_or_404(Analysis, pk=analysis_id)
+    Shows the research findings page for a completed analysis.
+    Displays content analysis results (photorealism, object detection,
+    person attributes) and annotated images on a dedicated page.
+    """
+    context, error_response = _get_completed_analysis(request, analysis_id)
+    if error_response:
+        return error_response
 
-    # Security check.
-    if not(request.user.is_superuser or request.user in analysis.case.users.all()):
-        return render(request, "error.html",
-                                  {"error": "You are not authorized to view this."})
-
-    if analysis.state != "C":
-        return render(request, "error.html",
-                                  {"error": "Analysis not yet complete."})
-
-    try:
-        anal = get_db().analyses.find_one(ObjectId(analysis.analysis_id))
-        if not anal:
-            return render(request, "error.html",
-                                      {"error": "Analysis not present in database."})
-    except InvalidId:
-        return render(request, "error.html",
-                                  {"error": "Analysis not found."})
-
+    anal = context['anal']
     content = anal.get("content_analysis", {})
     if not content or not content.get("enabled"):
         return render(request, "error.html",
                                   {"error": "No research data available for this image."})
 
-    return render(request, "analyses/research/show.html",
-                              {"analysis": analysis,
-                               "content": content,
-                               "anal": anal})
+    context['content'] = content
+    context['active_tab'] = 'research'
+    return render(request, "analyses/research/show.html", context)
 
 @require_safe
 @login_required
