@@ -1,5 +1,5 @@
-# Ghiro - Copyright (C) 2013-2016 Ghiro Developers.
-# This file is part of Ghiro.
+# Sus Scrofa - Copyright (C) 2026 Sus Scrofa Developers.
+# This file is part of Sus Scrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
 import json
@@ -9,8 +9,8 @@ from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404
 
-from ghiro.common import log_activity
-from api.common import api_authenticate
+from sus_scrofa.common import log_activity
+from sus_scrofa.authorization import api_authenticate
 from analyses.models import Case, Analysis
 from lib.db import save_file
 from lib.utils import create_thumb
@@ -40,48 +40,27 @@ def new_case(request):
 
 @require_POST
 @csrf_exempt
-def show_case(request):
-    """Shows a case."""
-    user = api_authenticate(request.POST.get("api_key"))
-
-    if request.POST.get("case_id"):
-        case = get_object_or_404(Case, pk=request.POST.get("case_id"))
-
-        # Security check.
-        if not case.can_read(user):
-            return HttpResponse("You are not authorized to read this case", status=400)
-
-        response_data = {"id": case.id, "status": case.state, "name": case.name,
-                         "description": case.description, "images":
-                             [image.id for image in case.images.all()]}
-        return HttpResponse(json.dumps(response_data), content_type="application/json")
-    else:
-        return HttpResponse("Missing parameter case_id", status=400)
-
-@require_POST
-@csrf_exempt
 def new_image(request):
     """Upload a new image."""
     user = api_authenticate(request.POST.get("api_key"))
 
-    if request.POST.get("case_id"):
-        case = get_object_or_404(Case, pk=request.POST.get("case_id"))
+    case = get_object_or_404(Case, pk=request.POST.get("case_id"))
 
-        # Security check.
-        if not case.can_write(user):
-            return HttpResponse("You are not authorized to add image to this", status=400)
+    # Security check.
+    if not user.is_superuser and not user in case.users.all():
+        return HttpResponse("You are not authorized to add image to this", status=400)
 
-        if case.state == "C":
-            return HttpResponse("You cannot add an image to a closed case", status=400)
-    else:
-        case = None
+    if case.state == "C":
+        return HttpResponse("You cannot add an image to a closed case", status=400)
 
-    task = Analysis.add_task(request.FILES["image"].temporary_file_path(),
-                    file_name=request.FILES["image"].name, case=case, user=user,
-                    content_type=request.FILES["image"].content_type,
+    task = Analysis(owner=user,
+                    case=case,
+                    file_name=request.FILES["image"].name,
                     image_id=save_file(file_path=request.FILES["image"].temporary_file_path(),
                               content_type=request.FILES["image"].content_type),
-                    thumb_id=create_thumb(request.FILES["image"].temporary_file_path()))
+                    thumb_id=create_thumb(request.FILES["image"].temporary_file_path())
+    )
+    task.save()
 
     # Auditing.
     log_activity("I",
@@ -91,24 +70,3 @@ def new_image(request):
 
     response_data = {"id": task.id}
     return HttpResponse(json.dumps(response_data), content_type="application/json")
-
-@require_POST
-@csrf_exempt
-def get_report(request):
-    """Returns a report."""
-    user = api_authenticate(request.POST.get("api_key"))
-
-    if request.POST.get("task_id"):
-        task = get_object_or_404(Analysis, pk=request.POST.get("task_id"))
-
-        # Security check.
-        if not task.can_read(user):
-            return HttpResponse("You are not authorized to read this analysis", status=400)
-
-        if task.state == "C":
-            response_data = {"id": task.id, "status": task.state, "data": task.to_json}
-        else:
-            response_data = {"id": task.id, "status": task.state}
-        return HttpResponse(json.dumps(response_data), content_type="application/json")
-    else:
-        return HttpResponse("Missing parameter task_id", status=400)

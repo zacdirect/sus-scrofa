@@ -1,5 +1,5 @@
-# Ghiro - Copyright (C) 2013-2016 Ghiro Developers.
-# This file is part of Ghiro.
+# Sus Scrofa - Copyright (C) 2026 Sus Scrofa Developers.
+# This file is part of Sus Scrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
 import os
@@ -83,10 +83,10 @@ class CaseModelTest(TestCase):
         """Tests automated case folder creation."""
         # Create temporary directory to store everything.
         tmp_path = tempfile.mkdtemp()
-        # Build the ghiro path for auto upload.
-        ghiro_path = os.path.join(tmp_path, "ghiro-test")
+        # Build the sus_scrofa path for auto upload.
+        sus_scrofa_path = os.path.join(tmp_path, "sus_scrofa-test")
         # Set path and test.
-        settings.AUTO_UPLOAD_DIR = ghiro_path
+        settings.AUTO_UPLOAD_DIR = sus_scrofa_path
         # Create base dir.
         Command.create_auto_upload_dirs()
         # Create case.

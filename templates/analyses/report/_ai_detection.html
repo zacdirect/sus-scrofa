@@ -1,0 +1,75 @@
+{% load analyses_tags %}
+
+<div class="box">
+    <div class="wdgt-header">AI Generation Detection — Raw Detector Results
+        <span class="pull-right">
+            {% if analysis.report.ai_detection.error %}
+                <span class="label label-inverse">Unavailable</span>
+            {% elif not analysis.report.ai_detection.enabled %}
+                <span class="label">Disabled</span>
+            {% else %}
+                <span class="label label-info">{{ analysis.report.ai_detection.methods_run|length }} method{{ analysis.report.ai_detection.methods_run|length|pluralize }}</span>
+            {% endif %}
+        </span>
+    </div>
+    <div class="wdgt-body">
+        {% if analysis.report.ai_detection.error %}
+            <div class="alert alert-warning">
+                <strong>Analysis Not Available:</strong> {{ analysis.report.ai_detection.error }}
+                <br><small>Run <code>make ai-setup</code> to enable AI detection.</small>
+            </div>
+        {% elif analysis.report.ai_detection.enabled %}
+            {% if analysis.report.ai_detection.detection_layers %}
+            <table class="table table-condensed table-bordered" style="font-size: 12px; margin-bottom: 10px;">
+                <thead>
+                    <tr>
+                        <th style="width: 25%;">Detection Method</th>
+                        <th style="width: 12%;">Verdict</th>
+                        <th style="width: 12%;">Score</th>
+                        <th style="width: 15%;">Confidence</th>
+                        <th>Evidence</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for layer in analysis.report.ai_detection.detection_layers %}
+                    <tr>
+                        <td><strong>{{ layer.method }}</strong></td>
+                        <td>
+                            {% if layer.verdict == 'AI' %}
+                                <span class="label label-important">AI</span>
+                            {% elif layer.verdict == 'Real' %}
+                                <span class="label label-success">Real</span>
+                            {% else %}
+                                <span class="label">Unknown</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if layer.score is not None %}
+                                {{ layer.score|floatformat:2 }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                        <td>{{ layer.confidence|default:"—"|upper }}</td>
+                        <td class="muted">{{ layer.evidence|default:"—" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+                <p class="muted">No detection layers returned results.</p>
+            {% endif %}
+
+            <p class="muted" style="font-size: 10px; margin: 0;">
+                <strong>Methods:</strong> {{ analysis.report.ai_detection.methods_run|join:", " }}
+                <br>
+                <em>These are raw detector outputs. The authoritative verdict is in the Compliance Audit section above.</em>
+            </p>
+        {% else %}
+            <div class="alert alert-info">
+                <p>AI detection not configured.</p>
+                <small>Run <code>make ai-setup</code> to install detection models.</small>
+            </div>
+        {% endif %}
+    </div>
+</div>

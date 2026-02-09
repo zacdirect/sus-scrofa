@@ -1,5 +1,5 @@
-# Ghiro - Copyright (C) 2013-2016 Ghiro Developers.
-# This file is part of Ghiro.
+# Sus Scrofa - Copyright (C) 2026 Sus Scrofa Developers.
+# This file is part of Sus Scrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
 import os
@@ -9,19 +9,17 @@ import shutil
 import sys
 from time import sleep
 from django.conf import settings
-from django.core.management.base import NoArgsCommand
+from django.core.management.base import BaseCommand
 from django.core.exceptions import ObjectDoesNotExist
 
 from analyses.models import Analysis, Case
 
 logger = logging.getLogger(__name__)
 
-class Command(NoArgsCommand):
+class Command(BaseCommand):
     """Monitor a directory for new files."""
 
     help = "Directory monitor and images upload."
-
-    option_list = NoArgsCommand.option_list
 
     @staticmethod
     def create_auto_upload_dirs():

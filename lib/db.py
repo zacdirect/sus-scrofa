@@ -1,5 +1,5 @@
-# Ghiro - Copyright (C) 2013-2016 Ghiro Developers.
-# This file is part of Ghiro.
+# Sus Scrofa - Copyright (C) 2026 Sus Scrofa Developers.
+# This file is part of Sus Scrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
 import sys
@@ -12,23 +12,81 @@ from pymongo import MongoClient
 from pymongo.database import Database
 from pymongo.errors import ConnectionFailure
 
+try:
+    import numpy as np
+    _HAS_NUMPY = True
+except ImportError:
+    _HAS_NUMPY = False
+
+
+def _sanitize_for_mongo(obj):
+    """Recursively convert numpy types to native Python types for MongoDB.
+
+    pymongo/BSON cannot encode numpy scalars (np.int64, np.float64, etc.).
+    This walks the document tree and converts them to plain int/float/bool/list.
+    """
+    if _HAS_NUMPY:
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.bool_):
+            return bool(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+    if isinstance(obj, dict):
+        return {k: _sanitize_for_mongo(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_sanitize_for_mongo(v) for v in obj]
+    return obj
+
+# Lazy MongoDB connection
+_db = None
+_fs = None
+_mongo_available = None
 
 def mongo_connect():
-    """Connects to Mongo, exits if unable to connect.
-    @return: connection handler
+    """Connects to Mongo, returns None if unable to connect.
+    @return: connection handler or None
     """
+    global _mongo_available
     try:
-        # connect = False will open a connection to db only when really needed.
-        db = Database(MongoClient(settings.MONGO_URI, connect=False), settings.MONGO_DB)
-    except ConnectionFailure:
-        print("ERROR: unable to connect to MongoDB. Please check the server availability.")
-        sys.exit()
-    else:
+        db = Database(MongoClient(settings.MONGO_URI, serverSelectionTimeoutMS=2000), settings.MONGO_DB)
+        # Test connection
+        db.client.server_info()
+        _mongo_available = True
         return db
+    except (ConnectionFailure, Exception) as e:
+        print(f"WARNING: Unable to connect to MongoDB: {e}")
+        print("MongoDB features will be unavailable. Install and start MongoDB to use image analysis features.")
+        _mongo_available = False
+        return None
 
-# Mongo connection.
-db = mongo_connect()
-fs = gridfs.GridFS(db)
+def get_db():
+    """Get or create MongoDB connection."""
+    global _db
+    if _db is None:
+        _db = mongo_connect()
+    return _db
+
+def get_fs():
+    """Get or create GridFS connection."""
+    global _fs
+    if _fs is None:
+        db = get_db()
+        if db is not None:
+            _fs = gridfs.GridFS(db)
+    return _fs
+
+def is_mongo_available():
+    """Check if MongoDB is available."""
+    if _mongo_available is None:
+        get_db()
+    return _mongo_available
+
+# For backward compatibility - these are now just aliases
+db = get_db()
+fs = get_fs()
 
 def save_file(data=None, file_path=None, content_type=None):
     """Save file in GridFS.
@@ -37,6 +95,9 @@ def save_file(data=None, file_path=None, content_type=None):
     @param content_type: file content type
     @return: saved file ID
     """
+    fs = get_fs()
+    db = get_db()
+    
     if file_path:
         try:
             fh = open(file_path, "rb")
@@ -62,14 +123,16 @@ def get_file(id):
     """Get a file from GridFS.
     @param id: file uuid
     @return: file object"""
+    fs = get_fs()
+    db = get_db()
     obj_id = db.fs.files.find_one({"uuid": id})["_id"]
     return fs.get(ObjectId(obj_id))
 
 def get_file_length(id):
-    """Get a file length from GridFS.
+    """Get a file lenght from GridFS.
     @param id: file uuid
     @return: integer"""
-
+    db = get_db()
     return db.fs.files.find_one({"uuid": id})["length"]
 
 def save_results(results):
@@ -77,4 +140,19 @@ def save_results(results):
     @param results: data dict
     @return: object id
     """
-    return db.analyses.save(results)
+    db = get_db()
+    results = _sanitize_for_mongo(results)
+    result = db.analyses.insert_one(results)
+    return result.inserted_id
+
+def update_results(analysis_id, results):
+    """Update existing results in mongo (for re-processing).
+    @param analysis_id: existing MongoDB ObjectId (as string)
+    @param results: new data dict to replace
+    """
+    db = get_db()
+    results = _sanitize_for_mongo(results)
+    db.analyses.replace_one(
+        {"_id": ObjectId(analysis_id)},
+        results
+    )

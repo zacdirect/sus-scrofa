@@ -1,12 +1,13 @@
-# Ghiro - Copyright (C) 2013-2016 Ghiro Developers.
-# This file is part of Ghiro.
+# Sus Scrofa - Copyright (C) 2026 Sus Scrofa Developers.
+# This file is part of Sus Scrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
-from django.conf.urls import patterns, url
+from django.urls import re_path
+from . import views
 
-urlpatterns = patterns("",
-    url(r"^index/$", "hashes.views.list_hashes"),
-    url(r"^new/", "hashes.views.new_hashes"),
-    url(r"^show/(?P<list_id>[\d]+)/", "hashes.views.show_hashes"),
-    url(r"^delete/(?P<list_id>[\d]+)/", "hashes.views.delete_hashes"),
-)
+urlpatterns = [
+    re_path(r"^index/$", views.list_hashes, name="list_hashes"),
+    re_path(r"^new/", views.new_hashes, name="new_hashes"),
+    re_path(r"^show/(?P<list_id>[\d]+)/", views.show_hashes, name="show_hashes"),
+    re_path(r"^delete/(?P<list_id>[\d]+)/", views.delete_hashes, name="delete_hashes"),
+]

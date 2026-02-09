@@ -51,3 +51,41 @@ Thumbs.db
 ghiro/secret_key.py
 log/*
 reports/*
+
+temp/*
+
+# AI Detection Models #
+#######################
+models/weights/
+models/*.pth
+models/*.onnx
+
+# AI Detection Module #
+#######################
+ai_detection/.venv/
+ai_detection/venv/
+ai_detection/__pycache__/
+ai_detection/spai/__pycache__/
+ai_detection/spai/**/__pycache__/
+ai_detection/weights/
+ai_detection/weights/*.pth
+ai_detection/weights/*.onnx
+ai_detection/models/
+ai_detection/models/**
+
+# Model Evaluation #
+####################
+ai_detection/model_evaluation/test_data/
+ai_detection/model_evaluation/test_data_link
+ai_detection/model_evaluation/**/*.jpg
+ai_detection/model_evaluation/**/*.jpeg
+ai_detection/model_evaluation/**/*.png
+ai_detection/model_evaluation/**/weights/*.pth
+ai_detection/model_evaluation/**/weights/*.pt
+ai_detection/model_evaluation/**/weights/*.h5
+ai_detection/model_evaluation/**/weights/*.ckpt
+ai_detection/model_evaluation/**/.venv/
+ai_detection/model_evaluation/**/test_results.json
+ai_detection/model_evaluation/baseline/*.json
+ai_detection/model_evaluation/reports/*.md
+ai_detection/model_evaluation/reports/*.html

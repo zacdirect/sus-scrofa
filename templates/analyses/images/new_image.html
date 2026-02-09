@@ -1,52 +1,49 @@
-{% extends "base.html" %}
+    {% extends "base.html" %}
 
-{% block content %}
-    <div class="crumbs">
-        <ol class="breadcrumb hidden-xs">
-            <li>
-                <span class="glyphicon glyphicon-home gi-0x"></span><a href="/">Dashboard</a>
-            </li>
-            <li>
-                <a href="{% url "analyses.views.list_cases" %}"><span class="glyphicon glyphicon-book gi-0x"></span> Cases</a>
-            </li>
-             <li>
-                <a href="{% url "analyses.views.show_case" case.id "list" %}"><span class="glyphicon glyphicon-th-list gi-0x"></span>
-                    {% if case.name|length > 70 %}
-                        {{ case.name|slice:":70" }} ...
-                    {% else %}
-                        {{ case.name }}
-                    {% endif %}
-                </a>
-            </li>
-            <li class="active">
-                New image
-            </li>
-        </ol>
-    </div>
-</div>
-
-    <div class="content">
-        <div class="page-h1">
-            <h1>Upload photo<small> in
-                "{% if case.name|length > 70 %}
-                    {{ case.name|slice:":70" }} ...
-                {% else %}
-                    {{ case.name }}
-                {% endif %}" case</small>
-            </h1>
-        </div>
-        <div class="col-md-12">
-            <div class="wdgt">
-                <div id="uploader"></div>
-                <div id="filelist" class="hide">
-                    <strong id="generic_error">
-                        <span class="glyphicon glyphicon-warning-sign text-danger"></span>
-                        Errors:
-                    </strong>
-                    <strong id="server_error" class="hide">
-                        <span class="glyphicon glyphicon-warning-sign text-danger"></span>
-                        Server error: unexpected error, try to reload page and check logs.
-                    </strong>
+    {% block content %}
+    <div class="span11">
+        <div class="content content-large">
+            <div class="content-header">
+                <h2><i class="icon-briefcase"> </i> Cases</h2>
+            </div>
+            <div class="content-breadcrumb">
+                <ul class="breadcrumb">
+                    <li>
+                        <a href="/"><i class="icon-home"></i> Dashboard</a><span class="divider">&rsaquo;</span>
+                    </li>
+                    <li>
+                        <a href="{% url "list_cases" %}"><i class="icon-briefcase"> </i> Cases</a>
+                        <span class="divider">&rsaquo;</span>
+                    </li>
+                    <li>
+                        <a href="{% url "show_case" case.id "list" %}"><i class="icon-book"> </i>
+                            {% if case.name|length > 70 %}
+                                {{ case.name|slice:":70" }} ...
+                            {% else %}
+                                {{ case.name }}
+                            {% endif %}
+                        </a><span class="divider">&rsaquo;</span>
+                    </li>
+                    <li class="active">
+                        New Image
+                    </li>
+                </ul>
+            </div>
+            <div class="content-body">
+                <div class="row-fluid">
+                    <p>
+                        <div id="uploader"></div>
+                    </p>
+                    <div id="filelist" class="hide">
+                        <strong id="generic_error">
+                            <i class="icon-warning-sign text-error"></i>
+                            Errors:
+                        </strong>
+                        <strong id="server_error" class="hide">
+                            <i class="icon-warning-sign text-error"></i>
+                            Server error: unexpected error, try to reload page and check logs.
+                        </strong>
+                    </div>
                 </div>
             </div>
         </div>
@@ -55,14 +52,17 @@
     {# Styles #}
     <link rel="stylesheet" href="{{ STATIC_URL }}css/plupload/jquery.plupload.queue.css">
     {# JS #}
-    <script src="{{ STATIC_URL }}js/plupload/moxie.min.js"></script>
+    <script src="{{ STATIC_URL }}js/plupload/jquery-migrate-1.0.0.js"></script>
+    <script src="{{ STATIC_URL }}js/plupload/elfinder.min.js"></script>
     <script src="{{ STATIC_URL }}js/plupload/jquery.plupload.queue.js"></script>
     <script src="{{ STATIC_URL }}js/plupload/plupload.full.js"></script>
     <script type="text/javascript">
+
         $(document).ready(function() {
+
             $("#uploader").pluploadQueue({
                 runtimes : 'html5,flash',
-                url : '{% url "analyses.views.new_image" case.id %}',
+                url : '{% url "new_image" case.id %}',
                 unique_names: false,
                 multipart: true,
                 file_data_name: 'image',
@@ -95,14 +95,13 @@
             uploader.bind('FilesAdded', function() {
                 $('.plupload_start').show();
                 $('.result_button').hide();
-                $('#uploader_browse').css('color','#FFF');
             });
 
             uploader.bind('UploadComplete', function(up) {
                 if (up.total.queued == 0 && uploader.total.uploaded == up.files.length){
-                    window.location.href = "{% url "analyses.views.show_case" case.id "list" %}";
+                    window.location.href = "{% url "show_case" case.id "list" %}";
                 }else{
-                    $('.plupload_buttons').append("<a href='{% url 'analyses.views.show_case' case.id 'list' %}' class='btn result_button'>Back</a>").show();
+                    $('.plupload_buttons').append("<a href='{% url "show_case" case.id 'list' %}' class='btn result_button'>Back</a>").show();
                     $('.plupload_start').hide();
                 }
             });
@@ -115,9 +114,9 @@
                     $('#filelist').append("<div>" + (file ? " File: " + file.name : "") +
                             ", Reason: " + response.error.message +
                             "</div>"
-                    ).removeClass('hide');
+                    ).show();
                 }else{
-                    $('#generic_error').removeClass('hide');
+                    $('#generic_error').show();
                     $('.result_button').hide();
                 }
             });
@@ -126,12 +125,13 @@
                 $('#filelist').append("<div>" +
                         (err.file ? " File: " + err.file.name : "") +
                         "</div>"
-                ).removeClass('hide');
-                $('#server_error').removeClass('hide');
+                ).show();
+                $('#server_error').show();
                 $('.result_button').hide();
             });
 
         })
+
     </script>
 
     {% endblock %}

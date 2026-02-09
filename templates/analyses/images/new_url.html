@@ -1,55 +1,49 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <div class="crumbs">
-        <ol class="breadcrumb hidden-xs">
-            <li>
-                <span class="glyphicon glyphicon-home gi-0x"></span><a href="/">Dashboard</a>
-            </li>
-            <li>
-                <a href="{% url "analyses.views.list_cases" %}"><span class="glyphicon glyphicon-book gi-0x"></span> Cases</a>
-            </li>
-             <li>
-                <a href="{% url "analyses.views.show_case" case.id "list" %}"><span class="glyphicon glyphicon-th-list gi-0x"></span>
-                    {% if case.name|length > 70 %}
-                        {{ case.name|slice:":70" }} ...
-                    {% else %}
-                        {{ case.name }}
-                    {% endif %}
-                </a>
-            </li>
-            <li class="active">
-                New image URL
-            </li>
-        </ol>
+<div class="span11">
+    <div class="content content-large">
+        <div class="content-header">
+            <h2><i class="icon-briefcase"> </i> Cases</h2>
+        </div>
+        <div class="content-breadcrumb">
+            <ul class="breadcrumb">
+                <li>
+                    <a href="/"><i class="icon-home"> </i> Dashboard</a><span class="divider">&rsaquo;</span>
+                </li>
+                <li>
+                    <a href="{% url "list_cases" %}"><i class="icon-briefcase"> </i> Cases</a>
+                    <span class="divider">&rsaquo;</span>
+                </li>
+                <li>
+                    <a href="{% url "show_case" case.id "list" %}"><i class="icon-book"> </i>
+                        {% if case.name|length > 70 %}
+                            {{ case.name|slice:":70" }} ...
+                        {% else %}
+                            {{ case.name }}
+                        {% endif %}
+                    </a><span class="divider">&rsaquo;</span>
+                </li>
+                <li class="active">
+                    New image URL
+                </li>
+            </ul>
+        </div>
+        <div class="content-body">
+            <blockquote>
+                <p>Add image URL: this will fetch URL data and process it as image</p>
+            </blockquote>
+            <form action="{% url "new_url" case.id %}" method="post" class="form-inline">{% csrf_token %}
+                <div class="input-append">
+                    <input id="id_path" type="text" name="url" class="height-large" placeholder="http://example.com/image.jpg">
+                    <button id="btn_submit" type="submit" class="btn btn-large btn-success">
+                        Add
+                    </button>
+                    <a href="{% url "show_case" case.id "list" %}" class="btn btn-large"> Back </a>
+                </div>
+                <span class="help-inline">{{ form.url.errors }}</span>
+            </form>
+        </div>
     </div>
 </div>
-
-    <div class="content">
-        <div class="page-h1">
-            <h1>New image <small>in
-                "{% if case.name|length > 70 %}
-                    {{ case.name|slice:":70" }} ...
-                {% else %}
-                    {{ case.name }}
-                {% endif %}" case</small>
-            </h1>
-        </div>
-        <div class="col-md-12">
-            <div class="wdgt">
-                <blockquote>
-                    <p>Add image URL: this will fetch URL data and process it as image</p>
-                </blockquote>
-                <form action="{% url "analyses.views.new_url" case.id %}" method="post" class="form-inline">{% csrf_token %}
-                    <div class="input-append">
-                        <input id="id_path" type="text" name="url" class="form-control" placeholder="http://example.com/image.jpg">
-                        <button id="btn_submit" type="submit" class="btn btn-success">Add</button>
-                        <a href="{% url "analyses.views.show_case" case.id "list" %}" class="btn btn-default">Back</a>
-                    </div>
-                    <span class="help-inline">{{ form.url.errors }}</span>
-                </form>
-            </div>
-        </div>
-    </div>
-
 {% endblock %}

@@ -1,6 +1,6 @@
 $(document).ready(function() {
 
-    $('[data-tooltip="tooltip"]').tooltip();
+    $('.tool').tooltip();
 
     $('.pop').popover();
 
@@ -12,7 +12,7 @@ $(document).ready(function() {
             }
         },
         tpl : {
-            error : 'Can not display preview, unsupported format.'
+            error : 'Can not dispaly preview, unsupported format.'
         },
         'autoSize': 'false'
     });
@@ -31,8 +31,8 @@ $(document).ready(function() {
                 win.print();
             }
 
-        return false;
-        }
+            return false;
+            }
     };
     $(document).ready(function () {
         Popup.init();
@@ -72,7 +72,6 @@ $(document).ready(function() {
                     $(".star"+rel).addClass('btn-warning');
                 }else{
                     $(".star"+rel).removeClass('btn-warning');
-                    $(".star"+rel).addClass('btn-default');
                 }
             }
         });
@@ -103,21 +102,4 @@ $(document).ready(function() {
     }
 });
 
-function internetStatus(){
-    if (navigator.onLine){
-        loadScript();
-    }else{
-        $("#noNet").removeClass('hidden');
-        $(".maps").hide();
-    }
-}
-
-function loadScript() {
-    var script = document.createElement("script");
-    script.type = "text/javascript";
-    script.src = "http://maps.google.com/maps/api/js?sensor=false&callback=initialize";
-    document.body.appendChild(script);
-    $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
-  	    initialize();
-    });
-}
+// Map functionality now handled by Leaflet.js in individual templates

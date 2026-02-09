@@ -1,5 +1,5 @@
-# Ghiro - Copyright (C) 2013-2016 Ghiro Developers.
-# This file is part of Ghiro.
+# Sus Scrofa - Copyright (C) 2026 Sus Scrofa Developers.
+# This file is part of Sus Scrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
 from django.db.models import Q
@@ -24,7 +24,7 @@ class HashComparerProcessing(BaseProcessingModule):
         return IS_HASH
 
     def run(self, task):
-        for key, value in self.data["hash"].iteritems():
+        for key, value in self.data["hash"].items():
             # Get all lists matching hash type.
             hash_lists = List.objects.filter(cipher=key).filter(Q(owner=task.owner) | Q(public=True))
             # Check hashes.

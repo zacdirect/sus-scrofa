@@ -1,0 +1,428 @@
+{
+  "description": "Real forensics data from analyzed images used to validate AI detection scoring",
+  "source": "MongoDB analysis results from production system (IDs 54-70)",
+  "date_extracted": "2026-02-07",
+  "images": [
+    {
+      "id": 54,
+      "type": "real",
+      "description": "Unedited real photo",
+      "dimensions": [4032, 2268],
+      "noise_analysis": {
+        "inconsistency_score": 5.35,
+        "mean_variance": 171.82,
+        "std_variance": 171.96,
+        "anomaly_count": 1872
+      },
+      "frequency_analysis": {
+        "checkerboard_score": 98.86,
+        "anomaly_score": 55.35,
+        "peak_ratio": 0.592
+      },
+      "expected_result": {
+        "is_fake": false,
+        "authenticity_score_min": 60,
+        "notes": "Natural photo with high noise variation and many anomalies"
+      }
+    },
+    {
+      "id": 55,
+      "type": "real",
+      "description": "Unedited real photo",
+      "dimensions": [3840, 2160],
+      "noise_analysis": {
+        "inconsistency_score": 5.11,
+        "mean_variance": 64.45,
+        "std_variance": 153.92,
+        "anomaly_count": 1619
+      },
+      "frequency_analysis": {
+        "checkerboard_score": 99.77,
+        "anomaly_score": 54.25,
+        "peak_ratio": 0.437
+      },
+      "expected_result": {
+        "is_fake": false,
+        "authenticity_score_min": 60,
+        "notes": "Natural photo with high noise variation"
+      }
+    },
+    {
+      "id": 56,
+      "type": "real",
+      "description": "Unedited real photo",
+      "dimensions": [2048, 1363],
+      "noise_analysis": {
+        "inconsistency_score": 5.97,
+        "mean_variance": 298.77,
+        "std_variance": 274.72,
+        "anomaly_count": 632
+      },
+      "frequency_analysis": {
+        "checkerboard_score": 99.0,
+        "anomaly_score": 53.61,
+        "peak_ratio": 0.411
+      },
+      "expected_result": {
+        "is_fake": false,
+        "authenticity_score_min": 60,
+        "notes": "Natural photo with very high noise variation (5.97)"
+      }
+    },
+    {
+      "id": 57,
+      "type": "ai",
+      "description": "AI-generated image",
+      "dimensions": [2560, 1435],
+      "noise_analysis": {
+        "inconsistency_score": 1.91,
+        "mean_variance": 23.9,
+        "std_variance": 144.84,
+        "anomaly_count": 266
+      },
+      "frequency_analysis": {
+        "checkerboard_score": 100.0,
+        "anomaly_score": 53.38,
+        "peak_ratio": 0.338
+      },
+      "expected_result": {
+        "is_fake": true,
+        "authenticity_score_max": 40,
+        "detected_types": ["ai_generation", "noise_analysis"],
+        "notes": "Very low noise inconsistency (1.91) - synthetic noise pattern"
+      }
+    },
+    {
+      "id": 58,
+      "type": "ai",
+      "description": "AI-generated image (sophisticated)",
+      "dimensions": [1280, 876],
+      "noise_analysis": {
+        "inconsistency_score": 4.86,
+        "mean_variance": 78.54,
+        "std_variance": 187.01,
+        "anomaly_count": 201
+      },
+      "frequency_analysis": {
+        "checkerboard_score": 100.0,
+        "anomaly_score": 54.35,
+        "peak_ratio": 0.435
+      },
+      "expected_result": {
+        "is_fake": true,
+        "authenticity_score_max": 60,
+        "notes": "Borderline case - high inconsistency for AI, likely post-processed"
+      }
+    },
+    {
+      "id": 59,
+      "type": "ai",
+      "description": "AI-generated image (1024x1024)",
+      "dimensions": [1024, 1024],
+      "noise_analysis": {
+        "inconsistency_score": 4.68,
+        "mean_variance": 70.57,
+        "std_variance": 103.62,
+        "anomaly_count": 180
+      },
+      "frequency_analysis": {
+        "checkerboard_score": 100.0,
+        "anomaly_score": 55.53,
+        "peak_ratio": 0.553
+      },
+      "expected_result": {
+        "is_fake": true,
+        "authenticity_score_max": 40,
+        "detected_types": ["ai_generation", "ai_dimensions"],
+        "notes": "Perfect square dimensions + moderately low noise"
+      }
+    },
+    {
+      "id": 60,
+      "type": "ai",
+      "description": "AI-generated image (1024x1024)",
+      "dimensions": [1024, 1024],
+      "noise_analysis": {
+        "inconsistency_score": 3.9,
+        "mean_variance": 50.1,
+        "std_variance": 123.73,
+        "anomaly_count": 150
+      },
+      "frequency_analysis": {
+        "checkerboard_score": 95.0,
+        "anomaly_score": 54.3,
+        "peak_ratio": 0.68
+      },
+      "expected_result": {
+        "is_fake": true,
+        "authenticity_score_max": 40,
+        "detected_types": ["ai_generation", "ai_dimensions", "noise_analysis"],
+        "notes": "Perfect square + low noise inconsistency (3.9)"
+      }
+    },
+    {
+      "id": 61,
+      "type": "ai",
+      "description": "AI-generated image (1024x1024)",
+      "dimensions": [1024, 1024],
+      "noise_analysis": {
+        "inconsistency_score": 2.39,
+        "mean_variance": 108.02,
+        "std_variance": 181.75,
+        "anomaly_count": 92
+      },
+      "frequency_analysis": {
+        "checkerboard_score": 100.0,
+        "anomaly_score": 57.75,
+        "peak_ratio": 0.775
+      },
+      "expected_result": {
+        "is_fake": true,
+        "authenticity_score_max": 40,
+        "detected_types": ["ai_generation", "ai_dimensions", "noise_analysis"],
+        "notes": "Perfect square + very low noise inconsistency (2.39)"
+      }
+    },
+    {
+      "id": 62,
+      "type": "real_edited",
+      "description": "Heavily edited stock photo",
+      "dimensions": [1380, 2048],
+      "noise_analysis": {
+        "inconsistency_score": 1.46,
+        "mean_variance": 30.39,
+        "std_variance": 113.41,
+        "anomaly_count": 156
+      },
+      "frequency_analysis": {
+        "checkerboard_score": 100.0,
+        "anomaly_score": 53.24,
+        "peak_ratio": 0.324
+      },
+      "expected_result": {
+        "is_fake": true,
+        "authenticity_score_max": 40,
+        "detected_types": ["ai_generation", "noise_analysis"],
+        "notes": "Real photo but heavily edited - correctly flagged as fake. Very low noise (1.46) from editing."
+      }
+    },
+    {
+      "id": 63,
+      "type": "real",
+      "description": "Unedited real photo",
+      "dimensions": [1080, 1350],
+      "noise_analysis": {
+        "inconsistency_score": 4.86,
+        "mean_variance": 18.57,
+        "std_variance": 33.46,
+        "anomaly_count": 266
+      },
+      "frequency_analysis": {
+        "checkerboard_score": 100.0,
+        "anomaly_score": 57.6,
+        "peak_ratio": 0.76
+      },
+      "expected_result": {
+        "is_fake": false,
+        "authenticity_score_min": 46,
+        "notes": "Natural photo with moderate noise variation"
+      }
+    },
+    {
+      "id": 64,
+      "type": "real",
+      "description": "Unedited real photo (Instagram 1:1)",
+      "dimensions": [1080, 1080],
+      "noise_analysis": {
+        "inconsistency_score": 4.22,
+        "mean_variance": 43.96,
+        "std_variance": 61.01,
+        "anomaly_count": 184
+      },
+      "frequency_analysis": {
+        "checkerboard_score": 100.0,
+        "anomaly_score": 54.99,
+        "peak_ratio": 0.499
+      },
+      "expected_result": {
+        "is_fake": false,
+        "authenticity_score_min": 46,
+        "notes": "Square dimensions but natural noise pattern. Just above threshold (4.22 > 4.2)."
+      }
+    },
+    {
+      "id": 65,
+      "type": "ai",
+      "description": "AI-generated image",
+      "dimensions": [640, 617],
+      "noise_analysis": {
+        "inconsistency_score": 2.77,
+        "mean_variance": 85.17,
+        "std_variance": 95.7,
+        "anomaly_count": 39
+      },
+      "frequency_analysis": {
+        "checkerboard_score": 100.0,
+        "anomaly_score": 56.67,
+        "peak_ratio": 0.667
+      },
+      "expected_result": {
+        "is_fake": true,
+        "authenticity_score_max": 40,
+        "detected_types": ["ai_generation", "noise_analysis"],
+        "notes": "Low noise inconsistency (2.77) and very few anomalies (39)"
+      }
+    },
+    {
+      "id": 66,
+      "type": "ai",
+      "description": "AI-generated image (sophisticated)",
+      "dimensions": [640, 644],
+      "noise_analysis": {
+        "inconsistency_score": 5.87,
+        "mean_variance": 30.24,
+        "std_variance": 43.26,
+        "anomaly_count": 87
+      },
+      "frequency_analysis": {
+        "checkerboard_score": 97.19,
+        "anomaly_score": 55.59,
+        "peak_ratio": 0.7
+      },
+      "expected_result": {
+        "is_fake": true,
+        "authenticity_score_max": 60,
+        "notes": "High inconsistency (5.87) - post-processed or advanced model. May pass as real."
+      }
+    },
+    {
+      "id": 67,
+      "type": "ai",
+      "description": "AI-generated image",
+      "dimensions": [1080, 1057],
+      "noise_analysis": {
+        "inconsistency_score": 2.1,
+        "mean_variance": 30.81,
+        "std_variance": 60.75,
+        "anomaly_count": 90
+      },
+      "frequency_analysis": {
+        "checkerboard_score": 96.9,
+        "anomaly_score": 57.93,
+        "peak_ratio": 0.948
+      },
+      "expected_result": {
+        "is_fake": true,
+        "authenticity_score_max": 40,
+        "detected_types": ["ai_generation", "noise_analysis"],
+        "notes": "Very low noise inconsistency (2.1)"
+      }
+    },
+    {
+      "id": 68,
+      "type": "ai",
+      "description": "AI-generated image (duplicate of 65)",
+      "dimensions": [640, 617],
+      "noise_analysis": {
+        "inconsistency_score": 2.77,
+        "mean_variance": 85.17,
+        "std_variance": 95.7,
+        "anomaly_count": 39
+      },
+      "frequency_analysis": {
+        "checkerboard_score": 100.0,
+        "anomaly_score": 56.67,
+        "peak_ratio": 0.667
+      },
+      "expected_result": {
+        "is_fake": true,
+        "authenticity_score_max": 40,
+        "detected_types": ["ai_generation", "noise_analysis"],
+        "notes": "Duplicate of ID 65"
+      }
+    },
+    {
+      "id": 69,
+      "type": "ai",
+      "description": "AI-generated image (sophisticated, duplicate of 66)",
+      "dimensions": [640, 644],
+      "noise_analysis": {
+        "inconsistency_score": 5.87,
+        "mean_variance": 30.24,
+        "std_variance": 43.26,
+        "anomaly_count": 87
+      },
+      "frequency_analysis": {
+        "checkerboard_score": 97.19,
+        "anomaly_score": 55.59,
+        "peak_ratio": 0.7
+      },
+      "expected_result": {
+        "is_fake": true,
+        "authenticity_score_max": 60,
+        "notes": "Duplicate of ID 66. High inconsistency - may pass as real."
+      }
+    },
+    {
+      "id": 70,
+      "type": "ai",
+      "description": "AI-generated image (duplicate of 67)",
+      "dimensions": [1080, 1057],
+      "noise_analysis": {
+        "inconsistency_score": 2.1,
+        "mean_variance": 30.81,
+        "std_variance": 60.75,
+        "anomaly_count": 90
+      },
+      "frequency_analysis": {
+        "checkerboard_score": 96.9,
+        "anomaly_score": 57.93,
+        "peak_ratio": 0.948
+      },
+      "expected_result": {
+        "is_fake": true,
+        "authenticity_score_max": 40,
+        "detected_types": ["ai_generation", "noise_analysis"],
+        "notes": "Duplicate of ID 67"
+      }
+    }
+  ],
+  "detection_thresholds": {
+    "noise_inconsistency": {
+      "high_risk": "< 3.0 (synthetic uniform noise)",
+      "medium_risk": "< 4.2 (suspicious uniformity)",
+      "positive": "> 5.5 (natural sensor variation)"
+    },
+    "dimensions": {
+      "suspicious": ["512x512", "768x768", "1024x1024", "1536x1536", "2048x2048"]
+    },
+    "anomaly_count": {
+      "positive_high": "> 500 (many natural variations)",
+      "negative": "< 100 (too uniform)"
+    }
+  },
+  "expected_performance": {
+    "real_photos_unedited": {
+      "count": 5,
+      "expected_correct": 5,
+      "accuracy": "100%"
+    },
+    "real_photos_edited": {
+      "count": 1,
+      "expected_correct": 1,
+      "accuracy": "100%",
+      "notes": "Correctly flagged as fake due to heavy editing"
+    },
+    "ai_images": {
+      "count": 11,
+      "expected_correct": 8,
+      "accuracy": "73%",
+      "notes": "3 sophisticated AI with post-processed noise may pass"
+    },
+    "overall": {
+      "count": 17,
+      "expected_correct": 14,
+      "accuracy": "82%"
+    }
+  }
+}

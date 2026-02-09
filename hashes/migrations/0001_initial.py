@@ -34,12 +34,12 @@ class Migration(migrations.Migration):
                 ('public', models.BooleanField(default=False)),
                 ('created_at', models.DateTimeField(auto_now_add=True, db_index=True)),
                 ('matches', models.ManyToManyField(to='analyses.Analysis', blank=True)),
-                ('owner', models.ForeignKey(related_name='owned_hashes', editable=False, to=settings.AUTH_USER_MODEL)),
+                ('owner', models.ForeignKey(related_name='owned_hashes', editable=False, to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)),
             ],
         ),
         migrations.AddField(
             model_name='hash',
             name='list',
-            field=models.ForeignKey(editable=False, to='hashes.List'),
+            field=models.ForeignKey(editable=False, to='hashes.List', on_delete=models.CASCADE),
         ),
     ]

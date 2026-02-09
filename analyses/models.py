@@ -1,27 +1,26 @@
-# Ghiro - Copyright (C) 2013-2016 Ghiro Developers.
-# This file is part of Ghiro.
+# Sus Scrofa - Copyright (C) 2026 Sus Scrofa Developers.
+# This file is part of Sus Scrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
-import os
 import json
+import os
 import gridfs
 
-from datetime import datetime
 from bson.objectid import ObjectId
 from django.db import models
-from django.db.models.signals import pre_delete, pre_save, post_save
-from django.dispatch import receiver
 from django.conf import settings
+from django.db.models.signals import pre_delete, post_save
+from django.dispatch import receiver
 
 from users.models import Profile
-from lib.db import get_file, get_file_length, mongo_connect
-from lib.exceptions import GhiroValidationException
-from ghiro.common import check_allowed_content
-from lib.db import save_file
+from lib.db import get_file, get_file_length, get_db, get_fs, save_file
 from lib.utils import create_thumb, get_content_type_from_file
+from sus_scrofa.common import check_allowed_content
+from lib.exceptions import SusScrofaValidationException
 
-db = mongo_connect()
-fs = gridfs.GridFS(db)
+# Lazy load DB and FS when needed
+# db = mongo_connect()
+# fs = gridfs.GridFS(db)
 
 class Case(models.Model):
     """Collection of image analysis."""
@@ -41,31 +40,30 @@ class Case(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
-        get_latest_by = "created_at"
 
     def is_owner(self, user):
-        """Checks if an user is the owner of this object.
+        """Checks if a user is the owner of this object.
         @param user: user instance
         @return: boolean permission
         """
         return user == self.owner
 
     def is_in_users(self, user):
-        """Checks if an user is allowed list of users for this object.
+        """Checks if a user is in the allowed user list for this object.
         @param user: user instance
         @return: boolean permission
         """
         return user in self.users.all()
 
     def can_read(self, user):
-        """Checks if an user is allowed to read this object.
+        """Checks if a user is allowed to read this object.
         @param user: user instance
         @return: boolean permission
         """
         return user.is_superuser or self.is_in_users(user) or self.is_owner(user)
 
     def can_write(self, user):
-        """Checks if an user is allowed to write (create, edit, delete) this object.
+        """Checks if a user is allowed to write (create, edit, delete) this object.
         @param user: user instance
         @return: boolean permission
         """
@@ -76,30 +74,11 @@ class Case(models.Model):
         """Returns directory name used in auto upload."""
         return "Case_id_%s" % self.id
 
-@receiver(pre_save, sender=Case)
-def set_updated_at(sender, instance, **kwargs):
-    """Hook to set updated_at date every time the model is saved."""
-    instance.updated_at = datetime.now()
-
-@receiver(pre_save, sender=Case)
-def strip_attributes(sender, instance, **kwargs):
-    """Hook to strip fields."""
-    instance.name = instance.name.strip()
-    if instance.description:
-        instance.description = instance.description.strip()
-
-@receiver(post_save, sender=Case)
-def auto_upload_sync(sender, instance, **kwargs):
-    """When a new case is created syncs file system auto upload directories."""
-    # If auto upload is enabled sync the case folders.
-    if settings.AUTO_UPLOAD_DIR:
-        dir_path = os.path.join(settings.AUTO_UPLOAD_DIR, instance.directory_name)
-        if not os.path.exists(dir_path):
-            try:
-                os.mkdir(dir_path)
-            except (IOError, OSError) as e:
-                # TODO: add error tracking.
-                pass
+    def save(self, *args, **kwargs):
+        self.name = self.name.strip()
+        if self.description:
+            self.description = self.description.strip()
+        super(Case, self).save(*args, **kwargs)
 
 class Analysis(models.Model):
     """Image analysis."""
@@ -115,7 +94,7 @@ class Analysis(models.Model):
     thumb_id = models.CharField(max_length=72, editable=False, null=True, blank=True)
     file_name = models.CharField(max_length=255, editable=False, null=False, blank=False)
     analysis_id = models.CharField(max_length=24, db_index=True, editable=False, null=True, blank=True)
-    case = models.ForeignKey(Case, null=True, blank=True, on_delete=models.SET_NULL, db_index=True, editable=False, related_name="images")
+    case = models.ForeignKey(Case, null=False, blank=False, on_delete=models.CASCADE, db_index=True, editable=False, related_name="images")
     owner = models.ForeignKey(Profile, null=False, blank=False, on_delete=models.CASCADE, db_index=True, editable=False, related_name="owned_images")
     state = models.CharField(max_length=1, choices=STATUSES, default="W", db_index=True, editable=False)
     created_at = models.DateTimeField(auto_now_add=True, editable=False, db_index=True)
@@ -123,13 +102,33 @@ class Analysis(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
-        get_latest_by = "created_at"
+
+    def is_owner(self, user):
+        """Checks if a user is the owner of this object.
+        @param user: user instance
+        @return: boolean permission
+        """
+        return user == self.owner
+
+    def can_read(self, user):
+        """Checks if a user is allowed to read this object.
+        @param user: user instance
+        @return: boolean permission
+        """
+        return user.is_superuser or self.is_owner(user)
+
+    def can_write(self, user):
+        """Checks if a user is allowed to write (create, edit, delete) this object.
+        @param user: user instance
+        @return: boolean permission
+        """
+        return user.is_superuser or self.is_owner(user)
 
     @property
     def latitude(self):
         """Lookups latitude on mongo."""
         try:
-            record = db.analyses.find_one({"_id": ObjectId(self.analysis_id)})
+            record = get_db().analyses.find_one({"_id": ObjectId(self.analysis_id)})
         except:
             return None
 
@@ -140,7 +139,7 @@ class Analysis(models.Model):
     def longitude(self):
         """Lookups longitude on mongo."""
         try:
-            record = db.analyses.find_one({"_id": ObjectId(self.analysis_id)})
+            record = get_db().analyses.find_one({"_id": ObjectId(self.analysis_id)})
         except:
             return None
 
@@ -151,17 +150,9 @@ class Analysis(models.Model):
     def report(self):
         """Lookups report on mongo, used to fetch anal."""
         try:
-            data = db.analyses.find_one(ObjectId(self.analysis_id))
+            return get_db().analyses.find_one(ObjectId(self.analysis_id))
         except:
             return None
-        else:
-            if data:
-                # Data enrichment.
-                data["created_at"] = self.created_at
-                data["completed_at"] = self.completed_at
-                return data
-            else:
-                return None
 
     @property
     def get_file_data(self):
@@ -182,41 +173,15 @@ class Analysis(models.Model):
     @property
     def to_json(self):
         """Converts object to JSON."""
-        def date_handler(obj):
-            """Converts datetime to str."""
-            return obj.isoformat() if hasattr(obj, "isoformat") else obj
-
         # Fetch report from mongo.
         data = self.report
         # Cleanup.
         del(data["_id"])
         # If result available converts it.
         if data:
-            return json.dumps(data, sort_keys=False, indent=4,
-                              default=date_handler)
+            return json.dumps(data, sort_keys=False, indent=4)
         else:
             return json.dumps({})
-
-    def is_owner(self, user):
-        """Checks if an user is the owner of this object.
-        @param user: user instance
-        @return: boolean permission
-        """
-        return user == self.owner
-
-    def can_read(self, user):
-        """Checks if an user is allowed to read this object.
-        @param user: user instance
-        @return: boolean permission
-        """
-        return user.is_superuser or self.is_owner(user)
-
-    def can_write(self, user):
-        """Checks if an user is allowed to write (create, edit, delete) this object.
-        @param user: user instance
-        @return: boolean permission
-        """
-        return user.is_superuser or self.is_owner(user)
 
     @staticmethod
     def add_task(file_path, file_name=None, case=None, user=None, content_type=None, image_id=None, thumb_id=None):
@@ -229,8 +194,7 @@ class Analysis(models.Model):
         @param image_id: original image gridfs id
         @param thumb_id: thumbnail gridfs id
         """
-        # TODO: re enable with py3 support.
-        # assert isinstance(file_path, str)
+        assert isinstance(file_path, str)
 
         # File name.
         if not file_name:
@@ -250,11 +214,22 @@ class Analysis(models.Model):
 
         # Check on allowed file type.
         if not check_allowed_content(content_type):
-            raise GhiroValidationException("Skipping %s: file type not allowed." % file_name)
+            raise SusScrofaValidationException("Skipping %s: file type not allowed." % file_name)
         else:
             # Add to analysis queue.
             return Analysis.objects.create(owner=user, case=case, file_name=file_name,
                                            image_id=image_id, thumb_id=thumb_id)
+
+@receiver(post_save, sender=Case)
+def auto_upload_sync(sender, instance, **kwargs):
+    """When a new case is created syncs file system auto upload directories."""
+    if settings.AUTO_UPLOAD_DIR:
+        dir_path = os.path.join(settings.AUTO_UPLOAD_DIR, instance.directory_name)
+        if not os.path.exists(dir_path):
+            try:
+                os.mkdir(dir_path)
+            except (IOError, OSError):
+                pass
 
 @receiver(pre_delete, sender=Analysis)
 def delete_mongo_analysis(sender, instance, **kwargs):
@@ -265,14 +240,14 @@ def delete_mongo_analysis(sender, instance, **kwargs):
         @param uuid: file UUID
         """
         try:
-            obj_id = db.fs.files.find_one({"uuid": uuid})["_id"]
-            fs.delete(ObjectId(obj_id))
+            obj_id = get_db().fs.files.find_one({"uuid": uuid})["_id"]
+            get_fs().delete(ObjectId(obj_id))
         except:
             # TODO: add logging.
             pass
 
     # Fetch analysis.
-    analysis = db.analyses.find_one({"_id": ObjectId(instance.analysis_id)})
+    analysis = get_db().analyses.find_one({"_id": ObjectId(instance.analysis_id)})
 
     # Delete files created during analysis.
     useless_files = []
@@ -281,16 +256,16 @@ def delete_mongo_analysis(sender, instance, **kwargs):
     if analysis:
         # Delete ELA image.
         if "ela" in analysis and "ela_image" in analysis["ela"]:
-            if db.analyses.find({"ela.ela_image": analysis["ela"]["ela_image"]}).count() == 1:
+            if get_db().analyses.find({"ela.ela_image": analysis["ela"]["ela_image"]}).count() == 1:
                 useless_files.append(analysis["ela"]["ela_image"])
         # Delete preview images.
         if "metadata" in analysis and "preview" in analysis["metadata"]:
             for preview in analysis["metadata"]["preview"]:
-                if db.analyses.find({"metadata.preview.file": preview["file"]}).count() == 1:
+                if get_db().analyses.find({"metadata.preview.file": preview["file"]}).count() == 1:
                     useless_files.append(preview["file"])
         # Delete analysis data.
         try:
-            db.analyses.remove({"_id": ObjectId(instance.analysis_id)})
+            get_db().analyses.remove({"_id": ObjectId(instance.analysis_id)})
         except:
             # TODO: add logging.
             pass
@@ -311,19 +286,6 @@ class AnalysisMetadataDescription(models.Model):
     key = models.CharField(max_length=255, editable=False, null=False, blank=False, db_index=True, unique=True)
     description = models.TextField(editable=False, null=False, blank=False)
 
-    @staticmethod
-    def add(key, description):
-        """Adds key metadata description to lookup table.
-        @param key: fully qualified metadata key
-        @param description: key description
-        """
-        # Skip if no description is provided.
-        if description:
-            try:
-                AnalysisMetadataDescription.objects.get(key=key.lower())
-            except AnalysisMetadataDescription.DoesNotExist:
-                obj = AnalysisMetadataDescription(key=key.lower(), description=description)
-                obj.save()
 
 class Favorite(models.Model):
     """Add favorite to image."""

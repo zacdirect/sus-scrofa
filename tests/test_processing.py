@@ -1,5 +1,5 @@
-# Ghiro - Copyright (C) 2013-2016 Ghiro Developers.
-# This file is part of Ghiro.
+# Sus Scrofa - Copyright (C) 2026 Sus Scrofa Developers.
+# This file is part of Sus Scrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
 from django.test import TestCase
@@ -22,4 +22,15 @@ class AnalysisManagerTest(TestCase):
         self.assertEqual(self.am.get_parallelism(), 1)
 
     def tearDown(self):
-         self.am.stop()
+        # Stop workers to clean up processes
+        try:
+            if hasattr(self.am, 'workers'):
+                # Terminate all workers
+                for worker in self.am.workers:
+                    if worker.is_alive():
+                        worker.terminate()
+                # Wait for termination
+                for worker in self.am.workers:
+                    worker.join(timeout=0.5)
+        except Exception:
+            pass  # Best effort cleanup

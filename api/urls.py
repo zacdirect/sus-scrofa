@@ -1,12 +1,11 @@
-# Ghiro - Copyright (C) 2013-2016 Ghiro Developers.
-# This file is part of Ghiro.
+# Sus Scrofa - Copyright (C) 2026 Sus Scrofa Developers.
+# This file is part of Sus Scrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
-from django.conf.urls import patterns, url
+from django.urls import re_path
+from . import views
 
-urlpatterns = patterns("",
-    url(r"^cases/new$", "api.views.new_case"),
-    url(r"^cases/show$", "api.views.show_case"),
-    url(r"^images/new$", "api.views.new_image"),
-    url(r"^images/report", "api.views.get_report"),
-)
+urlpatterns = [
+    re_path(r"^cases/new$", views.new_case),
+    re_path(r"^images/new$", views.new_image),
+]

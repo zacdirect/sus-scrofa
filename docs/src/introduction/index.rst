@@ -17,7 +17,7 @@ Ghiro is a multi user environment, different permissions can be assigned to each
 user.
 Cases allow you to group image analyses by topic, you can choose which user
 allow to see your case with a permission schema. Every team in your forensic lab
-could work in their own cases with privileges separation.
+could work in their own cases with priviledges separation.
 
 Use Case
 ========
@@ -62,8 +62,8 @@ Architecture
 Ghiro is composed by the following components:
 
  * The web interface: to interact with all features, this is the component used by users to work with Ghiro
- * The processor daemon: it fetches waiting tasks from the queue, process and analyze images
- * The SQL database: it stores relational data, you can choose between MySQL, PostgreSQL and SQLite3
+ * The processor deamon: it fetches waiting tasks from the queue, process and analyze images
+ * The relation database: it stores relational data, you can choose between MySQL, PostgreSQL and SQLite3
  * The MongoDB database: it stores analysis data
 
 Following the architecture in a simple schema:
@@ -99,93 +99,76 @@ You can download it with the following command::
 .. _`official website`: http://www.getghiro.org
 .. _`official GitHub page`: https://github.com/ghirensics/ghiro
 
-Verifying Signatures
-====================
+Virtual Appliance
+=================
 
-Every release published by the Ghiro Developers is digitally signed by the
-`Ghiro Master Signing key`_ or by one of the developers (each such key is signed
-by the `Ghiro Master Signing key`_).
+The faster way to start playing with Ghiro is to download the Ghiro Virtual
+Appliance.
+You can download it from the `official website`_.
+In few minutes you will have a fully functional Ghiro setup, running in a
+virtual machine, to start to analyze your images.
+It is an OVA file, you have to import in your virtualization software (like
+VirtualBox or VMWare) and configure the networking as explained in the
+documentation.
 
-The first step is to import the Ghiro Master Signing public key, you can download
-it from a keyserver with this command::
+Getting Started
+---------------
 
-    $ gpg --keyserver pool.sks-keyservers.net --recv-keys 0xafda03a581c21ee9
+Import the .OVA file in your virtualization software (VirtualBox or Vmware).
+For example in VirtualBox go in File > Import Appliance and select the .OVA file. 
+Start the appliance.
 
-You can add it directly from Ghiro website too::
+The appliance credentials are:
+Username: ghiro
+Password: ghiromanager
 
-    $ gpg --fetch-keys http://getghiro.org/keys/ghiro_master_signing_key.asc
+For extra security, remember to change the password at your first access.
 
-The fingerprint of `Ghiro Master Signing key`_ is published here (for additional security)::
+The first time you have to properly configure the network interface.
+Select the virtual networking you like (for example
+bridged or NAT); by default the appliance is configured in bridged mode.
+By default, Ghiro appliance will get an IP address using DHCP and show it in
+the boot screen.
 
-    9DD9 3A61 39A4 A72D 2467  378D AFDA 03A5 81C2 1EE9
+If you need to manually configure your IP address: login in, and configure the
+networking card with your desired IP, for example to
+give the IP 192.168.0.10 use the following command:
 
-Now you can download the signature for Ghiro package or appliance from Ghiro website,
-you can verify it with the following::
+sudo ifconfig eth0 192.168.0.10 up
 
-    $ gpg --verify ghiro-0.2.zip.sig
-    gpg: Signature made Sun Mar 15 17:55:51 2015 CET using RSA key ID 81C21EE9
-    gpg: Good signature from "Ghiro Master Signing key (Ghiro Master Signing key)" [ultimate]
+When Ghiro apppliance has an IP address, via DHCP or via manual configuration,
+the web interface is reachable on default HTTP port 80/tcp, just put the
+appliance address in your browser. For example:
 
-If you get an output like this one, the package you got is good and you can trust it,
-if you get a different output you are facing a security risk, you should contact Ghiro's
-developers and never use the downloaded package.
+http://192.168.0.10 (or other DHCP or manually configured adress)
 
-It is also a good, although optional, practice to set its trust level to “ultimate”,
-so that it can be used to automatically verify all the keys signed by the Ghiro developers::
+The web interface credentials are:
+Username: ghiro
+Password: ghiromanager
 
-    $ gpg –edit-key 0x81C21EE9
+For extra security, remember to change the password at your first access.
 
-Now trust the key, and set trust to ultimate level with::
+Now you can start analyzing images! Go in the "Cases" panel, create your first
+case, and add your images with the add button.
+For usage help please refer to the documentation at:
+http://www.getghiro.org/docs/latest/usage/index.html
 
-    gpg> trust pub 4096R/81C21EE9
+If you need to access remotely to the appliance you can use SSH.
+The appliance is shipped with a default disk of 50GB, if is not enough you can
+create another virtual disk and add that to the root volume using LVM.
 
-As example the full output follows::
+Appliance building
+------------------
 
-    $ gpg --keyserver pool.sks-keyservers.net --recv-keys 0xafda03a581c21ee9
-    gpg: requesting key 81C21EE9 from hkp server pool.sks-keyservers.net
-    gpg: /home/jekil/.gnupg/trustdb.gpg: trustdb created
-    gpg: key 81C21EE9: public key "Ghiro Master Signing key (Ghiro Master Signing key)" imported
-    gpg: no ultimately trusted keys found
-    gpg: Total number processed: 1
-    gpg:               imported: 1  (RSA: 1)
+The appliance building script is open source and available under a project
+dubbed `ghiro-appliance`_ on Github.
 
-    $ gpg --edit-key 0x81C21EE9
-    gpg (GnuPG) 1.4.16; Copyright (C) 2013 Free Software Foundation, Inc.
-    This is free software: you are free to change and redistribute it.
-    There is NO WARRANTY, to the extent permitted by law.
+Ghiro appliance builder is a `packer.io`_ script to automagically create a Ghiro
+appliance ready to be used, based on Ubuntu.
 
+Using this script you should be able to create your onw Ghiro appliance updated
+to Ghiro's developed branch. You can easily customize the appliance building
+script to have your own customized appliance.
 
-    pub  4096R/81C21EE9  created: 2015-03-15  expires: 2021-03-15  usage: SC
-                         trust: unknown       validity: unknown
-    sub  4096R/E51F5BBD  created: 2015-03-15  expires: 2021-03-15  usage: E
-    [ unknown] (1). Ghiro Master Signing key (Ghiro Master Signing key)
-
-    gpg> trust pub 4096R/81C21EE9
-    pub  4096R/81C21EE9  created: 2015-03-15  expires: 2021-03-15  usage: SC
-                         trust: unknown       validity: unknown
-    sub  4096R/E51F5BBD  created: 2015-03-15  expires: 2021-03-15  usage: E
-    [ unknown] (1). Ghiro Master Signing key (Ghiro Master Signing key)
-
-    Please decide how far you trust this user to correctly verify other users' keys
-    (by looking at passports, checking fingerprints from different sources, etc.)
-
-      1 = I don't know or won't say
-      2 = I do NOT trust
-      3 = I trust marginally
-      4 = I trust fully
-      5 = I trust ultimately
-      m = back to the main menu
-
-    Your decision? 5
-    Do you really want to set this key to ultimate trust? (y/N) y
-
-    pub  4096R/81C21EE9  created: 2015-03-15  expires: 2021-03-15  usage: SC
-                         trust: ultimate      validity: unknown
-    sub  4096R/E51F5BBD  created: 2015-03-15  expires: 2021-03-15  usage: E
-    [ unknown] (1). Ghiro Master Signing key (Ghiro Master Signing key)
-    Please note that the shown key validity is not necessarily correct
-    unless you restart the program.
-
-    gpg> quit
-
-.. _`Ghiro Master Signing key`: http://getghiro.org/keys/ghiro_master_signing_key.asc
+.. _`packer.io`: http://packer.io
+.. _`ghiro-appliance`: https://github.com/ghirensics/ghiro-appliance

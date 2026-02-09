@@ -1,15 +1,14 @@
-# Ghiro - Copyright (C) 2013-2016 Ghiro Developers.
-# This file is part of Ghiro.
+# Sus Scrofa - Copyright (C) 2026 Sus Scrofa Developers.
+# This file is part of Sus Scrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
-from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_safe
-from django.shortcuts import render_to_response, get_object_or_404
+from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from users.models import Profile, Activity
-from ghiro.common import log_activity
+from sus_scrofa.common import log_activity
 
 import users.forms as forms
 
@@ -20,8 +19,7 @@ def profile(request):
     # Set sidebar no active tab.
     request.session["sidebar_active"] = None
 
-    return render_to_response("users/profile.html",
-                              context_instance=RequestContext(request))
+    return render(request, "users/profile.html")
 
 @require_safe
 @login_required
@@ -33,15 +31,13 @@ def admin_list_users(request):
 
     # Security check.
     if not request.user.is_superuser:
-        return render_to_response("error.html",
-                                  {"error": "You must be superuser"},
-                                  context_instance=RequestContext(request))
+        return render(request, "error.html",
+                                  {"error": "You must be superuser"})
 
     users = Profile.objects.all()
 
-    return render_to_response("admin/index.html",
-                              {"users": users},
-                              context_instance=RequestContext(request))
+    return render(request, "admin/index.html",
+                              {"users": users})
 
 @login_required
 def admin_new_user(request):
@@ -49,9 +45,8 @@ def admin_new_user(request):
 
     # Security check.
     if not request.user.is_superuser:
-        return render_to_response("error.html",
-                                  {"error": "You must be superuser"},
-                                  context_instance=RequestContext(request))
+        return render(request, "error.html",
+                                  {"error": "You must be superuser"})
 
     if request.method == "POST":
         form = forms.ProfileCreationForm(request.POST)
@@ -61,13 +56,12 @@ def admin_new_user(request):
             log_activity("A",
                          "Created new user %s" % user.username,
                          request)
-            return HttpResponseRedirect(reverse("users.views.admin_show_user", args=(user.id,)))
+            return HttpResponseRedirect(reverse("admin_show_user", args=(user.id,)))
     else:
         form = forms.ProfileCreationForm()
 
-    return render_to_response("admin/new_user.html",
-                              {"form": form},
-                              context_instance=RequestContext(request))
+    return render(request, "admin/new_user.html",
+                              {"form": form})
 
 @login_required
 def admin_show_user(request, user_id):
@@ -75,15 +69,13 @@ def admin_show_user(request, user_id):
 
     # Security check.
     if not request.user.is_superuser:
-        return render_to_response("error.html",
-                                  {"error": "You must be superuser"},
-                                  context_instance=RequestContext(request))
+        return render(request, "error.html",
+                                  {"error": "You must be superuser"})
 
     user = get_object_or_404(Profile, pk=user_id)
 
-    return render_to_response("users/profile.html",
-                              {"user": user, "admin_mode": True},
-                              context_instance=RequestContext(request))
+    return render(request, "admin/show_user.html",
+                              {"user": user})
 
 @login_required
 def admin_edit_user(request, user_id):
@@ -91,9 +83,8 @@ def admin_edit_user(request, user_id):
 
     # Security check.
     if not request.user.is_superuser:
-        return render_to_response("error.html",
-                                  {"error": "You must be superuser"},
-                                  context_instance=RequestContext(request))
+        return render(request, "error.html",
+                                  {"error": "You must be superuser"})
 
     user = get_object_or_404(Profile, pk=user_id)
 
@@ -105,13 +96,12 @@ def admin_edit_user(request, user_id):
             log_activity("A",
                          "Edited user %s" % user.username,
                          request)
-            return HttpResponseRedirect(reverse("users.views.admin_show_user", args=(user.id,)))
+            return HttpResponseRedirect(reverse("admin_show_user", args=(user.id,)))
     else:
         form = forms.ProfileForm(instance=user)
 
-    return render_to_response("admin/edit_user.html",
-                              {"form": form, "user": user},
-                              context_instance=RequestContext(request))
+    return render(request, "admin/edit_user.html",
+                              {"form": form, "user": user})
 
 @login_required
 def admin_disable_user(request, user_id):
@@ -119,16 +109,14 @@ def admin_disable_user(request, user_id):
 
     # Security check.
     if not request.user.is_superuser:
-        return render_to_response("error.html",
-                                  {"error": "You must be superuser"},
-                                  context_instance=RequestContext(request))
+        return render(request, "error.html",
+                                  {"error": "You must be superuser"})
 
     user = get_object_or_404(Profile, pk=user_id)
 
     if request.user == user:
-        return render_to_response("error.html",
-                                  {"error": "You can not disable yourself"},
-                                  context_instance=RequestContext(request))
+        return render(request, "error.html",
+                                  {"error": "You can not disable yourself"})
 
     user.is_active = False
     user.save()
@@ -137,7 +125,7 @@ def admin_disable_user(request, user_id):
                  "Disabled user %s" % user.username,
                  request)
 
-    return HttpResponseRedirect(reverse("users.views.admin_list_users"))
+    return HttpResponseRedirect(reverse("admin_list_users"))
 
 @login_required
 def admin_list_activity(request):
@@ -145,15 +133,13 @@ def admin_list_activity(request):
 
     # Security check.
     if not request.user.is_superuser:
-        return render_to_response("error.html",
-                                  {"error": "You must be superuser"},
-                                  context_instance=RequestContext(request))
+        return render(request, "error.html",
+                                  {"error": "You must be superuser"})
 
     activities = Activity.objects.all()
 
-    return render_to_response("admin/activity.html",
-                              {"activities": activities},
-                              context_instance=RequestContext(request))
+    return render(request, "admin/activity.html",
+                              {"activities": activities})
 
 @login_required
 def admin_show_activity(request, user_id):
@@ -161,13 +147,11 @@ def admin_show_activity(request, user_id):
 
     # Security check.
     if not request.user.is_superuser:
-        return render_to_response("error.html",
-                                  {"error": "You must be superuser"},
-                                  context_instance=RequestContext(request))
+        return render(request, "error.html",
+                                  {"error": "You must be superuser"})
 
     user = get_object_or_404(Profile, pk=user_id)
     activities = Activity.objects.filter(user=user)
 
-    return render_to_response("admin/user_activity.html",
-                              {"activities": activities},
-                              context_instance=RequestContext(request))
+    return render(request, "admin/user_activity.html",
+                              {"activities": activities})

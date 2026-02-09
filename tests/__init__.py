@@ -1,3 +1,9 @@
-# Ghiro - Copyright (C) 2013-2016 Ghiro Developers.
-# This file is part of Ghiro.
+# Sus Scrofa - Copyright (C) 2026 Sus Scrofa Developers.
+# This file is part of Sus Scrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
+
+import os
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "sus_scrofa.settings")
+
+import django
+django.setup()

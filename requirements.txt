@@ -1,11 +1,31 @@
-Django==1.9.7
-Pillow==3.2.0
-argparse>=1.2.1
-chardet==2.3.0
-pdfkit==0.5.0
-pymongo==3.2.2
-python-dateutil==2.5.3
-python-magic==0.4.11
-requests==2.10.0
-nudepy>=0.2
-imagehash
+Django==4.2.17
+Pillow>=8.0.0
+chardet>=3.0.0
+pdfkit>=0.6.0
+pymongo>=3.12.0
+python-dateutil>=2.8.0
+python-magic>=0.4.24
+sqlparse>=0.3.0
+asgiref>=3.3.0
+
+# Modern metadata extraction (replaces GExiv2)
+exif>=1.6.0
+pillow-heif>=0.15.0
+python-xmp-toolkit>=2.0.1
+
+# Enhanced forensics dependencies
+numpy>=1.21.0
+scipy>=1.7.0
+opencv-python-headless>=4.5.0
+scikit-image>=0.19.0
+imagehash>=4.3.0
+
+# AI detection (SPAI - Spectral AI-Generated Image Detector)
+# SPAI installation: see AI_DETECTION_SETUP.md for complete instructions
+# Model weights (~100MB) must be downloaded separately
+# Optional but highly recommended for AI-generated image detection
+
+# Photoholmes image forgery detection (optional, requires torch)
+# Install via: make photoholmes-setup
+# Methods include DQ, ZERO, Noisesniffer (CPU), plus GPU methods
+# See MODERNIZATION.md for full details

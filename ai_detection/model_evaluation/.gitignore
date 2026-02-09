@@ -1,0 +1,69 @@
+# Model Evaluation - Git Ignore Rules
+
+# Test Data (NOT in git - your private test images)
+test_data/
+test_data_link
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.tiff
+*.webp
+
+# Model Weights (NOT in git - download separately)
+**/weights/*.pth
+**/weights/*.pt
+**/weights/*.h5
+**/weights/*.ckpt
+**/weights/*.pb
+**/weights/*.onnx
+**/weights/*.bin
+**/weights/*.safetensors
+
+# Virtual Environments
+**/venv/
+**/.venv/
+**/env/
+**/.env/
+
+# Test Results (Generated, NOT in git)
+**/test_results.json
+**/baseline/*.json
+!**/baseline/.gitkeep
+
+# Reports (Generated, NOT in git)
+reports/*.md
+reports/*.html
+reports/*.pdf
+!reports/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Keep directory structure
+!.gitkeep

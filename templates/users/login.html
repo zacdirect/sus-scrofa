@@ -1,7 +1,7 @@
 {% extends "base_index.html" %}
 
 {% block login %}
-<form class="form-horizontal" method="post" action="{% url "django.contrib.auth.views.login" %}">{% csrf_token %}
+<form class="form-horizontal" method="post" action="{% url 'login' %}">{% csrf_token %}
     <legend>
         <i class="icon-user"> </i> Login
     </legend>
@@ -26,9 +26,9 @@
         </div>
     </div>
 </form>
-{% if form.errors %}
-    <div class="alert alert-danger" id="failed-login-alert">
-        <i class="icon-warning-sign"></i> Your username and password didn't match. Please try again.
+{% if form.non_field_errors %}
+    <div class="alert alert-danger">
+        <i class="icon-warning-sign"></i> {{ form.non_field_errors|striptags }}
     </div>
 {% endif %}
 

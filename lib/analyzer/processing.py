@@ -1,22 +1,22 @@
-# Ghiro - Copyright (C) 2013-2016 Ghiro Developers.
-# This file is part of Ghiro.
+# Sus Scrofa - Copyright (C) 2026 Sus Scrofa Developers.
+# This file is part of Sus Scrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
 import logging
-import pkgutil
-import inspect
 
 from time import sleep
 from multiprocessing import cpu_count, Process, JoinableQueue
 from django.utils.timezone import now
 from django.conf import settings
 
-import plugins.processing as modules
-from lib.utils import AutoVivification
+from lib.analyzer.orchestrator import (
+    discover_plugins, check_deps, should_skip_ai_ml, should_skip_research,
+    run_plugins,
+)
+from lib.analyzer.auditor import audit
+from lib.forensics.confidence import calculate_manipulation_confidence
+from lib.db import save_results, update_results
 from analyses.models import Analysis
-from lib.analyzer.base import BaseProcessingModule
-from lib.db import save_results
-from lib.exceptions import GhiroPluginException
 
 logger = logging.getLogger(__name__)
 
@@ -24,71 +24,127 @@ logger = logging.getLogger(__name__)
 class AnalysisRunner(Process):
     """Run an analysis process."""
 
-    def __init__(self, tasks, modules=None):
+    def __init__(self, tasks, static_plugins=None, ai_ml_plugins=None,
+                 research_plugins=None):
         Process.__init__(self)
         self.tasks = tasks
-        self.modules = modules
+        self.static_plugins = static_plugins or []
+        self.ai_ml_plugins = ai_ml_plugins or []
+        self.research_plugins = research_plugins or []
         logger.debug("AnalysisRunner started")
 
     def run(self):
         """Start processing."""
-        # Antani-finite loop.
         while True:
             try:
-                # Get a new task from queue.
                 task = self.tasks.get()
-                self.process_image(task)
+                self._process_image(task)
             except KeyboardInterrupt:
                 break
 
-    def run_module(self, task, module, results):
-        """Runs a processing module.
-        @param task: task
-        @param module: module
-        @param results: results dict
-        """
-        logger.debug("[Task {0}]: Running module {1}".format(task.id, module))
-        current = module()
-        current.data = results
-        try:
-            output = current.run(task)
-        except Exception as e:
-            logger.exception("[Task {0}]: Critical error in plugin {1}, skipping: {2}".format(task.id, module, e))
-            raise GhiroPluginException(e)
-        else:
-            if isinstance(output, AutoVivification):
-                results.update(output)
-            else:
-                logger.warning("[Task {0}]: Module {1} returned results not in dict format.".format(task.id, module))
-        return results
-
-    def process_image(self, task):
+    def _process_image(self, task):
         """Process an image.
+
+        Four-phase architecture:
+
+          Phase 1a — Static plugins:
+                     Fast, deterministic analysers (metadata, hashes,
+                     ELA, noise, frequency, signatures, …).
+
+          ── Auditor checkpoint ──
+                     If static evidence alone is already decisive,
+                     skip the expensive AI/ML phase.
+
+          Phase 1b — AI/ML plugins:
+                     Heavier detectors (SDXL, SPAI, OpenCV manipulation,
+                     photoholmes, …).  Only run when Phase 1a didn't
+                     already produce a clear verdict.
+
+          Phase 1c — Research plugins:
+                     Content analysis, object detection, person
+                     attributes.  Gated by confidence threshold —
+                     only runs when the image appears genuine or
+                     uncertain.  Minimal auditor impact (LOW only).
+                     Results populate a dedicated research page,
+                     not the main analysis report.
+
+          Phase 2  — Engine post-processing (NOT plugins):
+                     a) Compliance Auditor → results['audit']
+                     b) Confidence Scoring → results['confidence']
+
         @param task: image task
         """
         try:
             results = {}
-
-            # Save reference to image data on  GridFS.
             results["file_data"] = task.image_id
 
-            for module in self.modules:
-                try:
-                    results = self.run_module(task, module, results)
-                except GhiroPluginException:
-                    continue
+            # ── Phase 1a: Static plugins ──────────────────────────
+            run_plugins(self.static_plugins, results, task)
 
-            # Complete.
-            task.analysis_id = save_results(results)
+            # ── Auditor checkpoint ────────────────────────────────
+            skipped_ai = False
+            if self.ai_ml_plugins and should_skip_ai_ml(results):
+                skipped_ai = True
+                results["_engine"] = {"ai_ml_skipped": True,
+                                      "skip_reason": "decisive static evidence"}
+                logger.info("Task %s: AI/ML tier skipped (static evidence sufficient)", task.id)
+            else:
+                # ── Phase 1b: AI/ML plugins ───────────────────────
+                run_plugins(self.ai_ml_plugins, results, task)
+
+            # ── Research gate ─────────────────────────────────────
+            # Only run research plugins when the image is likely
+            # genuine (authenticity score >= threshold).  There is no
+            # forensic value in cataloguing person attributes on a
+            # fabricated image.
+            skipped_research = False
+            if self.research_plugins:
+                if should_skip_research(results):
+                    skipped_research = True
+                    results.setdefault("_engine", {})
+                    results["_engine"]["research_skipped"] = True
+                    results["_engine"]["research_skip_reason"] = (
+                        "image likely not genuine (below confidence threshold)")
+                    results["content_analysis"] = {
+                        "enabled": False,
+                        "reason": "Skipped: image likely not genuine",
+                    }
+                    logger.info("Task %s: Research tier skipped (image not genuine)", task.id)
+                else:
+                    # ── Phase 1c: Research plugins ────────────────
+                    run_plugins(self.research_plugins, results, task)
+
+            # ── Phase 2: Engine post-processing ───────────────────
+            try:
+                results["audit"] = audit(results)
+                logger.info("Compliance audit complete for task %s: authenticity=%s",
+                            task.id, results["audit"].get("authenticity_score"))
+            except Exception as e:
+                logger.exception("Compliance audit failed for task %s: %s", task.id, e)
+                results["audit"] = {"error": str(e)}
+
+            try:
+                results["confidence"] = calculate_manipulation_confidence(results)
+            except Exception as e:
+                logger.exception("Confidence scoring failed for task %s: %s", task.id, e)
+                results["confidence"] = {"error": str(e)}
+
+            # Complete — save or update results.
+            # If analysis_id exists, we're re-processing → update existing MongoDB doc.
+            if task.analysis_id:
+                update_results(task.analysis_id, results)
+                logger.info("Re-processed task {0} with success (updated existing analysis)".format(task.id))
+            else:
+                task.analysis_id = save_results(results)
+                logger.info("Processed task {0} with success (new analysis)".format(task.id))
+            
             task.state = "C"
-            logger.info("[Task {0}]: Processed task with success".format(task.id))
         except Exception as e:
-            logger.exception("[Task {0}]: Critical error processing, skipping task: {1}".format(task.id, e))
+            logger.exception("Critical error processing task {0}, skipping task: {1}".format(task.id, e))
             task.state = "F"
         finally:
-            # Saving timestamp.
-            task.completed_at = now()
             # Save.
+            task.completed_at = now()
             task.save()
             self.tasks.task_done()
 
@@ -97,20 +153,25 @@ class AnalysisManager():
     """Manage all analysis' process."""
 
     def __init__(self):
-        # Processing pool.
         logger.debug("Using pool on %i core" % self.get_parallelism())
-        # Load modules.
-        self.modules = []
-        self.load_modules()
-        self.check_module_deps()
+        # Discover and validate plugins via engine orchestrator.
+        static_raw, ai_ml_raw, research_raw = discover_plugins()
+        self.static_plugins = check_deps(static_raw)
+        self.ai_ml_plugins = check_deps(ai_ml_raw)
+        self.research_plugins = check_deps(research_raw)
+        logger.info("Loaded %d static plugins, %d AI/ML plugins, %d research plugins",
+                     len(self.static_plugins), len(self.ai_ml_plugins),
+                     len(self.research_plugins))
         # Starting worker pool.
         self.workers = []
         self.tasks = JoinableQueue(self.get_parallelism())
+        self.workers_start()
 
     def workers_start(self):
         """Start workers pool."""
         for _ in range(self.get_parallelism()):
-            runner = AnalysisRunner(self.tasks, self.modules)
+            runner = AnalysisRunner(self.tasks, self.static_plugins,
+                                    self.ai_ml_plugins, self.research_plugins)
             runner.start()
             self.workers.append(runner)
 
@@ -121,7 +182,7 @@ class AnalysisManager():
             sex_worker.join()
 
     def get_parallelism(self):
-        """Get the ghiro parallelism level for analysis processing."""
+        """Get the sus_scrofa parallelism level for analysis processing."""
         # Check database type. If we detect SQLite we slow down processing to
         # only one process. SQLite does not support parallelism.
         if settings.DATABASES["default"]["ENGINE"].endswith("sqlite3"):
@@ -133,43 +194,8 @@ class AnalysisManager():
         else:
             return 1
 
-    def load_modules(self):
-        """Load modules."""
-        # Search for analysis modules, it need to import module directory as package named "modules".
-        for loader_instance, module_name, is_pkg in pkgutil.iter_modules(modules.__path__, modules.__name__ + "."):
-            # Skip packages.
-            if is_pkg:
-                continue
-            # Load module.
-            # NOTE: This code is inspired to Cuckoo Sandbox module loading system.
-            try:
-                module = __import__(module_name, globals(), locals(), ["dummy"], -1)
-            except ImportError as e:
-                logger.error("Unable to import module: %s" % module)
-            else:
-                for class_name, class_pkg in inspect.getmembers(module):
-                    if inspect.isclass(class_pkg):
-                        # Load only modules which inherits BaseModule.
-                        if issubclass(class_pkg, BaseProcessingModule) and class_pkg is not BaseProcessingModule:
-                            self.modules.append(class_pkg)
-                            logger.debug("Found module: %s" % class_name)
-
-        # Sort modules by execution order.
-        self.modules.sort(key=lambda x: x.order)
-
-    def check_module_deps(self):
-        """Check modules for requested deps, if not found removes the module from the list."""
-        for plugin in self.modules:
-            # NOTE: create the module class instance.
-            if not plugin().check_deps():
-                self.modules.remove(plugin)
-                logger.warning("Kicked module, requirements not found: %s" % plugin.__name__)
-
     def run(self):
         """Start all analyses."""
-        # Start workers.
-        self.workers_start()
-
         # Clean up tasks remaining stale from old runs.
         if Analysis.objects.filter(state="P").exists():
             logger.info("Found %i stale analysis, putting them in queue." % Analysis.objects.filter(state="P").count())
@@ -200,8 +226,3 @@ class AnalysisManager():
             print("Waiting tasks to accomplish...")
             self.workers_stop()
             print("Processing done. Have a nice day in the real world.")
-
-    def stop(self):
-        """Stops the analysis manager."""
-        if self.workers:
-            self.workers_stop()

@@ -1,6 +1,10 @@
+Sus Scrofa Developers
+----------------
+@ZacDirect
+Vibe coder
+
 Ghiro Developers
 ----------------
-
 Alessandro `jekil` Tanasi (@jekil) - alessandro at tanasi.it
 Lead Developer
 

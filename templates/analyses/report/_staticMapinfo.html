@@ -2,7 +2,7 @@
     <tr>
         <td>
             <table>
-                {% for k, v in analysis.report.metadata.Exif.GPSInfo.iteritems %}
+                {% for k, v in analysis.report.metadata.Exif.GPSInfo.items %}
                 <tr>
                     <td>
                         <strong>{{ k|upper }}</strong>

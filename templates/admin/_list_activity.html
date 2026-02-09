@@ -1,4 +1,4 @@
-<table class="table datatables">
+<table class="table table-bordered table-striped responsive datatables">
     <thead>
         <tr>
             <th>#</th>
@@ -30,17 +30,13 @@
 </table>
 
 <script type="text/javascript">
-$(document).ready(function() {
-    $('.datatables').dataTable({
-        "sPaginationType": "bs_normal"
-    });
-    $('.datatables').each(function(){
-        var datatable = $(this);
-        var search_input = datatable.closest('.dataTables_wrapper').find('div[id$=_filter] input');
-        search_input.attr('placeholder', 'Search');
-        search_input.addClass('form-control input-sm');
-        var length_sel = datatable.closest('.dataTables_wrapper').find('div[id$=_length] select');
-        length_sel.addClass('form-control input-sm');
-    });
+$('.datatables').dataTable({
+    "sDom" : '<"top"f>t<"bottom"lp><"clear">',
+    "aaSorting": [[ 0, "desc" ]],
+    "language": {
+        "search": "_INPUT_"
+    }
 });
+
+$('.dataTables_filter input').attr("placeholder", "Search...");
 </script>

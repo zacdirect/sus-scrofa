@@ -1,5 +1,5 @@
-# Ghiro - Copyright (C) 2013-2016 Ghiro Developers.
-# This file is part of Ghiro.
+# Sus Scrofa - Copyright (C) 2026 Sus Scrofa Developers.
+# This file is part of Sus Scrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
 import os
@@ -30,12 +30,12 @@ class CreateAutoUploadDirTest(TestCase):
         """Test for AUTO_UPLOAD_DIR creation when missing."""
         # Create temporary directory to store everything.
         tmp_path = tempfile.mkdtemp()
-        # Build the ghiro path for auto upload.
-        ghiro_path = os.path.join(tmp_path, "ghiro-test")
+        # Build the sus_scrofa path for auto upload.
+        sus_scrofa_path = os.path.join(tmp_path, "sus_scrofa-test")
         # Set path and test.
-        settings.AUTO_UPLOAD_DIR = ghiro_path
+        settings.AUTO_UPLOAD_DIR = sus_scrofa_path
         self.assertNotEqual(Command.create_auto_upload_dirs(), False)
-        self.assertTrue(os.path.exists(ghiro_path))
+        self.assertTrue(os.path.exists(sus_scrofa_path))
         # Cleanup.
         shutil.rmtree(tmp_path)
 
@@ -46,14 +46,14 @@ class CreateAutoUploadDirTest(TestCase):
         case2 = Case.objects.create(name="aab", owner=self.user)
         # Create temporary directory to store everything.
         tmp_path = tempfile.mkdtemp()
-        # Build the ghiro path for auto upload.
-        ghiro_path = os.path.join(tmp_path, "ghiro-test")
+        # Build the sus_scrofa path for auto upload.
+        sus_scrofa_path = os.path.join(tmp_path, "sus_scrofa-test")
         # Create AUTO_UPLOAD_DIR.
-        os.mkdir(ghiro_path)
+        os.mkdir(sus_scrofa_path)
         # Set path and test.
-        settings.AUTO_UPLOAD_DIR = ghiro_path
+        settings.AUTO_UPLOAD_DIR = sus_scrofa_path
         self.assertNotEqual(Command.create_auto_upload_dirs(), False)
-        self.assertTrue(os.path.exists(ghiro_path))
+        self.assertTrue(os.path.exists(sus_scrofa_path))
         # Cleanup.
         shutil.rmtree(tmp_path)
 
@@ -63,14 +63,14 @@ class CreateAutoUploadDirTest(TestCase):
         case2 = Case.objects.create(name="aab", owner=self.user)
         # Create temporary directory to store everything.
         tmp_path = tempfile.mkdtemp()
-        # Build the ghiro path for auto upload.
-        ghiro_path = os.path.join(tmp_path, "ghiro-test")
+        # Build the sus_scrofa path for auto upload.
+        sus_scrofa_path = os.path.join(tmp_path, "sus_scrofa-test")
         # Set path and create folders.
-        settings.AUTO_UPLOAD_DIR = ghiro_path
+        settings.AUTO_UPLOAD_DIR = sus_scrofa_path
         Command.create_auto_upload_dirs()
         # Test.
         for case in [case1, case2]:
-            case_path = os.path.join(ghiro_path, case.directory_name)
+            case_path = os.path.join(sus_scrofa_path, case.directory_name)
             self.assertTrue(os.path.exists(case_path))
         # Cleanup.
         shutil.rmtree(tmp_path)
@@ -79,13 +79,13 @@ class CreateAutoUploadDirTest(TestCase):
         """Test for AUTO_UPLOAD_STARTUP_CLEANUP."""
         # Create temporary directory to store everything.
         tmp_path = tempfile.mkdtemp()
-        # Build the ghiro path for auto upload.
-        ghiro_path = os.path.join(tmp_path, "ghiro-test")
+        # Build the sus_scrofa path for auto upload.
+        sus_scrofa_path = os.path.join(tmp_path, "sus_scrofa-test")
         # Set path and create folders.
-        settings.AUTO_UPLOAD_DIR = ghiro_path
-        os.mkdir(ghiro_path)
+        settings.AUTO_UPLOAD_DIR = sus_scrofa_path
+        os.mkdir(sus_scrofa_path)
         # Test folder.
-        test_path = os.path.join(ghiro_path, "test")
+        test_path = os.path.join(sus_scrofa_path, "test")
         os.mkdir(test_path)
         # Test 1: not cleaning.
         settings.AUTO_UPLOAD_STARTUP_CLEANUP = False
@@ -113,7 +113,7 @@ class ParseDirNameTest(TestCase):
     def test_parse_dir_name_absolute_path(self):
         """Tests parsing of directory name, expected cases: absolute path."""
         case = Case.objects.create(name="aaa", owner=self.user, id=4)
-        dir_name = os.path.join("/tmp/ghiro", case.directory_name)
+        dir_name = os.path.join("/tmp/sus_scrofa", case.directory_name)
         self.assertEqual(self.c.parse_dir_name(dir_name), case)
 
     def test_parse_dir_name_many_digits(self):

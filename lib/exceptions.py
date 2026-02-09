@@ -1,15 +1,15 @@
-# Ghiro - Copyright (C) 2013-2016 Ghiro Developers.
-# This file is part of Ghiro.
+# Sus Scrofa - Copyright (C) 2026 Sus Scrofa Developers.
+# This file is part of Sus Scrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
-class GhiroException(Exception):
-    """Base Ghiro exception."""
+class SusScrofaException(Exception):
+    """Base SusScrofa exception."""
     pass
 
-class GhiroValidationException(GhiroException):
+class SusScrofaValidationException(SusScrofaException):
     """Validation error."""
     pass
 
-class GhiroPluginException(GhiroException):
+class SusScrofaPluginException(SusScrofaException):
     """An error occurred when running the plugin."""
     pass

@@ -6,37 +6,55 @@
         </tr>
     </thead>
     <tbody>
+        {% if analysis.report.confidence %}
+        <tr>
+            <td><strong>Automated Analysis</strong></td>
+            <td>
+                {% if analysis.report.confidence.verdict == 'ai_generated' %}
+                    <span class="label label-important">{{ analysis.report.confidence.verdict_label }} ({{ analysis.report.confidence.verdict_confidence|floatformat:0 }}%)</span>
+                {% elif analysis.report.confidence.verdict == 'manipulated' %}
+                    <span class="label label-important">{{ analysis.report.confidence.verdict_label }} ({{ analysis.report.confidence.confidence_score|floatformat:0 }}% suspicion)</span>
+                {% elif analysis.report.confidence.verdict_certainty == 'inconclusive' %}
+                    <span class="label label-warning">Inconclusive</span>
+                {% elif analysis.report.confidence.verdict_certainty == 'low' %}
+                    <span class="label label-info">{{ analysis.report.confidence.verdict_label }}</span>
+                {% else %}
+                    <span class="label label-success">{{ analysis.report.confidence.verdict_label }}</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endif %}
         <tr>
             <td>Static analysis</td>
             <td><span class="label label-success">Static data</span></td>
         </tr>
         <tr>
             <td>EXIF metadata extraction</td>
-            <td> {% if analysis.report.metadata.Exif %} <span class="label label-success">EXIF Metadata</span> {% else %} <span class="label label-dark">No EXIF metadata</span> {% endif %} </td>
+            <td> {% if analysis.report.metadata.Exif %} <span class="label label-success">EXIF Metadata</span> {% else %} <span class="label label-inverse">No EXIF metadata</span> {% endif %} </td>
         </tr>
         <tr>
             <td>IPTC metadata extraction</td>
-            <td> {% if analysis.report.metadata.Iptc %} <span class="label label-success">IPTC Metadata</span> {% else %} <span class="label label-dark">No IPTC metadata</span> {% endif %} </td>
+            <td> {% if analysis.report.metadata.Iptc %} <span class="label label-success">IPTC Metadata</span> {% else %} <span class="label label-inverse">No IPTC metadata</span> {% endif %} </td>
         </tr>
         <tr>
             <td>XMP metadata extraction</td>
-            <td> {% if analysis.report.metadata.Xmp %} <span class="label label-success">XMP Metadata</span> {% else %} <span class="label label-dark">No XMP metadata</span> {% endif %} </td>
+            <td> {% if analysis.report.metadata.Xmp %} <span class="label label-success">XMP Metadata</span> {% else %} <span class="label label-inverse">No XMP metadata</span> {% endif %} </td>
         </tr>
         <tr>
             <td>Preview extraction from metadata</td>
-            <td> {% if analysis.report.metadata.preview and analysis.report.metadata.preview|length > 0  %} <span class="label label-success">Preview found</span> {% else %} <span class="label label-dark">No Preview</span> {% endif %} </td>
+            <td> {% if analysis.report.metadata.preview and analysis.report.metadata.preview|length > 0  %} <span class="label label-success">Preview found</span> {% else %} <span class="label label-inverse">No Preview</span> {% endif %} </td>
         </tr>
         <tr>
             <td>Localization</td>
-            <td> {% if analysis.report.metadata.gps.pos %} <span class="label label-success">GPS position</span> {% else %} <span class="label label-dark">No GPS data</span> {% endif %} </td>
+            <td> {% if analysis.report.metadata.gps.pos %} <span class="label label-success">GPS position</span> {% else %} <span class="label label-inverse">No GPS data</span> {% endif %} </td>
         </tr>
         <tr>
             <td>Error Level Analysis (ELA)</td>
-            <td> {% if analysis.report.ela  %} <span class="label label-success">Applicable</span> {% else %} <span class="label label-dark">Not applicable</span> {% endif %} </td>
+            <td> {% if analysis.report.ela  %} <span class="label label-success">Applicable</span> {% else %} <span class="label label-inverse">Not applicable</span> {% endif %} </td>
         </tr>
         <tr>
             <td>Signature check</td>
-            <td> {% if analysis.report.signatures and analysis.report.signatures|length > 0  %} <span class="label label-success">Signature matches</span> {% else %} <span class="label label-dark">No signature match</span> {% endif %} </td>
+            <td> {% if analysis.report.signatures and analysis.report.signatures|length > 0  %} <span class="label label-success">Signature matches</span> {% else %} <span class="label label-inverse">No signature match</span> {% endif %} </td>
         </tr>
     </tbody>
 </table>

@@ -1,4 +1,4 @@
-Ghiro is copyrighted by Ghiro Developers and released under the following
+SusScrofa is copyrighted by SusScrofa Developers and released under the following
 license:
 
                     GNU GENERAL PUBLIC LICENSE
@@ -623,7 +623,7 @@ copy of the Program in return for a fee.
 
                      END OF TERMS AND CONDITIONS
 
-Components shipped with Ghiro are licensed as following.
+Components shipped with SusScrofa are licensed as following.
 
 jQuery is copyrighted by jQuery Foundation, Inc. and released under the
 following license: GNU GPL, MIT License.

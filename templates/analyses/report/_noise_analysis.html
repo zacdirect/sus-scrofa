@@ -1,0 +1,77 @@
+{% load analyses_tags %}
+
+<div class="box">
+    <div class="wdgt-header">Noise Pattern Analysis
+        <span class="pull-right">
+            {% if analysis.report.noise_analysis.suspicious %}
+                <span class="label label-warning">Suspicious</span>
+            {% else %}
+                <span class="label label-success">Normal</span>
+            {% endif %}
+        </span>
+    </div>
+    <div class="wdgt-body">
+        {% if analysis.report.noise_analysis.variance_map_id %}
+            <div class="row-fluid">
+                <div class="span6">
+                    <h4>Variance Heatmap</h4>
+                    <a href="{% url 'image' analysis.report.noise_analysis.variance_map_id %}" class="fancybox">
+                        <img src="{% url 'image' analysis.report.noise_analysis.variance_map_id %}" 
+                             style="max-width: 100%;" 
+                             alt="Noise Variance Map" />
+                    </a>
+                    <p class="muted">
+                        <small>
+                            <span style="color: blue;">■</span> Low variance (smooth/synthetic)<br>
+                            <span style="color: green;">■</span> Normal variance<br>
+                            <span style="color: red;">■</span> High variance (potential manipulation)
+                        </small>
+                    </p>
+                </div>
+                <div class="span6">
+                    <h4>Analysis Results</h4>
+                    <table class="table table-striped">
+                        <tr>
+                            <td><strong>Inconsistency Score:</strong></td>
+                            <td>
+                                <span class="label {% if analysis.report.noise_analysis.inconsistency_score > 15 %}label-warning{% else %}label-success{% endif %}">
+                                    {{ analysis.report.noise_analysis.inconsistency_score|floatformat:2 }}%
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Mean Variance:</strong></td>
+                            <td>{{ analysis.report.noise_analysis.mean_variance|floatformat:4 }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Std Deviation:</strong></td>
+                            <td>{{ analysis.report.noise_analysis.std_variance|floatformat:4 }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Anomalous Regions:</strong></td>
+                            <td>
+                                <span class="badge">{{ analysis.report.noise_analysis.anomaly_count }}</span>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <div class="alert {% if analysis.report.noise_analysis.suspicious %}alert-warning{% else %}alert-info{% endif %}">
+                        <strong>Interpretation:</strong>
+                        {% if analysis.report.noise_analysis.suspicious %}
+                            This image shows significant noise inconsistencies. This may indicate:
+                            <ul>
+                                <li>Regions from different sources (splicing)</li>
+                                <li>AI-generated content (synthetic noise)</li>
+                                <li>Heavy editing with selective smoothing</li>
+                            </ul>
+                        {% else %}
+                            Noise patterns appear consistent across the image.
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <p class="muted">Noise analysis not available for this image type.</p>
+        {% endif %}
+    </div>
+</div>

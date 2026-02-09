@@ -1,5 +1,5 @@
-<div class="box">
-    <table class="table">
+<div class="row-fluid">
+    <table class="table table-bordered table-striped responsive">
         <thead>
             <tr>
                 <th>File name</th>
@@ -13,19 +13,21 @@
                 {% for image in images %}
                     <tr>
                         <td>
-                            <a href="{% url "analyses.views.show_analysis" image.id %}">{{ image.file_name }}</a></td>
+                            <a href="{% url "show_analysis" image.id %}">{{ image.file_name }}</a></td>
                         <td>{{ image.owner.username }}</td>
                         <td>{{ image.created_at }}</td>
                         <td>
-                            <a class="btn btn-primary fancybox" data-tooltip="tooltip" title="Show preview" href="{% url "analyses.views.image" image.image_id %}">
-                                <span class="glyphicon glyphicon-picture"></span>
-                            </a>
-                            <a class="btn btn-info" data-tooltip="tooltip" title="Show analysis" href="{% url "analyses.views.show_analysis" image.id %}">
-                                <span class="glyphicon glyphicon-list-alt"></span>
-                            </a>
-                            <a class="btn btn-warning unfavorite" id="{% url "analyses.views.favorite" image.id %}" rel="{{ image.id }}" data-tooltip="tooltip" title="Unfavorite">
-                                <span class="glyphicon glyphicon-star"></span>
-                            </a>
+                            <div class="btn-group">
+                                <a class="btn tool fancybox" title="Show preview" href="{% url "image" image.image_id %}">
+                                    <i class="icon-picture"> </i>
+                                </a>
+                                <a class="btn tool" title="Show analysis" href="{% url "show_analysis" image.id %}">
+                                    <i class="icon-list-alt"> </i>
+                                </a>
+                                <a class="btn tool btn-warning unfavorite" id="{% url "favorite" image.id %}" rel="{{ image.id }}" title="Unfavorite">
+                                    <i class="icon-star"> </i>
+                                </a>
+                            </div>
                         </td>
                     </tr>
                 {% endfor %}
@@ -48,7 +50,7 @@ $('.unfavorite').click(function(){
        type: "GET",
        url: id,
        success: function(){
-           window.location.href="{% url 'analyses.views.list_images' 'favorites' %}";
+           window.location.href="{% url "list_images" 'favorites' %}";
        }
    });
 });

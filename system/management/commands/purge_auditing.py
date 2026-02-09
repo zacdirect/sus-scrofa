@@ -1,30 +1,28 @@
-# Ghiro - Copyright (C) 2013-2016 Ghiro Developers.
-# This file is part of Ghiro.
+# Sus Scrofa - Copyright (C) 2026 Sus Scrofa Developers.
+# This file is part of Sus Scrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
-from django.core.management.base import NoArgsCommand
+from django.core.management.base import BaseCommand
 
 from users.models import Activity
 
 
-class Command(NoArgsCommand):
+class Command(BaseCommand):
     """Purge auditing table."""
 
     help = "Purge auditing table"
 
-    option_list = NoArgsCommand.option_list
-
     def handle(self, *args, **options):
         """Runs command."""
 
-        print "Audit log purge"
-        print "WARNING: this will permanently delete all your audit logs!"
+        print("Audit log purge")
+        print("WARNING: this will permanently delete all your audit logs!")
 
-        ans = raw_input("Do you want to continue? [y/n]")
+        ans = input("Do you want to continue? [y/n] ")
 
         if ans.strip().lower() == "y":
-            print "Purging audit log... (it could take several minutes)"
+            print("Purging audit log... (it could take several minutes)")
             Activity.objects.all().delete()
-            print "Done."
+            print("Done.")
         else:
-            print "Please use only y/n"
+            print("Please use only y/n")

@@ -1,11 +1,37 @@
-# Ghiro - Copyright (C) 2013-2016 Ghiro Developers.
-# This file is part of Ghiro.
+# SusScrofa - Copyright (C) 2013-2026 SusScrofa Developers.
+# This file is part of Sus Scrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
+
+"""
+DEPRECATED: This processing module has been superseded by
+    plugins/analyzer/perceptual_hash.py
+
+The new analyzer module adds:
+  - Hamming distance scoring (not just exact-match)
+  - Wavelet hash (wHash)
+  - Cross-case similar image search
+  - Perceptual hash list matching
+  - Inter-hash manipulation fingerprinting
+  - Confidence scoring integration
+
+This module remains for backward compatibility with existing results
+that reference the 'imghash' and 'similar' keys. New installations
+should rely on the analyzer module (auto-discovered).
+"""
+
+import warnings
 
 from analyses.models import Case
 from lib.analyzer.base import BaseProcessingModule
 
 from lib.utils import str2image
+
+warnings.warn(
+    "perceptualimagehash processing module is deprecated. "
+    "Use plugins/analyzer/perceptual_hash.py instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 try:
     import imagehash
@@ -15,16 +41,24 @@ except ImportError:
 
 
 class PerceptualImageHashProcessing(BaseProcessingModule):
-    """Perceptual Image Hashing."""
+    """Perceptual Image Hashing.
+    
+    DEPRECATED: Superseded by plugins/analyzer/perceptual_hash.PerceptualHashAnalyzer
+    """
 
-    name = "ImageHash Calculator"
-    description = "This plugins calculates image hash using Perceptual Image Hashing."
+    name = "ImageHash Calculator (Legacy)"
+    description = "Legacy perceptual hashing — use analyzer/perceptual_hash instead."
     order = 10
+
+    # Disabled by default — the new analyzer module handles this
+    enabled = False
 
     HASH_SIZE = 8
 
     def check_deps(self):
-        return IS_IMAGEHASH
+        # Return False to prevent this module from running
+        # The new PerceptualHashAnalyzer (plugins/analyzer/perceptual_hash.py) handles this
+        return False
 
     def get_similar_images(self, hash_value, hash_func):
         # TODO: this should be refactored in the future.

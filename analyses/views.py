@@ -1,35 +1,37 @@
-# Ghiro - Copyright (C) 2013-2016 Ghiro Developers.
-# This file is part of Ghiro.
+# Sus Scrofa - Copyright (C) 2026 Sus Scrofa Developers.
+# This file is part of Sus Scrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
 import gridfs
 import os
 import re
-import requests
+import magic
+import urllib.request
+import urllib.parse
 import json
 from bson.son import SON
 from bson.objectid import ObjectId, InvalidId
-from django.template import RequestContext, loader, Context
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_safe, require_POST
-from django.shortcuts import render_to_response, get_object_or_404
+from django.shortcuts import render, get_object_or_404
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponseRedirect, HttpResponse
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.db.models import Q
 from django.utils.timezone import now
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Count
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.core.files import File
 from django.core.files.temp import NamedTemporaryFile
+from django.contrib import messages
 
 import analyses.forms as forms
 from analyses.models import Case, Analysis, Favorite, Comment, Tag
-from lib.db import save_file, get_file, mongo_connect
-from lib.utils import create_thumb, hexdump, get_content_type_from_file
+from lib.db import save_file, get_file, mongo_connect, get_db
+from lib.utils import create_thumb, hexdump
 from users.models import Profile
-from ghiro.common import log_activity, check_allowed_content
+from sus_scrofa.common import log_activity, check_allowed_content
 
 try:
     import pdfkit
@@ -37,9 +39,9 @@ try:
 except ImportError:
     HAVE_PDFKIT = False
 
-# Mongo connection.
-db = mongo_connect()
-fs = gridfs.GridFS(db)
+# Mongo connection - Lazy load when needed
+# db = mongo_connect()
+# fs = gridfs.GridFS(db)
 
 @login_required
 def new_case(request):
@@ -57,13 +59,12 @@ def new_case(request):
             log_activity("C",
                          "Created new case %s" % case.name,
                          request)
-            return HttpResponseRedirect(reverse("analyses.views.show_case", args=(case.id, "list")))
+            return HttpResponseRedirect(reverse("show_case", args=(case.id, "list")))
     else:
         form = forms.CaseForm()
 
-    return render_to_response("analyses/cases/new.html",
-                              {"form": form},
-                              context_instance=RequestContext(request))
+    return render(request, "analyses/cases/new.html",
+                              {"form": form})
 
 @login_required
 def edit_case(request, case_id):
@@ -72,14 +73,12 @@ def edit_case(request, case_id):
 
     # Security check.
     if request.user != case.owner and not request.user.is_superuser:
-        return render_to_response("error.html",
-                                  {"error": "You are not authorized to edit this."},
-                                  context_instance=RequestContext(request))
+        return render(request, "error.html",
+                                  {"error": "You are not authorized to edit this."})
 
     if case.state == "C":
-        return render_to_response("error.html",
-                                  {"error": "You cannot edit a closed case."},
-                                  context_instance=RequestContext(request))
+        return render(request, "error.html",
+                                  {"error": "You cannot edit a closed case."})
 
     if request.method == "POST":
         form = forms.CaseForm(request.POST, instance=case)
@@ -95,17 +94,16 @@ def edit_case(request, case_id):
             log_activity("C",
                          "Edited case %s" % case.name,
                          request)
-            return HttpResponseRedirect(reverse("analyses.views.show_case", args=(case.id, "list")))
+            return HttpResponseRedirect(reverse("show_case", args=(case.id, "list")))
     else:
         form = forms.CaseForm(instance=case)
 
     # Redirects to case index if requested.
     if request.GET.get("page", None):
-        return HttpResponseRedirect(reverse("analyses.views.list_cases"))
+        return HttpResponseRedirect(reverse("list_cases"))
     else:
-        return render_to_response("analyses/cases/edit.html",
-                                  {"form": form, "case": case},
-                                  context_instance=RequestContext(request))
+        return render(request, "analyses/cases/edit.html",
+                                  {"form": form, "case": case})
 
 @login_required
 def close_case(request, case_id):
@@ -114,14 +112,12 @@ def close_case(request, case_id):
 
     # Security check.
     if request.user != case.owner and not request.user.is_superuser:
-        return render_to_response("error.html",
-                                  {"error": "You are not authorized to close this. Only owner can close the case."},
-                                  context_instance=RequestContext(request))
+        return render(request, "error.html",
+                                  {"error": "You are not authorized to close this. Only owner can close the case."})
 
     if case.state == "C":
-        return render_to_response("error.html",
-                                  {"error": "You cannot edit an already closed case."},
-                                  context_instance=RequestContext(request))
+        return render(request, "error.html",
+                                  {"error": "You cannot edit an already closed case."})
 
     case.state = "C"
     case.updated_at = now()
@@ -130,7 +126,7 @@ def close_case(request, case_id):
     log_activity("C",
                  "Closed case %s" % case.name,
                  request)
-    return HttpResponseRedirect(reverse("analyses.views.list_cases"))
+    return HttpResponseRedirect(reverse("list_cases"))
 
 @require_safe
 @login_required
@@ -140,21 +136,16 @@ def delete_case(request, case_id):
 
     # Security check.
     if request.user != case.owner and not request.user.is_superuser:
-        return render_to_response("error.html",
-                                  {"error": "You are not authorized to delete this. Only owner can delete the case."},
-                                  context_instance=RequestContext(request))
+        return render(request, "error.html",
+                                  {"error": "You are not authorized to delete this. Only owner can delete the case."})
 
-    # Delete all analysis.
-    for image in case.images.all():
-        image.delete()
-    # Delete case.
     Case.objects.get(pk=case_id).delete()
 
     # Auditing.
     log_activity("C",
                  "Case %s deleted" % case.name,
                  request)
-    return HttpResponseRedirect(reverse("analyses.views.list_cases"))
+    return HttpResponseRedirect(reverse("list_cases"))
 
 @require_safe
 @login_required
@@ -164,9 +155,8 @@ def show_case(request, case_id, page_name):
 
     # Security check.
     if not request.user in case.users.all() and not request.user.is_superuser:
-        return render_to_response("error.html",
-            {"error": "You are not authorized to view this."},
-            context_instance=RequestContext(request))
+        return render(request, "error.html",
+            {"error": "You are not authorized to view this."})
 
     tasks = Analysis.objects.filter(case=case)
 
@@ -194,7 +184,7 @@ def show_case(request, case_id, page_name):
         tasks = _paginate(tasks, page, 20)
     elif page_name == "map":
         # Return all data, lookup on mongo to be faster.
-        mongo_results = db.analyses.find({"metadata.gps.pos": {"$exists": True}})
+        mongo_results = get_db().analyses.find({"metadata.gps.pos": {"$exists": True}})
         # Get results (run a bunch of queries to avoid too long sql queries).
         tasks = []
         for result in mongo_results:
@@ -205,28 +195,13 @@ def show_case(request, case_id, page_name):
                 tasks.append(analyses.get(analysis_id=result["_id"]))
             except ObjectDoesNotExist:
                 continue
-    elif page_name == "nude":
-        # Return all data, lookup on mongo to be faster.
-        mongo_results = db.analyses.find({"nude.nudepy.result": True})
-        # Get results (run a bunch of queries to avoid too long sql queries).
-        tasks = []
-        for result in mongo_results:
-            try:
-                analyses = Analysis.objects.filter(case=case)
-                if not request.user.is_superuser:
-                    analyses = analyses.filter(Q(case__owner=request.user) | Q(case__users=request.user))
-                tasks.append(analyses.get(analysis_id=result["_id"]))
-            except ObjectDoesNotExist:
-                continue
-        tasks = _paginate(tasks, page, 20)
     elif page_name == "search":
         pass
     else:
         raise Exception
 
-    return render_to_response("analyses/cases/show.html",
-                              {"case": case, "tasks": tasks, "last_image": last_image, "pagename": page_name, "filtered": filtering},
-                              context_instance=RequestContext(request))
+    return render(request, "analyses/cases/show.html",
+                              {"case": case, "tasks": tasks, "last_image": last_image, "pagename": page_name, "filtered": filtering})
 
 @require_safe
 @login_required
@@ -251,9 +226,8 @@ def list_cases(request):
     # Set sidebar active tab.
     request.session["sidebar_active"] = "side-cases"
 
-    return render_to_response("analyses/cases/index.html",
-                              {"my_cases": my, "last_cases": last, "others_cases": others},
-                              context_instance=RequestContext(request))
+    return render(request, "analyses/cases/index.html",
+                              {"my_cases": my, "last_cases": last, "others_cases": others})
 
 @login_required
 def new_image(request, case_id):
@@ -262,28 +236,25 @@ def new_image(request, case_id):
 
     # Security check.
     if not request.user.is_superuser and not request.user in case.users.all():
-        return render_to_response("error.html",
-                                  {"error": "You are not authorized to add image to this."},
-                                  context_instance=RequestContext(request))
+        return render(request, "error.html",
+                                  {"error": "You are not authorized to add image to this."})
 
     if case.state == "C":
-        return render_to_response("error.html",
-                                  {"error": "You cannot add an image to a closed case."},
-                                  context_instance=RequestContext(request))
+        return render(request, "error.html",
+                                  {"error": "You cannot add an image to a closed case."})
 
     if request.method == "POST":
         form = forms.UploadImageForm(request.POST, request.FILES)
 
         if form.is_valid():
-            content_type = get_content_type_from_file(request.FILES["image"].temporary_file_path())
-
-            task = Analysis.add_task(request.FILES["image"].temporary_file_path(), case=case,
-                    user=request.user, content_type=content_type,
-                    image_id=save_file(file_path=request.FILES["image"].temporary_file_path(),
-                              content_type=content_type),
-                    thumb_id=create_thumb(request.FILES["image"].temporary_file_path()),
-                    file_name=request.FILES["image"].name)
-
+            task = form.save(commit=False)
+            task.owner = request.user
+            task.case = case
+            task.file_name = request.FILES["image"].name
+            task.image_id = save_file(file_path=request.FILES["image"].temporary_file_path(),
+                                      content_type=request.FILES["image"].content_type)
+            task.thumb_id = create_thumb(request.FILES["image"].temporary_file_path())
+            task.save()
             # Auditing.
             log_activity("I",
                          "Created new analysis %s" % task.file_name,
@@ -300,10 +271,10 @@ def new_image(request, case_id):
             # so we have to deal with custom validation errors passing in JSON.
             # Plupload needs a status code 200/OK to get additional data passed from the web server.
             response = HttpResponse(json.dumps({"jsonrpc" : "2.0",
-                            "error" : {"code": 88,
-                                       "message": " ".join([(" ".join([force_text(i) for i in v])) for k, v in form.errors.items()])},
-                            "id" : "id"}),
-                content_type="application/json")
+                                                "error" : {"code": 88,
+                                                           "message": " ".join([(u" ".join([force_str(i) for i in v])) for k, v in form.errors.items()])},
+                                                "id" : "id"}),
+                                    content_type="application/json")
             # Never cache AJAX response.
             response["Expires"] = "Mon, 1 Jan 2000 01:00:00 GMT"
             response["Cache-Control"] = "no-store, no-cache, must-revalidate, post-check=0, pre-check=0"
@@ -313,9 +284,8 @@ def new_image(request, case_id):
         # Request is not a POST.
         form = forms.UploadImageForm()
 
-    return render_to_response("analyses/images/new_image.html",
-                              {"form": form, "case": case},
-                              context_instance=RequestContext(request))
+    return render(request, "analyses/images/new_image.html",
+                              {"form": form, "case": case})
 
 @login_required
 def new_url(request, case_id):
@@ -324,14 +294,12 @@ def new_url(request, case_id):
 
     # Security check.
     if not request.user.is_superuser and not request.user in case.users.all():
-        return render_to_response("error.html",
-            {"error": "You are not authorized to add image to this."},
-            context_instance=RequestContext(request))
+        return render(request, "error.html",
+            {"error": "You are not authorized to add image to this."})
 
     if case.state == "C":
-        return render_to_response("error.html",
-            {"error": "You cannot add an image to a closed case."},
-            context_instance=RequestContext(request))
+        return render(request, "error.html",
+            {"error": "You cannot add an image to a closed case."})
 
     if request.method == "POST":
         form = forms.UrlForm(request.POST)
@@ -339,50 +307,49 @@ def new_url(request, case_id):
         if form.is_valid():
             # Download file.
             try:
-                url = requests.get(request.POST.get("url"), timeout=5)
-                response = url.content
-            except requests.exceptions.RequestException as e:
+                url = urllib2.urlopen(request.POST.get("url"), timeout=5)
+            except urllib2.URLError as e:
                 if hasattr(e, "reason"):
-                    return render_to_response("error.html",
-                        {"error": "We failed to reach a server, reason: %s" % e.reason},
-                        context_instance=RequestContext(request))
+                    return render(request, "error.html",
+                        {"error": "We failed to reach a server, reason: %s" % e.reason})
                 elif hasattr(e, "code"):
-                    return render_to_response("error.html",
-                        {"error": "The remote server couldn't fulfill the request, HTTP error code %s" % e.code},
-                        context_instance=RequestContext(request))
+                    return render(request, "error.html",
+                        {"error": "The remote server couldn't fulfill the request, HTTP error code %s" % e.code})
 
             # Store temp file.
             url_temp = NamedTemporaryFile(delete=True)
-            url_temp.write(response)
+            url_temp.write(url.read())
             url_temp.flush()
 
             # Convert to File object.
             url_file = File(url_temp).name
 
             # Check content type.
-            content_type = get_content_type_from_file(url_file)
+            mime = magic.Magic(mime=True)
+            content_type = mime.from_file(url_file)
             if not check_allowed_content(content_type):
-                return render_to_response("error.html",
-                    {"error": "File type not supported"},
-                    context_instance=RequestContext(request))
+                return render(request, "error.html",
+                    {"error": "File type not supported"})
 
             # Create analysis task.
-            task = Analysis.add_task(os.path.basename(request.POST.get("url").split("//")[1]),
-                        case=case, user=request.user, content_type=content_type,
-                        image_id=save_file(file_path=url_file, content_type=content_type),
-                        thumb_id=create_thumb(url_file))
+            task = Analysis()
+            task.owner = request.user
+            task.case = case
+            task.file_name = os.path.basename(urlparse.urlparse(request.POST.get("url")).path)
+            task.image_id = save_file(file_path=url_file, content_type=content_type)
+            task.thumb_id = create_thumb(url_file)
+            task.save()
             # Auditing.
             log_activity("I",
                 "Created new analysis %s from URL %s" % (task.file_name, request.POST.get("url")),
                 request)
-            return HttpResponseRedirect(reverse("analyses.views.show_case", args=(case.id, "list")))
+            return HttpResponseRedirect(reverse("show_case", args=(case.id, "list")))
     else:
         # Request is not a POST.
         form = forms.UrlForm()
 
-    return render_to_response("analyses/images/new_url.html",
-        {"form": form, "case": case},
-        context_instance=RequestContext(request))
+    return render(request, "analyses/images/new_url.html",
+        {"form": form, "case": case})
 
 @login_required
 def new_folder(request, case_id):
@@ -391,30 +358,27 @@ def new_folder(request, case_id):
 
     # Security check.
     if not(request.user.is_superuser or request.user in case.users.all()):
-        return render_to_response("error.html",
-                                  {"error": "You are not authorized to add image to this."},
-                                  context_instance=RequestContext(request))
+        return render(request, "error.html",
+                                  {"error": "You are not authorized to add image to this."})
 
     if case.state == "C":
-        return render_to_response("error.html",
-                                  {"error": "You cannot add an image to a closed case."},
-                                  context_instance=RequestContext(request))
+        return render(request, "error.html",
+                                  {"error": "You cannot add an image to a closed case."})
 
     if request.method == "POST":
         form = forms.ImageFolderForm(request.POST)
         if form.is_valid():
             # Check.
             if not os.path.exists(request.POST.get("path")):
-                return render_to_response("error.html",
-                    {"error": "Folder does not exist."},
-                    context_instance=RequestContext(request))
+                return render(request, "error.html",
+                    {"error": "Folder does not exist."})
             elif not os.path.isdir(request.POST.get("path")):
-                return render_to_response("error.html",
-                    {"error": "Folder is not a directory."},
-                    context_instance=RequestContext(request))
+                return render(request, "error.html",
+                    {"error": "Folder is not a directory."})
             # Add all files in directory.
+            mime = magic.Magic(mime=True)
             for file in os.listdir(request.POST.get("path")):
-                content_type = get_content_type_from_file(os.path.join(request.POST.get("path"), file))
+                content_type = mime.from_file(os.path.join(request.POST.get("path"), file))
                 # Check if content type is allowed.
                 if not check_allowed_content(content_type):
                     # TODO: add some kind of feedback.
@@ -433,13 +397,12 @@ def new_folder(request, case_id):
                 log_activity("I",
                              "Created new analysis %s" % task.file_name,
                              request)
-            return HttpResponseRedirect(reverse("analyses.views.show_case", args=(case.id, "list")))
+            return HttpResponseRedirect(reverse("show_case", args=(case.id, "list")))
     else:
         form = forms.ImageFolderForm()
 
-    return render_to_response("analyses/images/new_folder.html",
-                              {"form": form, "case": case},
-                              context_instance=RequestContext(request))
+    return render(request, "analyses/images/new_folder.html",
+                              {"form": form, "case": case})
 @require_safe
 @login_required
 def show_analysis(request, analysis_id):
@@ -448,38 +411,104 @@ def show_analysis(request, analysis_id):
 
     # Security check.
     if not(request.user.is_superuser or request.user in analysis.case.users.all()):
-        return render_to_response("error.html",
-                                  {"error": "You are not authorized to view this."},
-                                  context_instance=RequestContext(request))
+        return render(request, "error.html",
+                                  {"error": "You are not authorized to view this."})
 
     if analysis.state == "C":
         try:
-            anal = db.analyses.find_one(ObjectId(analysis.analysis_id))
+            anal = get_db().analyses.find_one(ObjectId(analysis.analysis_id))
 
             if anal:
-                return render_to_response("analyses/report/show.html",
-                                          {"anal": anal, "analysis": analysis},
-                                          context_instance=RequestContext(request))
+                return render(request, "analyses/report/show.html",
+                                          {"anal": anal, "analysis": analysis})
             else:
-                return render_to_response("error.html",
-                                          {"error": "Analysis not present in mongo database"},
-                                          context_instance=RequestContext(request))
+                return render(request, "error.html",
+                                          {"error": "Analysis not present in mongo database"})
         except InvalidId:
-            return render_to_response("error.html",
-                                      {"error": "Analysis not found"},
-                                      context_instance=RequestContext(request))
+            return render(request, "error.html",
+                                      {"error": "Analysis not found"})
     elif analysis.state == "W" or analysis.state == "P" or analysis.state == "Q":
-        return render_to_response("analyses/images/waiting.html",
-                                  {"analysis": analysis},
-                                  context_instance=RequestContext(request))
+        return render(request, "analyses/images/waiting.html",
+                                  {"analysis": analysis})
     elif analysis.state == "E":
-        return render_to_response("error.html",
-                                  {"error": "Analysis ended with error."},
-                                  context_instance=RequestContext(request))
+        return render(request, "error.html",
+                                  {"error": "Analysis ended with error."})
     else:
-        return render_to_response("error.html",
-                                  {"error": "Analysis not found"},
-                                  context_instance=RequestContext(request))
+        return render(request, "error.html",
+                                  {"error": "Analysis not found"})
+
+@require_safe
+@login_required
+def show_research(request, analysis_id):
+    """Shows the research findings page for a completed analysis.
+
+    Displays content analysis results (photorealism, object detection,
+    person attributes) and annotated images on a dedicated page,
+    separate from the main forensic report.
+    """
+    analysis = get_object_or_404(Analysis, pk=analysis_id)
+
+    # Security check.
+    if not(request.user.is_superuser or request.user in analysis.case.users.all()):
+        return render(request, "error.html",
+                                  {"error": "You are not authorized to view this."})
+
+    if analysis.state != "C":
+        return render(request, "error.html",
+                                  {"error": "Analysis not yet complete."})
+
+    try:
+        anal = get_db().analyses.find_one(ObjectId(analysis.analysis_id))
+        if not anal:
+            return render(request, "error.html",
+                                      {"error": "Analysis not present in database."})
+    except InvalidId:
+        return render(request, "error.html",
+                                  {"error": "Analysis not found."})
+
+    content = anal.get("content_analysis", {})
+    if not content or not content.get("enabled"):
+        return render(request, "error.html",
+                                  {"error": "No research data available for this image."})
+
+    return render(request, "analyses/research/show.html",
+                              {"analysis": analysis,
+                               "content": content,
+                               "anal": anal})
+
+@require_safe
+@login_required
+def research_annotation(request, analysis_id):
+    """Serve the annotated research image from GridFS."""
+    analysis = get_object_or_404(Analysis, pk=analysis_id)
+
+    # Security check.
+    if not(request.user.is_superuser or request.user in analysis.case.users.all()):
+        return render(request, "error.html",
+                                  {"error": "You are not authorized to view this."})
+
+    try:
+        anal = get_db().analyses.find_one(ObjectId(analysis.analysis_id))
+        if not anal:
+            return render(request, "error.html",
+                                      {"error": "Analysis not found."})
+    except InvalidId:
+        return render(request, "error.html",
+                                  {"error": "Analysis not found."})
+
+    content = anal.get("content_analysis", {})
+    gridfs_id = content.get("annotation_gridfs_id")
+    if not gridfs_id:
+        return render(request, "error.html",
+                                  {"error": "No annotation image available."})
+
+    try:
+        file = get_file(gridfs_id)
+        data = file.read()
+        return HttpResponse(data, content_type="image/png")
+    except Exception:
+        return render(request, "error.html",
+                                  {"error": "Unable to load annotation image."})
 
 @require_safe
 @login_required
@@ -489,19 +518,61 @@ def delete_analysis(request, analysis_id):
 
     # Security check.
     if not(request.user.is_superuser or request.user in analysis.case.users.all()):
-        return render_to_response("error.html",
-            {"error": "You are not authorized to delete this."},
-            context_instance=RequestContext(request))
+        return render(request, "error.html",
+            {"error": "You are not authorized to delete this."})
 
     # If the analysis is still in process wait for the completion.
     if analysis.state == "W":
-        return render_to_response("analyses/images/waiting.html",
-            {"analysis": analysis},
-            context_instance=RequestContext(request))
+        return render(request, "analyses/images/waiting.html",
+            {"analysis": analysis})
     else:
         analysis.delete()
         # TODO: Redirect to the page visited before instad of this.
-        return HttpResponseRedirect(reverse("analyses.views.show_case", args=(analysis.case.id, "list")))
+        return HttpResponseRedirect(reverse("show_case", args=(analysis.case.id, "list")))
+
+@require_safe
+@login_required
+def reprocess_analysis(request, analysis_id):
+    """Re-process a single image using existing image data."""
+    analysis = get_object_or_404(Analysis, pk=analysis_id)
+
+    # Security check.
+    if not(request.user.is_superuser or request.user in analysis.case.users.all()):
+        return render(request, "error.html",
+            {"error": "You are not authorized to re-process this."})
+
+    # Can only re-process completed analyses
+    if analysis.state != "C":
+        return render(request, "error.html",
+            {"error": "Can only re-process completed analyses."})
+
+    # Reset state to trigger re-processing
+    # Keep the same image_id and analysis_id so results get updated
+    analysis.state = "W"
+    analysis.completed_at = None
+    analysis.save()
+
+    return HttpResponseRedirect(reverse("show_case", args=(analysis.case.id, "list")))
+
+@require_safe
+@login_required
+def reprocess_case(request, case_id):
+    """Re-process all completed images in a case."""
+    case = get_object_or_404(Case, pk=case_id)
+
+    # Security check.
+    if not(request.user.is_superuser or request.user in case.users.all()):
+        return render(request, "error.html",
+            {"error": "You are not authorized to re-process this case."})
+
+    # Reset all completed analyses in this case to waiting
+    analyses = Analysis.objects.filter(case=case, state="C")
+    count = analyses.count()
+    
+    analyses.update(state="W", completed_at=None)
+
+    messages.success(request, f"Queued {count} image(s) for re-processing.")
+    return HttpResponseRedirect(reverse("show_case", args=(case_id, "list")))
 
 @require_safe
 @login_required
@@ -509,9 +580,8 @@ def image(request, id):
     try:
        file = get_file(id)
     except (InvalidId, TypeError):
-        return render_to_response("error.html",
-                                  {"error": "Unable to load image."},
-                                  context_instance=RequestContext(request))
+        return render(request, "error.html",
+                                  {"error": "Unable to load image."})
 
     data = file.read()
     response = HttpResponse(data, content_type=file.content_type)
@@ -554,7 +624,7 @@ def list_images(request, page_name):
         last = _paginate(last, page, 20)
     elif page_name == "map":
         # Return all data, lookup on mongo to be faster.
-        mongo_results = db.analyses.find({"metadata.gps.pos": {"$exists": True}})
+        mongo_results = get_db().analyses.find({"metadata.gps.pos": {"$exists": True}})
         # Get results (run a bunch of queries to avoid too long sql queries).
         last = []
         for result in mongo_results:
@@ -565,30 +635,14 @@ def list_images(request, page_name):
                 last.append(analyses.get(analysis_id=result["_id"]))
             except ObjectDoesNotExist:
                 continue
-    elif page_name == "nude":
-        # Return all data, lookup on mongo to be faster.
-        mongo_results = db.analyses.find({"nude.nudepy.result": True})
-        # Get results (run a bunch of queries to avoid too long sql queries).
-        tasks = []
-        for result in mongo_results:
-            try:
-                analyses = Analysis.objects
-                if not request.user.is_superuser:
-                    analyses = analyses.filter(Q(case__owner=request.user) | Q(case__users=request.user))
-                tasks.append(analyses.get(analysis_id=result["_id"]))
-            except ObjectDoesNotExist:
-                continue
-        page = request.GET.get("page")
-        last = _paginate(tasks, page, 20)
     else:
         raise Exception
 
     # Set sidebar active tab.
     request.session["sidebar_active"] = "side-images"
 
-    return render_to_response("analyses/images/index.html",
-                              {"images": last, "pagename": page_name},
-                              context_instance=RequestContext(request))
+    return render(request, "analyses/images/index.html",
+                              {"images": last, "pagename": page_name})
 
 @login_required
 def search(request, page_name):
@@ -624,9 +678,8 @@ def search(request, page_name):
         if not request.user.is_superuser:
             available_cases = available_cases.filter(Q(owner=request.user) | Q(users=request.user))
 
-        return render_to_response("analyses/images/search.html",
-                                  {"available_cases": available_cases, "error": error},
-                                  context_instance=RequestContext(request))
+        return render(request, "analyses/images/search.html",
+                                  {"available_cases": available_cases, "error": error})
     # Set sidebar active tab.
     request.session["sidebar_active"] = "side-search"
 
@@ -687,7 +740,7 @@ def search(request, page_name):
 
         # Run query.
         try:
-            mongo_results = db.analyses.find(query)
+            mongo_results = get_db().analyses.find(query)
         except TypeError:
             return search_form("Empty search.")
 
@@ -719,9 +772,8 @@ def search(request, page_name):
         if queries_without_page.has_key("page"):
             del queries_without_page["page"]
 
-        return render_to_response("analyses/images/search_results.html",
-                                  {"images": results, "pagename": page_name, "get_params": queries_without_page},
-                                  context_instance=RequestContext(request))
+        return render(request, "analyses/images/search_results.html",
+                                  {"images": results, "pagename": page_name, "get_params": queries_without_page})
     else:
         # Default empty search page.
         return search_form()
@@ -735,22 +787,27 @@ def dashboard(request):
     request.session["sidebar_active"] = "side-dashboard"
 
     users_count = Profile.objects.count()
+    open_cases_count = Case.objects.filter(state="O").count()
+    analyses_complete_count = Analysis.objects.filter(state="C").count()
     last_cases = Case.objects.filter(state="O").filter(users=request.user).order_by("-created_at")[:5]
     last_analyses = Analysis.objects.filter(state="C").filter(case__users=request.user).order_by("-created_at")[:5]
+    analyses_wait_count = Analysis.objects.filter(state="W").count()
     completed_graph = Analysis.objects.filter(state="C").order_by("-created_at").extra({"created_at": "date(created_at)"}).values("created_at").annotate(counter=Count("pk"))[:30]
     waiting_graph = Analysis.objects.filter(state="W").order_by("-created_at").extra({"created_at": "date(created_at)"}).values("created_at").annotate(counter=Count("pk"))[:30]
     failed_graph = Analysis.objects.filter(state="F").order_by("-created_at").extra({"created_at": "date(created_at)"}).values("created_at").annotate(counter=Count("pk"))[:30]
 
-    return render_to_response("users/dashboard.html",
+    return render(request, "users/dashboard.html",
         {
             "users_count": users_count,
+            "open_cases_count": open_cases_count,
+            "analyses_complete_count": analyses_complete_count,
             "last_cases": last_cases,
             "last_analyses": last_analyses,
+            "analyses_wait_count": analyses_wait_count,
             "completed_graph": completed_graph,
             "waiting_graph": waiting_graph,
             "failed_graph": failed_graph
-        },
-        context_instance=RequestContext(request))
+        })
 
 @login_required
 def favorite(request, id):
@@ -759,9 +816,8 @@ def favorite(request, id):
 
     # Security check.
     if not(request.user.is_superuser or request.user in analysis.case.users.all()):
-        return render_to_response("error.html",
-            {"error": "You are not authorized to view this."},
-            context_instance=RequestContext(request))
+        return render(request, "error.html",
+            {"error": "You are not authorized to view this."})
 
     if Favorite.objects.filter(analysis=analysis).filter(owner=request.user).exists():
         Favorite.objects.filter(analysis=analysis).filter(owner=request.user).delete()
@@ -773,7 +829,7 @@ def favorite(request, id):
     log_activity("A",
                  "Favorite image added: %s" % analysis.file_name,
                  request)
-    #return HttpResponseRedirect(reverse("analyses.views.show_analysis", args=(analysis.id,)))
+    #return HttpResponseRedirect(reverse("show_analysis", args=(analysis.id,)))
     return HttpResponse("true")
 
 @login_required
@@ -784,9 +840,8 @@ def add_comment(request, id):
 
     # Security check.
     if not(request.user.is_superuser or request.user in analysis.case.users.all()):
-        return render_to_response("error.html",
-            {"error": "You are not authorized to add this."},
-            context_instance=RequestContext(request))
+        return render(request, "error.html",
+            {"error": "You are not authorized to add this."})
 
     form = forms.CommentForm(request.POST)
     if form.is_valid():
@@ -800,11 +855,10 @@ def add_comment(request, id):
         log_activity("I",
             "Comment on image added: %s" % analysis.file_name,
             request)
-        return HttpResponseRedirect(reverse("analyses.views.show_analysis", args=(analysis.id,)))
+        return HttpResponseRedirect(reverse("show_analysis", args=(analysis.id,)))
     else:
-        return render_to_response("error.html",
-                                  {"error": "Error adding comment: %s" % form.errors.as_text()},
-                                  context_instance=RequestContext(request))
+        return render(request, "error.html",
+                                  {"error": "Error adding comment: %s" % form.errors.as_text()})
 
 @login_required
 def delete_comment(request, id):
@@ -813,9 +867,8 @@ def delete_comment(request, id):
 
     # Security check.
     if request.user != comment.analysis.owner and not request.user.is_superuser:
-        return render_to_response("error.html",
-                                  {"error": "You are not authorized to delete this."},
-                                  context_instance=RequestContext(request))
+        return render(request, "error.html",
+                                  {"error": "You are not authorized to delete this."})
 
     comment.delete()
 
@@ -824,7 +877,7 @@ def delete_comment(request, id):
        "Comment on image deleted: %s" % comment.analysis.file_name,
         request)
 
-    return HttpResponseRedirect(reverse("analyses.views.show_analysis", args=(comment.analysis.id,)))
+    return HttpResponseRedirect(reverse("show_analysis", args=(comment.analysis.id,)))
 
 @login_required
 def add_tag(request, id):
@@ -833,9 +886,8 @@ def add_tag(request, id):
 
     # Security check.
     if not(request.user.is_superuser or request.user in analysis.case.users.all()):
-        return render_to_response("error.html",
-            {"error": "You are not authorized to tag this."},
-            context_instance=RequestContext(request))
+        return render(request, "error.html",
+            {"error": "You are not authorized to tag this."})
 
     # Validation check.
     if not request.POST.get("tagName"):
@@ -859,9 +911,8 @@ def delete_tag(request, id):
 
     # Security check.
     if not(request.user.is_superuser or request.user in analysis.case.users.all()):
-        return render_to_response("error.html",
-            {"error": "You are not authorized to tag this."},
-            context_instance=RequestContext(request))
+        return render(request, "error.html",
+            {"error": "You are not authorized to tag this."})
 
     # Validation check.
     if not request.POST.get("tagName"):
@@ -889,9 +940,8 @@ def hex_dump(request, analysis_id):
 
     # Security check.
     if not(request.user.is_superuser or request.user in analysis.case.users.all()):
-        return render_to_response("error.html",
-                                  {"error": "You are not authorized to view this."},
-                                  context_instance=RequestContext(request))
+        return render(request, "error.html",
+                                  {"error": "You are not authorized to view this."})
 
     #if analysis.state == "C":
     page = int(request.GET.get("page", 0))
@@ -900,9 +950,8 @@ def hex_dump(request, analysis_id):
 
     hex_data = hexdump(analysis.image_id, 32)[page*lines:(page+1)*lines]
 
-    return render_to_response("analyses/report/_hexdump.html",
-                                  {"hex_data": hex_data},
-                                  context_instance=RequestContext(request))
+    return render(request, "analyses/report/_hexdump.html",
+                                  {"hex_data": hex_data})
 @require_safe
 @login_required
 def static_report(request, analysis_id, report_type):
@@ -911,19 +960,17 @@ def static_report(request, analysis_id, report_type):
 
     # Security check.
     if not(request.user.is_superuser or request.user in analysis.case.users.all()):
-        return render_to_response("error.html",
-                                  {"error": "You are not authorized to view this."},
-                                  context_instance=RequestContext(request))
+        return render(request, "error.html",
+                                  {"error": "You are not authorized to view this."})
 
     if analysis.state == "C":
         try:
-            anal = db.analyses.find_one(ObjectId(analysis.analysis_id))
+            anal = get_db().analyses.find_one(ObjectId(analysis.analysis_id))
 
             if anal:
                 if report_type == "html":
-                    return render_to_response("analyses/report/static_report.html",
-                                              {"anal": anal, "analysis": analysis},
-                                              context_instance=RequestContext(request))
+                    return render(request, "analyses/report/static_report.html",
+                                              {"anal": anal, "analysis": analysis})
                 elif report_type == "pdf":
                     if HAVE_PDFKIT:
                         # Render HTML.
@@ -935,33 +982,27 @@ def static_report(request, analysis_id, report_type):
                         pdf = pdfkit.from_string(rendered, False)
                         # Create the HttpResponse object with the appropriate PDF headers.
                         response = HttpResponse(content_type="application/pdf")
-                        response["Content-Disposition"] = 'attachment; filename="Ghiro_report_%s.pdf"' % analysis_id
+                        response["Content-Disposition"] = 'attachment; filename="SusScrofa_report_%s.pdf"' % analysis_id
                         response.write(pdf)
                         return response
                     else:
-                        return render_to_response("error.html",
-                                          {"error": "Cannot render PDF, missing pdfkit. Please install it."},
-                                          context_instance=RequestContext(request))
+                        return render(request, "error.html",
+                                          {"error": "Cannot render PDF, missing pdfkit. Please install it."})
             else:
-                return render_to_response("error.html",
-                                          {"error": "Analysis not present in mongo database"},
-                                          context_instance=RequestContext(request))
+                return render(request, "error.html",
+                                          {"error": "Analysis not present in mongo database"})
         except InvalidId:
-            return render_to_response("error.html",
-                                      {"error": "Analysis not found"},
-                                      context_instance=RequestContext(request))
+            return render(request, "error.html",
+                                      {"error": "Analysis not found"})
     elif analysis.state == "W" or analysis.state == "P" or analysis.state == "Q":
-        return render_to_response("analyses/images/waiting.html",
-                                  {"analysis": analysis},
-                                  context_instance=RequestContext(request))
+        return render(request, "analyses/images/waiting.html",
+                                  {"analysis": analysis})
     elif analysis.state == "E":
-        return render_to_response("error.html",
-                                  {"error": "Analysis ended with error."},
-                                  context_instance=RequestContext(request))
+        return render(request, "error.html",
+                                  {"error": "Analysis ended with error."})
     else:
-        return render_to_response("error.html",
-                                  {"error": "Analysis not found"},
-                                  context_instance=RequestContext(request))
+        return render(request, "error.html",
+                                  {"error": "Analysis not found"})
 
 @require_safe
 @login_required
@@ -971,11 +1012,10 @@ def export_json(request, analysis_id):
 
     # Security check.
     if not(request.user.is_superuser or request.user in analysis.case.users.all()):
-        return render_to_response("error.html",
-                                  {"error": "You are not authorized to view this."},
-                                  context_instance=RequestContext(request))
+        return render(request, "error.html",
+                                  {"error": "You are not authorized to view this."})
 
     response = HttpResponse(content_type="application/json")
-    response["Content-Disposition"] = 'attachment; filename="Ghiro_export_json_%s.json"' % analysis_id
+    response["Content-Disposition"] = 'attachment; filename="SusScrofa_export_json_%s.json"' % analysis_id
     response.write(analysis.to_json)
     return response

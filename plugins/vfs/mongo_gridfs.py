@@ -1,5 +1,5 @@
-# Ghiro - Copyright (C) 2013-2016 Ghiro Developers.
-# This file is part of Ghiro.
+# Sus Scrofa - Copyright (C) 2026 Sus Scrofa Developers.
+# This file is part of Sus Scrofa.
 # See the file 'docs/LICENSE.txt' for license terms.
 
 import sys
@@ -20,7 +20,7 @@ def mongo_connect():
     try:
         db = Database(MongoClient(settings.MONGO_URI), settings.MONGO_DB)
     except ConnectionFailure:
-        print "ERROR: unable to connect to MongoDB. Please check the server availability."
+        print("ERROR: unable to connect to MongoDB. Please check the server availability.")
         sys.exit()
     else:
         return db
