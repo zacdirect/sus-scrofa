@@ -12,22 +12,22 @@
 
 {% if analysis.report.confidence.authenticity_score is not None %}
 {# NEW: Compliance Audit - Authenticity Score is PRIMARY #}
-<div class="row-fluid">
-    <div class="span12">
-        <div class="alert {% if analysis.report.confidence.authenticity_score <= 40 %}alert-error{% elif analysis.report.confidence.authenticity_score >= 60 %}alert-success{% else %}alert-warning{% endif %}" style="padding: 20px; margin-bottom: 20px;">
-            <div class="row-fluid">
-                <div class="span8">
-                    <h2 style="margin: 0 0 10px 0;">
-                        <i class="{% if analysis.report.confidence.authenticity_score >= 60 %}icon-ok-sign{% else %}icon-warning-sign{% endif %}"></i>
+<div class="row">
+    <div class="col-12">
+        <div class="alert {% if analysis.report.confidence.authenticity_score <= 40 %}alert-danger{% elif analysis.report.confidence.authenticity_score >= 60 %}alert-success{% else %}alert-warning{% endif %} p-4 mb-4">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h2 class="mb-3">
+                        <i class="{% if analysis.report.confidence.authenticity_score >= 60 %}fa-solid fa-check-circle{% else %}fa-solid fa-exclamation-triangle{% endif %} me-2"></i>
                         {{ analysis.report.confidence.verdict_label }}
                     </h2>
-                    <h4 style="margin: 0 0 10px 0; color: #333;">
+                    <h4 class="mb-3 text-secondary">
                         Authenticity Score: 
-                        <strong style="font-size: 28px; {% if analysis.report.confidence.authenticity_score <= 40 %}color: #d9534f{% elif analysis.report.confidence.authenticity_score >= 60 %}color: #5cb85c{% else %}color: #f0ad4e{% endif %}">
+                        <strong class="display-6 fw-bold {% if analysis.report.confidence.authenticity_score <= 40 %}text-danger{% elif analysis.report.confidence.authenticity_score >= 60 %}text-success{% else %}text-warning{% endif %}">
                             {{ analysis.report.confidence.authenticity_score }}/100
                         </strong>
                     </h4>
-                    <p style="margin: 10px 0 0 0; font-size: 13px;">
+                    <p class="mt-3 mb-0">
                         {% if analysis.report.confidence.authenticity_score <= 20 %}
                             <strong>High confidence:</strong> This image is definitely fake (AI-generated or heavily manipulated).
                         {% elif analysis.report.confidence.authenticity_score <= 40 %}
@@ -41,34 +41,34 @@
                         {% endif %}
                     </p>
                     {% if analysis.report.confidence.detected_types %}
-                    <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">
+                    <p class="mt-1 mb-0 text-muted small">
                         <strong>Detected:</strong> {{ analysis.report.confidence.detected_types|join:", " }}
                     </p>
                     {% endif %}
                 </div>
-                <div class="span4" style="text-align: center; padding-top: 10px;">
-                    <div style="position: relative; display: inline-block; width: 140px; height: 140px;">
+                <div class="col-md-4 text-center mt-3 mt-md-0">
+                    <div class="position-relative d-inline-block" style="width: 140px; height: 140px;">
                         <svg width="140" height="140" style="transform: rotate(-90deg);">
                             <!-- Background circle -->
                             <circle cx="70" cy="70" r="60" stroke="#eee" stroke-width="12" fill="none"></circle>
                             <!-- Progress circle (circumference = 2πr = 377, so score/100 * 377) -->
                             {% widthratio analysis.report.confidence.authenticity_score 100 377 as dash_length %}
                             <circle cx="70" cy="70" r="60" 
-                                    stroke="{% if analysis.report.confidence.authenticity_score <= 40 %}#d9534f{% elif analysis.report.confidence.authenticity_score >= 60 %}#5cb85c{% else %}#f0ad4e{% endif %}" 
+                                    stroke="{% if analysis.report.confidence.authenticity_score <= 40 %}#dc3545{% elif analysis.report.confidence.authenticity_score >= 60 %}#198754{% else %}#ffc107{% endif %}" 
                                     stroke-width="12" 
                                     fill="none"
                                     stroke-dasharray="{{ dash_length }} 377"
                                     stroke-linecap="round">
                             </circle>
                         </svg>
-                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
-                            <div style="font-size: 36px; font-weight: bold; line-height: 1;">
+                        <div class="position-absolute top-50 start-50 translate-middle text-center">
+                            <div class="display-6 fw-bold lh-1">
                                 {{ analysis.report.confidence.authenticity_score }}
                             </div>
-                            <div style="font-size: 11px; color: #666;">out of 100</div>
+                            <div class="small text-muted">out of 100</div>
                         </div>
                     </div>
-                    <div style="margin-top: 10px; font-size: 11px; color: #999;">
+                    <div class="mt-2 small text-muted">
                         0 = Definitely Fake<br>
                         100 = Definitely Real
                     </div>
@@ -79,41 +79,45 @@
 </div>
 
 <!-- ================ SECTION 2: COMPONENT BREAKDOWN (From Auditor) ================ -->
-<div class="row-fluid">
-    <div class="span6">
-        <div class="box">
-            <div class="wdgt-header">
-                <i class="icon-bolt"></i> AI Generation Signals
-                <span class="label label-info" style="font-size: 9px; margin-left: 5px;">Component</span>
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="card h-100 shadow-sm border-0 bg-light">
+            <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fa-solid fa-bolt me-2"></i> AI Generation Signals</h5>
+                <span class="badge bg-secondary">Component</span>
             </div>
-            <div class="wdgt-body">
-                <div class="progress progress-striped {% if analysis.report.confidence.ai_generated_probability > 70 %}progress-danger{% elif analysis.report.confidence.ai_generated_probability > 50 %}progress-warning{% else %}progress-success{% endif %}"
-                     style="height: 35px; margin-bottom: 5px;">
-                    <div class="bar" style="width: {{ analysis.report.confidence.ai_generated_probability|floatformat:0 }}%; line-height: 35px; font-size: 16px;">
+            <div class="card-body">
+                <div class="progress mb-2" style="height: 25px;">
+                    <div class="progress-bar progress-bar-striped {% if analysis.report.confidence.ai_generated_probability > 70 %}bg-danger{% elif analysis.report.confidence.ai_generated_probability > 50 %}bg-warning{% else %}bg-success{% endif %}" 
+                         role="progressbar" 
+                         style="width: {{ analysis.report.confidence.ai_generated_probability|floatformat:0 }}%;"
+                         aria-valuenow="{{ analysis.report.confidence.ai_generated_probability|floatformat:0 }}" aria-valuemin="0" aria-valuemax="100">
                         {{ analysis.report.confidence.ai_generated_probability|floatformat:0 }}%
                     </div>
                 </div>
-                <p class="muted" style="font-size: 11px; margin: 0;">
+                <p class="text-muted small mb-0">
                     Probability image was AI-generated based on metadata, dimensions, patterns, and ML models.
                     <br><strong>Note:</strong> Aggregated into authenticity score above.
                 </p>
             </div>
         </div>
     </div>
-    <div class="span6">
-        <div class="box">
-            <div class="wdgt-header">
-                <i class="icon-search"></i> Manipulation Signals
-                <span class="label label-info" style="font-size: 9px; margin-left: 5px;">Component</span>
+    <div class="col-md-6">
+        <div class="card h-100 shadow-sm border-0 bg-light">
+            <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fa-solid fa-magnifying-glass me-2"></i> Manipulation Signals</h5>
+                <span class="badge bg-secondary">Component</span>
             </div>
-            <div class="wdgt-body">
-                <div class="progress progress-striped {% if analysis.report.confidence.confidence_score > 70 %}progress-danger{% elif analysis.report.confidence.confidence_score > 50 %}progress-warning{% else %}progress-success{% endif %}"
-                     style="height: 35px; margin-bottom: 5px;">
-                    <div class="bar" style="width: {{ analysis.report.confidence.confidence_score|floatformat:0 }}%; line-height: 35px; font-size: 16px;">
+            <div class="card-body">
+                <div class="progress mb-2" style="height: 25px;">
+                    <div class="progress-bar progress-bar-striped {% if analysis.report.confidence.confidence_score > 70 %}bg-danger{% elif analysis.report.confidence.confidence_score > 50 %}bg-warning{% else %}bg-success{% endif %}" 
+                         role="progressbar" 
+                         style="width: {{ analysis.report.confidence.confidence_score|floatformat:0 }}%;"
+                         aria-valuenow="{{ analysis.report.confidence.confidence_score|floatformat:0 }}" aria-valuemin="0" aria-valuemax="100">
                         {{ analysis.report.confidence.confidence_score|floatformat:0 }}%
                     </div>
                 </div>
-                <p class="muted" style="font-size: 11px; margin: 0;">
+                <p class="text-muted small mb-0">
                     Evidence of post-processing, editing, or manipulation based on noise, frequency, and forensic analysis.
                     <br><strong>Note:</strong> Aggregated into authenticity score above.
                 </p>
@@ -122,10 +126,10 @@
     </div>
 </div>
 
-<div class="row-fluid" style="margin-top: 10px;">
-    <div class="span12">
-        <div class="alert alert-info" style="padding: 8px 12px; margin-bottom: 15px;">
-            <i class="icon-info-sign"></i> 
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-info py-2">
+            <i class="fa-solid fa-circle-info me-2"></i> 
             <strong>How to Read This:</strong>
             The <strong>Authenticity Score ({{ analysis.report.confidence.authenticity_score }}/100)</strong> above is the final verdict.
             These component scores show <em>why</em> - what types of evidence contributed to that score.
@@ -136,16 +140,16 @@
 
 {% else %}
 {# LEGACY: Original verdict display when no compliance audit #}
-<div class="row-fluid">
-    <div class="span12">
-        <div class="alert {% if analysis.report.confidence.verdict == 'ai_generated' %}alert-error{% elif analysis.report.confidence.verdict == 'manipulated' %}alert-error{% elif analysis.report.confidence.verdict_certainty == 'inconclusive' %}alert-warning{% else %}alert-success{% endif %}" style="padding: 15px; margin-bottom: 20px;">
-            <div class="row-fluid">
-                <div class="span8">
-                    <h3 style="margin: 0 0 5px 0;">
-                        <i class="{% if analysis.report.confidence.verdict == 'authentic' and analysis.report.confidence.verdict_certainty != 'inconclusive' %}icon-ok-sign{% else %}icon-warning-sign{% endif %}"></i>
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert {% if analysis.report.confidence.verdict == 'ai_generated' %}alert-danger{% elif analysis.report.confidence.verdict == 'manipulated' %}alert-danger{% elif analysis.report.confidence.verdict_certainty == 'inconclusive' %}alert-warning{% else %}alert-success{% endif %} p-4">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h3 class="mb-2">
+                        <i class="{% if analysis.report.confidence.verdict == 'authentic' and analysis.report.confidence.verdict_certainty != 'inconclusive' %}fa-solid fa-check-circle{% else %}fa-solid fa-exclamation-triangle{% endif %} me-2"></i>
                         {{ analysis.report.confidence.verdict_label }}
                     </h3>
-                    <p style="margin: 0;">
+                    <p class="mb-0">
                         {% if analysis.report.confidence.verdict == 'ai_generated' %}
                             This image was identified as AI-generated.
                             {% if analysis.report.confidence.verdict_certainty == 'high' %}
@@ -164,11 +168,11 @@
                         {% endif %}
                     </p>
                 </div>
-                <div class="span4" style="text-align: right; padding-top: 5px;">
-                    <span style="font-size: 36px; font-weight: bold;">
+                <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                    <span class="display-4 fw-bold">
                         {{ analysis.report.confidence.verdict_confidence|floatformat:0 }}%
                     </span>
-                    <br><small class="muted">certainty in verdict</small>
+                    <br><small class="text-muted">certainty in verdict</small>
                 </div>
             </div>
         </div>
@@ -176,46 +180,49 @@
 </div>
 
 <!-- Section 2: Legacy three-box layout -->
-<div class="row-fluid">
-    <div class="span4">
-        <div class="box">
-            <div class="wdgt-header"><i class="icon-search"></i> Forensic Suspicion</div>
-            <div class="wdgt-body">
-                <div class="progress progress-striped {% if analysis.report.confidence.confidence_score > 70 %}progress-danger{% elif analysis.report.confidence.confidence_score > 50 %}progress-warning{% else %}progress-success{% endif %}"
-                     style="height: 30px; margin-bottom: 5px;">
-                    <div class="bar" style="width: {{ analysis.report.confidence.confidence_score|floatformat:0 }}%; line-height: 30px; font-size: 14px;">
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-header bg-white border-bottom-0"><i class="fa-solid fa-magnifying-glass me-2"></i> Forensic Suspicion</div>
+            <div class="card-body">
+                <div class="progress mb-2" style="height: 20px;">
+                    <div class="progress-bar progress-bar-striped {% if analysis.report.confidence.confidence_score > 70 %}bg-danger{% elif analysis.report.confidence.confidence_score > 50 %}bg-warning{% else %}bg-success{% endif %}" 
+                         role="progressbar" 
+                         style="width: {{ analysis.report.confidence.confidence_score|floatformat:0 }}%;">
                         {{ analysis.report.confidence.confidence_score|floatformat:0 }}%
                     </div>
                 </div>
-                <p class="muted" style="font-size: 11px; margin: 0;">Evidence of manipulation.</p>
+                <p class="text-muted small mb-0">Evidence of manipulation.</p>
             </div>
         </div>
     </div>
-    <div class="span4">
-        <div class="box">
-            <div class="wdgt-header"><i class="icon-bolt"></i> AI Generation Probability</div>
-            <div class="wdgt-body">
-                <div class="progress progress-striped {% if analysis.report.confidence.ai_generated_probability > 70 %}progress-danger{% elif analysis.report.confidence.ai_generated_probability > 50 %}progress-warning{% else %}progress-info{% endif %}"
-                     style="height: 30px; margin-bottom: 5px;">
-                    <div class="bar" style="width: {{ analysis.report.confidence.ai_generated_probability|floatformat:0 }}%; line-height: 30px; font-size: 14px;">
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-header bg-white border-bottom-0"><i class="fa-solid fa-bolt me-2"></i> AI Generation Probability</div>
+            <div class="card-body">
+                <div class="progress mb-2" style="height: 20px;">
+                    <div class="progress-bar progress-bar-striped {% if analysis.report.confidence.ai_generated_probability > 70 %}bg-danger{% elif analysis.report.confidence.ai_generated_probability > 50 %}bg-warning{% else %}bg-info{% endif %}" 
+                         role="progressbar" 
+                         style="width: {{ analysis.report.confidence.ai_generated_probability|floatformat:0 }}%;">
                         {{ analysis.report.confidence.ai_generated_probability|floatformat:0 }}%
                     </div>
                 </div>
-                <p class="muted" style="font-size: 11px; margin: 0;">AI probability.</p>
+                <p class="text-muted small mb-0">AI probability.</p>
             </div>
         </div>
     </div>
-    <div class="span4">
-        <div class="box">
-            <div class="wdgt-header"><i class="icon-ok-circle"></i> Verdict Confidence</div>
-            <div class="wdgt-body">
-                <div class="progress progress-striped {% if analysis.report.confidence.verdict_confidence > 70 %}progress-success{% elif analysis.report.confidence.verdict_confidence > 40 %}progress-info{% else %}progress-warning{% endif %}"
-                     style="height: 30px; margin-bottom: 5px;">
-                    <div class="bar" style="width: {{ analysis.report.confidence.verdict_confidence|floatformat:0 }}%; line-height: 30px; font-size: 14px;">
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-header bg-white border-bottom-0"><i class="fa-solid fa-check-circle me-2"></i> Verdict Confidence</div>
+            <div class="card-body">
+                <div class="progress mb-2" style="height: 20px;">
+                    <div class="progress-bar progress-bar-striped {% if analysis.report.confidence.verdict_confidence > 70 %}bg-success{% elif analysis.report.confidence.verdict_confidence > 40 %}bg-info{% else %}bg-warning{% endif %}" 
+                         role="progressbar" 
+                         style="width: {{ analysis.report.confidence.verdict_confidence|floatformat:0 }}%;">
                         {{ analysis.report.confidence.verdict_confidence|floatformat:0 }}%
                     </div>
                 </div>
-                <p class="muted" style="font-size: 11px; margin: 0;">Confidence.</p>
+                <p class="text-muted small mb-0">Confidence.</p>
             </div>
         </div>
     </div>
@@ -224,47 +231,44 @@
 
 <!-- ================ SECTION 3: EVIDENCE TABLE ================ -->
 {% if analysis.report.confidence.indicators %}
-<div class="row-fluid" style="margin-top: 15px;">
-    <div class="span12">
-        <div class="box">
-            <div class="wdgt-header">
-                <i class="icon-list-alt"></i> Key Indicators
-                <span class="pull-right">
-                    <small class="muted">
-                        <span class="label label-info" style="font-size: 9px;">Deterministic</span> = Rule-based |
-                        <span class="label label-warning" style="font-size: 9px;">AI/ML</span> = Probabilistic
-                    </small>
-                </span>
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <span><i class="fa-solid fa-list-check me-2"></i> Key Indicators</span>
+                <div class="small text-muted">
+                    <span class="badge bg-info">Deterministic</span> = Rule-based |
+                    <span class="badge bg-warning text-dark">AI/ML</span> = Probabilistic
+                </div>
             </div>
-            <div class="wdgt-body">
-                <table class="table table-condensed table-bordered table-striped" style="font-size: 12px; margin-bottom: 5px;">
-                    <thead>
-                        <tr>
-                            <th style="width: 30%;">Method</th>
-                            <th style="width: 10%;">Type</th>
-                            <th>Evidence</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for indicator in analysis.report.confidence.indicators %}
-                        <tr>
-                            <td><strong>{{ indicator.method }}</strong></td>
-                            <td>
-                                {% if indicator.type == 'deterministic' %}
-                                    <span class="label label-info" style="font-size: 9px;">Deterministic</span>
-                                {% else %}
-                                    <span class="label label-warning" style="font-size: 9px;">AI/ML</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ indicator.evidence }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                <p class="muted" style="font-size: 10px; margin: 0;">
-                    <strong>Note:</strong> Deterministic methods use mathematical analysis of image properties.
-                    AI/ML methods use trained models and results are probabilistic.
-                </p>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped align-middle small mb-2">
+                        <thead>
+                            <tr>
+                                <th style="width: 30%;">Method</th>
+                                <th style="width: 10%;">Type</th>
+                                <th>Evidence</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for indicator in analysis.report.confidence.indicators %}
+                            <tr>
+                                <td><strong>{{ indicator.method }}</strong></td>
+                                <td>
+                                    {% if indicator.type == 'deterministic' %}
+                                        <span class="badge bg-info">Deterministic</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">AI/ML</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ indicator.evidence }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Note removed as badges are self-explanatory -->
             </div>
         </div>
     </div>
@@ -277,66 +281,68 @@
 
 <!-- 4a: AI Generation Detection -->
 {% if analysis.report.ai_detection %}
-<div class="row-fluid" style="margin-top: 20px;">
-    <div class="span12">
-        <div class="box">
-            <div class="wdgt-header">
-                <i class="icon-bolt"></i> AI Generation Detection
-                <span class="pull-right">
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fa-solid fa-bolt me-2"></i> AI Generation Detection</h5>
+                <span>
                     {% if analysis.report.ai_detection.error %}
-                        <span class="label label-inverse">Unavailable</span>
+                        <span class="badge bg-dark">Unavailable</span>
                     {% elif not analysis.report.ai_detection.enabled %}
-                        <span class="label">Disabled</span>
+                        <span class="badge bg-secondary">Disabled</span>
                     {% else %}
-                        <span class="label label-info">{{ analysis.report.ai_detection.methods_run|length }} method{{ analysis.report.ai_detection.methods_run|length|pluralize }}</span>
+                        <span class="badge bg-info text-dark">{{ analysis.report.ai_detection.methods_run|length }} method{{ analysis.report.ai_detection.methods_run|length|pluralize }}</span>
                     {% endif %}
                 </span>
             </div>
-            <div class="wdgt-body">
+            <div class="card-body">
                 {% if analysis.report.ai_detection.error %}
-                    <div class="alert alert-warning" style="margin-bottom: 0;">
+                    <div class="alert alert-warning mb-0">
                         <strong>Not Available:</strong> {{ analysis.report.ai_detection.error }}
                         <br><small>Run <code>make ai-setup</code> to enable AI detection.</small>
                     </div>
                 {% elif analysis.report.ai_detection.enabled %}
                     {% if analysis.report.ai_detection.detection_layers %}
-                    <table class="table table-condensed table-bordered" style="font-size: 12px; margin-bottom: 10px;">
-                        <thead>
-                            <tr>
-                                <th style="width: 25%;">Detection Layer</th>
-                                <th style="width: 12%;">Status</th>
-                                <th style="width: 15%;">Confidence</th>
-                                <th>Detail</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for layer in analysis.report.ai_detection.detection_layers %}
-                            <tr>
-                                <td><strong>{{ layer.method }}</strong></td>
-                                <td>
-                                    {% if layer.verdict == 'Unknown' %}
-                                        <span class="label">N/A</span>
-                                    {% elif layer.verdict == 'AI' %}
-                                        <span class="label label-important">FAIL</span>
-                                    {% else %}
-                                        <span class="label label-success">PASS</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ layer.confidence|upper }}</td>
-                                <td class="muted">{{ layer.evidence|default:"No data available" }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-bordered small mb-3">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 25%;">Detection Layer</th>
+                                    <th style="width: 12%;">Status</th>
+                                    <th style="width: 15%;">Confidence</th>
+                                    <th>Detail</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for layer in analysis.report.ai_detection.detection_layers %}
+                                <tr>
+                                    <td><strong>{{ layer.method }}</strong></td>
+                                    <td>
+                                        {% if layer.verdict == 'Unknown' %}
+                                            <span class="badge bg-secondary">N/A</span>
+                                        {% elif layer.verdict == 'AI' %}
+                                            <span class="badge bg-danger">FAIL</span>
+                                        {% else %}
+                                            <span class="badge bg-success">PASS</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ layer.confidence|upper }}</td>
+                                    <td class="text-muted">{{ layer.evidence|default:"No data available" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                     {% endif %}
 
                     {% if analysis.report.ai_detection.methods_run %}
-                        <p class="muted" style="font-size: 10px; margin: 0;">
+                        <p class="text-muted small mb-0">
                             <strong>Methods:</strong> {{ analysis.report.ai_detection.methods_run|join:", " }}
                         </p>
                     {% endif %}
                 {% else %}
-                    <p class="muted" style="margin-bottom: 0;">AI detection not configured. Run <code>make ai-setup</code> to install.</p>
+                    <p class="text-muted mb-0">AI detection not configured. Run <code>make ai-setup</code> to install.</p>
                 {% endif %}
             </div>
         </div>
@@ -346,105 +352,110 @@
 
 <!-- 4b: OpenCV Manipulation Detection -->
 {% if analysis.report.opencv_manipulation %}
-<div class="row-fluid" style="margin-top: 15px;">
-    <div class="span12">
-        <div class="box">
-            <div class="wdgt-header">
-                <i class="icon-search"></i> Image Manipulation Detection
-                <span class="pull-right">
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fa-solid fa-magnifying-glass me-2"></i> Image Manipulation Detection</h5>
+                <span>
                     {% if analysis.report.opencv_manipulation.error %}
-                        <span class="label label-inverse">Unavailable</span>
+                        <span class="badge bg-dark">Unavailable</span>
                     {% elif not analysis.report.opencv_manipulation.enabled %}
-                        <span class="label">Disabled</span>
+                        <span class="badge bg-secondary">Disabled</span>
                     {% elif analysis.report.opencv_manipulation.is_suspicious %}
-                        <span class="label label-warning">Suspicious</span>
+                        <span class="badge bg-warning text-dark">Suspicious</span>
                     {% else %}
-                        <span class="label label-success">No Issues</span>
+                        <span class="badge bg-success">No Issues</span>
                     {% endif %}
                 </span>
             </div>
-            <div class="wdgt-body">
+            <div class="card-body">
                 {% if analysis.report.opencv_manipulation.error %}
-                    <div class="alert alert-warning" style="margin-bottom: 0;">
+                    <div class="alert alert-warning mb-0">
                         <strong>Not Available:</strong> {{ analysis.report.opencv_manipulation.error }}
                         <br><small>Run <code>make opencv-start</code> to enable manipulation detection.</small>
                     </div>
                 {% elif analysis.report.opencv_manipulation.enabled %}
-                    <table class="table table-condensed table-bordered" style="font-size: 12px; margin-bottom: 10px;">
-                        <thead>
-                            <tr>
-                                <th style="width: 25%;">Method</th>
-                                <th style="width: 12%;">Status</th>
-                                <th style="width: 15%;">Confidence</th>
-                                <th>Detail</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% if analysis.report.opencv_manipulation.manipulation_detection %}
-                            <tr>
-                                <td><strong><i class="icon-eye-open"></i> Gaussian Blur</strong></td>
-                                <td>
-                                    {% if analysis.report.opencv_manipulation.manipulation_detection.is_manipulated %}
-                                        <span class="label label-warning">Detected</span>
-                                    {% else %}
-                                        <span class="label label-success">Clean</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ analysis.report.opencv_manipulation.manipulation_detection.confidence|pct:1 }}%</td>
-                                <td class="muted">
-                                    {{ analysis.report.opencv_manipulation.manipulation_detection.evidence }}
-                                    <small>({{ analysis.report.opencv_manipulation.manipulation_detection.num_anomalies }} anomalies, {{ analysis.report.opencv_manipulation.manipulation_detection.anomaly_percentage|floatformat:1 }}% coverage)</small>
-                                </td>
-                            </tr>
-                            {% endif %}
-                            {% if analysis.report.opencv_manipulation.noise_analysis %}
-                            <tr>
-                                <td><strong><i class="icon-signal"></i> Noise Consistency</strong></td>
-                                <td>
-                                    {% if analysis.report.opencv_manipulation.noise_analysis.is_noise_inconsistent %}
-                                        <span class="label label-warning">Inconsistent</span>
-                                    {% else %}
-                                        <span class="label label-success">Consistent</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ analysis.report.opencv_manipulation.noise_analysis.noise_consistency|pct:1 }}%</td>
-                                <td class="muted">
-                                    Overall noise: {{ analysis.report.opencv_manipulation.noise_analysis.overall_noise|floatformat:2 }},
-                                    variation: {{ analysis.report.opencv_manipulation.noise_analysis.coefficient_variation|floatformat:3 }}
-                                    {% if analysis.report.opencv_manipulation.noise_analysis.quadrant_variances %}
-                                        <small>(Quadrants: {% for var in analysis.report.opencv_manipulation.noise_analysis.quadrant_variances %}Q{{ forloop.counter }}:{{ var|floatformat:1 }}{% if not forloop.last %}, {% endif %}{% endfor %})</small>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endif %}
-                            {% if analysis.report.opencv_manipulation.jpeg_artifacts %}
-                            <tr>
-                                <td><strong><i class="icon-file-alt"></i> JPEG Artifacts</strong></td>
-                                <td>
-                                    {% if analysis.report.opencv_manipulation.jpeg_artifacts.has_inconsistent_artifacts %}
-                                        <span class="label label-warning">Inconsistent</span>
-                                    {% else %}
-                                        <span class="label label-success">Consistent</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ analysis.report.opencv_manipulation.jpeg_artifacts.confidence|pct:1 }}%</td>
-                                <td class="muted">
-                                    {{ analysis.report.opencv_manipulation.jpeg_artifacts.evidence }}
-                                    <small>(compression variation: {{ analysis.report.opencv_manipulation.jpeg_artifacts.compression_variation|floatformat:3 }})</small>
-                                </td>
-                            </tr>
-                            {% endif %}
-                        </tbody>
-                    </table>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-bordered small mb-3">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 25%;">Method</th>
+                                    <th style="width: 12%;">Status</th>
+                                    <th style="width: 15%;">Confidence</th>
+                                    <th>Detail</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if analysis.report.opencv_manipulation.manipulation_detection %}
+                                <tr>
+                                    <td><strong><i class="fa-solid fa-eye me-2"></i> Gaussian Blur</strong></td>
+                                    <td>
+                                        {% if analysis.report.opencv_manipulation.manipulation_detection.is_manipulated %}
+                                            <span class="badge bg-warning text-dark">Detected</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Clean</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ analysis.report.opencv_manipulation.manipulation_detection.confidence|pct:1 }}%</td>
+                                    <td class="text-muted">
+                                        {{ analysis.report.opencv_manipulation.manipulation_detection.evidence }}
+                                        <small>({{ analysis.report.opencv_manipulation.manipulation_detection.num_anomalies }} anomalies, {{ analysis.report.opencv_manipulation.manipulation_detection.anomaly_percentage|floatformat:1 }}% coverage)</small>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% if analysis.report.opencv_manipulation.noise_analysis %}
+                                <tr>
+                                    <td><strong><i class="fa-solid fa-chart-bar me-2"></i> Noise Consistency</strong></td>
+                                    <td>
+                                        {% if analysis.report.opencv_manipulation.noise_analysis.is_noise_inconsistent %}
+                                            <span class="badge bg-warning text-dark">Inconsistent</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Consistent</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ analysis.report.opencv_manipulation.noise_analysis.noise_consistency|pct:1 }}%</td>
+                                    <td class="text-muted">
+                                        Overall noise: {{ analysis.report.opencv_manipulation.noise_analysis.overall_noise|floatformat:2 }},
+                                        variation: {{ analysis.report.opencv_manipulation.noise_analysis.coefficient_variation|floatformat:3 }}
+                                        {% if analysis.report.opencv_manipulation.noise_analysis.quadrant_variances %}
+                                            <small>(Quadrants: {% for var in analysis.report.opencv_manipulation.noise_analysis.quadrant_variances %}Q{{ forloop.counter }}:{{ var|floatformat:1 }}{% if not forloop.last %}, {% endif %}{% endfor %})</small>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% if analysis.report.opencv_manipulation.jpeg_artifacts %}
+                                <tr>
+                                    <td><strong><i class="fa-solid fa-file-image me-2"></i> JPEG Artifacts</strong></td>
+                                    <td>
+                                        {% if analysis.report.opencv_manipulation.jpeg_artifacts.has_inconsistent_artifacts %}
+                                            <span class="badge bg-warning text-dark">Inconsistent</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Consistent</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ analysis.report.opencv_manipulation.jpeg_artifacts.confidence|pct:1 }}%</td>
+                                    <td class="text-muted">
+                                        {{ analysis.report.opencv_manipulation.jpeg_artifacts.evidence }}
+                                        <small>(compression variation: {{ analysis.report.opencv_manipulation.jpeg_artifacts.compression_variation|floatformat:3 }})</small>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
 
-                    <p class="muted" style="font-size: 10px; margin: 0;">
-                        <strong>Overall:</strong> {{ analysis.report.confidence.confidence_score|floatformat:1 }}% manipulation probability
-                        — Auditor verdict based on {{ analysis.report.opencv_manipulation.methods|length }} forensic methods
-                        &nbsp;|&nbsp;
-                        <strong>Service:</strong> {{ analysis.report.opencv_manipulation.service }}
-                    </p>
+                    <div class="d-flex justify-content-between small text-muted">
+                        <span>
+                            <strong>Overall:</strong> {{ analysis.report.confidence.confidence_score|floatformat:1 }}% manipulation probability
+                            — Auditor verdict based on {{ analysis.report.opencv_manipulation.methods|length }} forensic methods
+                        </span>
+                        <span>
+                            <strong>Service:</strong> {{ analysis.report.opencv_manipulation.service }}
+                        </span>
+                    </div>
                 {% else %}
-                    <p class="muted" style="margin-bottom: 0;">Manipulation detection not configured. Run <code>make opencv-start</code> to enable.</p>
+                    <p class="text-muted mb-0">Manipulation detection not configured. Run <code>make opencv-start</code> to enable.</p>
                 {% endif %}
             </div>
         </div>
@@ -454,12 +465,13 @@
 
 <!-- ================ FALLBACK: NOTHING AVAILABLE ================ -->
 {% if not analysis.report.ai_detection and not analysis.report.opencv_manipulation and not analysis.report.confidence %}
-<div class="row-fluid">
-    <div class="span12">
+<div class="row">
+    <div class="col-12">
         <div class="alert alert-info">
-            <h4>No Automated Analysis Available</h4>
+            <h4 class="alert-heading">No Automated Analysis Available</h4>
             <p>Neither AI detection nor manipulation detection are currently configured.</p>
-            <p>
+            <hr>
+            <p class="mb-0">
                 <strong>To enable:</strong><br>
                 &bull; AI Detection: <code>make ai-setup</code><br>
                 &bull; Manipulation Detection: <code>make opencv-start</code>

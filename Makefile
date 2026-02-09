@@ -21,7 +21,7 @@ help:
 	@echo "$(GREEN)Sus Scrofa Development Commands$(NC)"
 	@echo ""
 	@echo "$(YELLOW)Setup:$(NC)"
-	@echo "  make setup       - Complete setup (venv, deps, MongoDB, migrations)"
+	@echo "  make setup       - Complete setup with ALL features (venv, deps, MongoDB, AI/ML)"
 	@echo "  make fresh       - Fresh start (reset DBs, recreate everything)"
 	@echo "  make venv        - Create Python virtual environment"
 	@echo "  make install     - Install Python dependencies"
@@ -139,15 +139,42 @@ setup: check-deps install mongodb
 	@$(MAKE) migrate
 	@echo ""
 	@echo "$(GREEN)========================================$(NC)"
-	@echo "$(GREEN)✓ Setup complete!$(NC)"
+	@echo "$(GREEN)Setting up optional AI/ML features...$(NC)"
 	@echo "$(GREEN)========================================$(NC)"
+	@echo ""
+	@echo "$(YELLOW)1. Setting up Photoholmes forgery detection...$(NC)"
+	@$(MAKE) photoholmes-setup || echo "$(YELLOW)⚠ Photoholmes setup failed (optional)$(NC)"
+	@echo ""
+	@echo "$(YELLOW)2. Setting up research content analysis...$(NC)"
+	@$(MAKE) research-setup || echo "$(YELLOW)⚠ Research setup failed (optional)$(NC)"
+	@echo ""
+	@echo "$(YELLOW)3. Building and starting OpenCV service...$(NC)"
+	@$(MAKE) opencv-build || echo "$(YELLOW)⚠ OpenCV build failed (optional)$(NC)"
+	@$(MAKE) opencv-start || echo "$(YELLOW)⚠ OpenCV start failed (optional)$(NC)"
+	@echo ""
+	@echo "$(GREEN)========================================$(NC)"
+	@echo "$(GREEN)✓ Complete setup finished!$(NC)"
+	@echo "$(GREEN)========================================$(NC)"
+	@echo ""
+	@echo "$(GREEN)All features are now available:$(NC)"
+	@echo "  ✓ AI Detection (SPAI + SDXL)"
+	@echo "  ✓ Photoholmes Forgery Detection"
+	@echo "  ✓ Research Content Analysis"
+	@echo "  ✓ OpenCV Manipulation Detection"
+	@echo ""
+	@echo "$(YELLOW)Verify installations:$(NC)"
+	@echo "  make ai-verify"
+	@echo "  make photoholmes-verify"
+	@echo "  make research-verify"
+	@echo "  make opencv-test"
 	@echo ""
 	@echo "$(YELLOW)Important: Create a superuser account$(NC)"
 	@echo "  Run: make superuser"
 	@echo ""
-	@echo "Then start the application:"
-	@echo "  Run: make run"
+	@echo "$(YELLOW)Then start the application:$(NC)"
+	@echo "  make run"
 	@echo ""
+
 
 mongodb:
 	@echo "$(GREEN)Checking MongoDB container...$(NC)"
@@ -320,10 +347,25 @@ print(f'Deleted {count} Analysis records from SQLite')" 2>/dev/null || echo "$(Y
 	@echo ""
 
 # AI Detection Setup
-ai-setup:
+ai-setup: venv
 	@echo "$(GREEN)Setting up AI detection module...$(NC)"
 	@echo ""
-	@cd ai_detection && $(MAKE) setup
+	@echo "$(YELLOW)Installing AI detection dependencies into main venv...$(NC)"
+	@INDEX_URL=$$($(SYSTEM_PYTHON) scripts/detect_system.py --index-url); \
+	BACKEND=$$($(SYSTEM_PYTHON) scripts/detect_system.py --backend); \
+	echo "Backend: $$BACKEND"; \
+	echo "PyTorch Index: $$INDEX_URL"; \
+	echo ""; \
+	echo "$(YELLOW)Installing PyTorch and AI detection dependencies...$(NC)"; \
+	$(PIP) install --extra-index-url "$$INDEX_URL" "torch>=2.0.0" "torchvision>=0.15.0"; \
+	$(PIP) install "opencv-python>=4.10.0" "pyyaml>=6.0.1" "scipy>=1.14.0" \
+		"timm==0.4.12" "yacs>=0.1.8" "numpy>=1.26.4" "torchmetrics>=1.4.0" \
+		"tqdm>=4.66.4" "pillow>=10.4.0" "einops>=0.8.0" "ftfy>=6.1.0" "regex>=2023.0.0" \
+		"transformers>=4.36.0" "safetensors>=0.4.0" "open-clip-torch"; \
+	echo "$(GREEN)✓ Dependencies installed$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Downloading AI detection models...$(NC)"
+	@cd ai_detection && PYTHON=../$(PYTHON) $(MAKE) weights models
 	@echo ""
 	@echo "$(GREEN)========================================$(NC)"
 	@echo "$(GREEN)✓ AI detection ready!$(NC)"
@@ -333,6 +375,7 @@ ai-setup:
 	@echo ""
 	@echo "Verify installation:"
 	@echo "  make ai-verify"
+
 
 ai-verify:
 	@echo "$(GREEN)Verifying AI detection module...$(NC)"

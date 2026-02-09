@@ -1,77 +1,55 @@
 {% load analyses_tags %}
 
-<div class="box">
-    <ul class="nav nav-pills" role="tablist" id="tab-stat">
-        <li class="active" role="presentation" >
-            <a data-toggle="tab" href="#ahash">Average Hash</a>
-        </li>
-        <li role="presentation" >
-            <a data-toggle="tab" href="#phash">Perception Hash</a>
-        </li>
-        <li role="presentation">
-            <a data-toggle="tab" href="#dhash">Difference Hash</a>
-        </li>
-    </ul>
-    <div class="box">
-        <div class="tab-content">
-            <div class="tab-pane fade in active" role="tabpanel" id="ahash">
-                <div class="box">
-                    {% if analysis.report.similar.a_hash %}
-                        <table>
-                            <tr>
-                                <td>
-                                    <ul class="thumbnails">
-                                        {% for image_id in analysis.report.similar.a_hash %}
-                                            {% include "analyses/report/_similarity_images.html" with image=image_id|get_analysis %}
-                                        {% endfor %}
-                                    </ul>
-                                </td>
-                            </tr>
-                        </table>
-                    {% else %}
-                        <div class="alert alert-warning" role="alert"><strong>Not found!</strong> No similar images found using average hashing method.</div>
-                    {% endif %}
-                </div> 
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white border-bottom-0 pb-0">
+        <ul class="nav nav-tabs card-header-tabs" role="tablist" id="similarityTabs">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="ahash-tab" data-bs-toggle="tab" data-bs-target="#ahash" type="button" role="tab" aria-controls="ahash" aria-selected="true">Average Hash</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="phash-tab" data-bs-toggle="tab" data-bs-target="#phash" type="button" role="tab" aria-controls="phash" aria-selected="false">Perception Hash</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="dhash-tab" data-bs-toggle="tab" data-bs-target="#dhash" type="button" role="tab" aria-controls="dhash" aria-selected="false">Difference Hash</button>
+            </li>
+        </ul>
+    </div>
+    <div class="card-body">
+        <div class="tab-content" id="similarityTabsContent">
+            <div class="tab-pane fade show active" role="tabpanel" aria-labelledby="ahash-tab" id="ahash">
+                {% if analysis.report.similar.a_hash %}
+                    <div class="row row-cols-1 row-cols-md-4 g-4">
+                        {% for image_id in analysis.report.similar.a_hash %}
+                            {% include "analyses/report/_similarity_images.html" with image=image_id|get_analysis %}
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning mb-0" role="alert"><i class="fa-solid fa-triangle-exclamation me-2"></i> <strong>Not found!</strong> No similar images found using average hashing method.</div>
+                {% endif %}
             </div>
 
-            <div class="tab-pane fade" role="tabpanel" id="phash">
-                <div class="box">
-                    {% if analysis.report.similar.p_hash %}
-                        <table>
-                            <tr>
-                                <td>
-                                    <ul class="thumbnails">
-                                        {% for image_id in analysis.report.similar.p_hash %}
-                                            {% include "analyses/report/_similarity_images.html" with image=image_id|get_analysis %}
-                                        {% endfor %}
-                                    </ul>
-                                </td>
-                            </tr>
-                        </table>
-                    {% else %}
-                        <div class="alert alert-warning" role="alert"><strong>Not found!</strong> No similar images found using perceptual hashing method.</div>
-                    {% endif %}
-                </div> 
+            <div class="tab-pane fade" role="tabpanel" aria-labelledby="phash-tab" id="phash">
+                {% if analysis.report.similar.p_hash %}
+                    <div class="row row-cols-1 row-cols-md-4 g-4">
+                        {% for image_id in analysis.report.similar.p_hash %}
+                            {% include "analyses/report/_similarity_images.html" with image=image_id|get_analysis %}
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning mb-0" role="alert"><i class="fa-solid fa-triangle-exclamation me-2"></i> <strong>Not found!</strong> No similar images found using perceptual hashing method.</div>
+                {% endif %}
             </div>
 
-            <div class="tab-pane fade" role="tabpanel" id="dhash">
-                <div class="box">
-                    {% if analysis.report.similar.d_hash %}
-                        <table>
-                            <tr>
-                                <td>
-                                    <ul class="thumbnails">
-                                        {% for image_id in analysis.report.similar.d_hash %}
-                                            {% include "analyses/report/_similarity_images.html" with image=image_id|get_analysis %}
-                                        {% endfor %}
-                                    </ul>
-                                </td>
-                            </tr>
-                        </table>
-                    {% else %}
-                        <div class="alert alert-warning" role="alert"><strong>Not found!</strong> No similar images found using difference hashing method.</div>
-                    {% endif %}
-                </div> 
+            <div class="tab-pane fade" role="tabpanel" aria-labelledby="dhash-tab" id="dhash">
+                {% if analysis.report.similar.d_hash %}
+                    <div class="row row-cols-1 row-cols-md-4 g-4">
+                        {% for image_id in analysis.report.similar.d_hash %}
+                            {% include "analyses/report/_similarity_images.html" with image=image_id|get_analysis %}
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning mb-0" role="alert"><i class="fa-solid fa-triangle-exclamation me-2"></i> <strong>Not found!</strong> No similar images found using difference hashing method.</div>
+                {% endif %}
             </div>
         </div>
     </div>

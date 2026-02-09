@@ -1,58 +1,49 @@
 {% load analyses_tags %}
-<div class="accordion-group">
-    <div class="accordion-heading">
-        {# Used to separate signatures by severity and avoid dups in IDs. #}
-        {% if segment %}
-            <a class="accordion-toggle bg-green" data-toggle="collapse" data-parent="#sign{{ segment }}-accordion" href="#{{ sign.name|slugify }}_{{ segment }}">
-        {% else %}
-            <a class="accordion-toggle bg-green" data-toggle="collapse" data-parent="#sign-accordion" href="#{{ sign.name|slugify }}">
-        {% endif %}
-
-            {# Badge selector. #}
+{% with target_id=sign.name|slugify %}
+<div class="accordion-item">
+    <h2 class="accordion-header" id="heading_{{ target_id }}{% if segment %}_{{ segment }}{% endif %}">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                data-bs-target="#collapse_{{ target_id }}{% if segment %}_{{ segment }}{% endif %}" 
+                aria-expanded="false" 
+                aria-controls="collapse_{{ target_id }}{% if segment %}_{{ segment }}{% endif %}">
+            
             {% if sign.severity == 1 %}
-                <span class="badge badge-success">Low</span>
+                <span class="badge bg-success me-2">Low</span>
             {% elif sign.severity == 2 %}
-                <span class="badge badge-warning">Medium</span>
+                 <span class="badge bg-warning text-dark me-2">Medium</span>
             {% elif sign.severity == 3 %}
-                <span class="badge badge-important">High</span>
+                 <span class="badge bg-danger me-2">High</span>
             {% endif %}
-            {{ sign.name}}
-        </a>
-    </div>
-    {# Used to separate signatures by severity and avoid dups in IDs. #}
-    {% if segment %}
-        <div id="{{ sign.name|slugify }}_{{ segment }}" class="accordion-body collapse">
-    {% else %}
-        <div id="{{ sign.name|slugify }}" class="accordion-body collapse">
-    {% endif %}
-        <div class="accordion-inner">
-            <dl class="dl-horizontal">
-                <dt>
-                    Category:
-                </dt>
-                <dd>
-                    {{ sign.category|capfirst }}
-                </dd>
-                <dt>
-                    Description:
-                </dt>
-                <dd>
-                    {{ sign.description }}
-                </dd>
+            {{ sign.name }}
+        </button>
+    </h2>
+    <div id="collapse_{{ target_id }}{% if segment %}_{{ segment }}{% endif %}" 
+         class="accordion-collapse collapse" 
+         aria-labelledby="heading_{{ target_id }}{% if segment %}_{{ segment }}{% endif %}" 
+         data-bs-parent="{% if segment %}#sign{{ segment }}-accordion{% else %}#sign-accordion{% endif %}">
+        <div class="accordion-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-3">Category:</dt>
+                <dd class="col-sm-9">{{ sign.category|capfirst }}</dd>
+                
+                <dt class="col-sm-3">Description:</dt>
+                <dd class="col-sm-9">{{ sign.description }}</dd>
+                
                 {% if sign.data %}
-                    <dt>
-                        Additional data:
-                    </dt>
-                    <dd>
-                        {{sign.data.0}}:
-                        <i> {% if sign.data.1|classname == "list" %}
+                    <dt class="col-sm-3">Additional data:</dt>
+                    <dd class="col-sm-9">
+                        <strong>{{sign.data.0}}:</strong>
+                        <span class="fst-italic">
+                        {% if sign.data.1|classname == "list" %}
                             {{ sign.data.1|join:", " }}
                         {% else %}
                             {{sign.data.1}}
-                        {% endif %} </i>
+                        {% endif %}
+                        </span>
                     </dd>
                 {% endif %}
             </dl>
         </div>
     </div>
 </div>
+{% endwith %}

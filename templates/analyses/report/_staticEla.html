@@ -1,6 +1,6 @@
 {% load analyses_tags %}
 {% if embed %}
-    <img src="{{ analysis.report.ela.ela_image|to_base64 }}" />
+    <img src="{{ analysis.report.ela.ela_image|to_base64 }}" class="img-fluid rounded shadow-sm border" alt="ELA Analysis">
 {% else %}
-    <img src="{% url "image" analysis.report.ela.ela_image %}" />
+    <img src="{% url "image" analysis.report.ela.ela_image %}" class="img-fluid rounded shadow-sm border" alt="ELA Analysis">
 {% endif %}
