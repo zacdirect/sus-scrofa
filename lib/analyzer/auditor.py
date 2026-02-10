@@ -439,8 +439,13 @@ def _check_photo_resolution(width: int, height: int) -> List[Finding]:
 def _check_ml_model_results(detection_layers: list) -> List[Finding]:
     """Check 11: ML model detector results.
 
-    HIGH is appropriate here because a trained ML model with >80%
-    confidence is as close to certainty as static analysis gets.
+    HIGH negative is appropriate for AI detection because a trained ML model
+    with >80% confidence is as close to certainty as static analysis gets.
+
+    For positive (Real) findings, we're more conservative since fooling these
+    models gets easier over time:
+    - HIGH confidence Real → MEDIUM positive (+15 pts)
+    - LOW/MEDIUM confidence Real → LOW positive (+5 pts)
     """
     findings = []
 
@@ -453,6 +458,7 @@ def _check_ml_model_results(detection_layers: list) -> List[Finding]:
         confidence = layer.get('confidence', 'NONE')
         evidence = layer.get('evidence', 'ml_model')
 
+        # Negative findings (AI detected)
         if verdict == 'AI' and score is not None and score > 0.8:
             findings.append(Finding(
                 Finding.HIGH, "ML Model Detection",
@@ -463,13 +469,24 @@ def _check_ml_model_results(detection_layers: list) -> List[Finding]:
                 Finding.MEDIUM, "ML Model Detection",
                 f"ML model: {score:.0%} AI probability ({evidence})",
             ))
-        elif verdict == 'Real' and score is not None and score < 0.3 and \
-                confidence in ('HIGH', 'MEDIUM', 'CERTAIN'):
-            findings.append(Finding(
-                Finding.MEDIUM, "ML Model Assessment",
-                f"ML model: {1 - score:.0%} authentic ({evidence})",
-                is_positive=True,
-            ))
+        
+        # Positive findings (Real detected) - calibrated lower
+        elif verdict == 'Real' and score is not None:
+            if confidence == 'HIGH':
+                # High confidence real → MEDIUM positive
+                findings.append(Finding(
+                    Finding.MEDIUM, "ML Model Assessment",
+                    f"ML model (HIGH confidence): {1 - score:.0%} authentic ({evidence})",
+                    is_positive=True,
+                ))
+            elif confidence in ('MEDIUM', 'LOW'):
+                # Medium/Low confidence real → LOW positive
+                findings.append(Finding(
+                    Finding.LOW, "ML Model Assessment",
+                    f"ML model ({confidence} confidence): {1 - score:.0%} authentic ({evidence})",
+                    is_positive=True,
+                ))
+            # NONE/CERTAIN confidence → ignored
 
     return findings
 

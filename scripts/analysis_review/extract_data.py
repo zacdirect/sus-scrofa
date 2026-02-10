@@ -75,7 +75,7 @@ def extract_analysis_data(analysis_id):
                 "manipulation_detected": conf.get("manipulation_detected"),
             },
 
-            # ── Audit metadata (from ComplianceAuditor) ──────────
+            # ── Audit metadata (from engine auditor) ─────────────
             "audit_metadata": ai_det.get("audit_metadata", {}),
 
             # ── AI Detection (full) ───────────────────────────────

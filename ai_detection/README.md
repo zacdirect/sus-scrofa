@@ -1,59 +1,53 @@
 # AI Detection System
 
-Multi-layer AI-generated image detection using a **gatekeeper architecture**.
+Multi-layer AI-generated image detection integrated into the engine's compliance auditor.
 
-## Architecture: Three Components
+## Architecture
 
 ```
-┌──────────────┐
-│ Orchestrator │ ← Runs detectors efficiently
-└──────┬───────┘
+┌──────────────────────┐
+│ Orchestrator         │ ← Runs ML detectors efficiently
+│ (MultiLayerDetector) │
+└──────┬───────────────┘
        │
-       ├─▶ Detector 1 (fast) → findings
-       ├─▶ Auditor: should_stop_early()? ← GATEKEEPER
-       │   ├─ YES: stop
-       │   └─ NO: continue
-       ├─▶ Detector 2 (slower) → findings
-       └─▶ Auditor: detect() → FINAL VERDICT
+       ├─▶ MetadataDetector (fast) → detection_layers[]
+       ├─▶ SDXLDetector (ML model) → detection_layers[]
+       ├─▶ SPAIDetector (ML model) → detection_layers[]
+       │
+       └─▶ Results → ai_detection: {detection_layers: [...]}
+                                                 │
+                                                 ▼
+                    ┌────────────────────────────────────────┐
+                    │ Engine: lib/analyzer/auditor.py        │
+                    │ - Reads detection_layers[]             │
+                    │ - Creates audit findings               │
+                    │ - Calculates authenticity score 0-100  │
+                    └────────────────────────────────────────┘
 ```
 
-### 1. 🎯 Orchestrator (`MultiLayerDetector`)
+### Components
+
+**1. Orchestrator (`MultiLayerDetector`)**
 - Runs detectors in efficient order (fast → slow)
-- Consults auditor after each detector
-- Pure operational logic - no decisions
+- Pure operational logic - no scoring decisions
+- Returns raw `detection_layers` array
 
-### 2. 🔍 Detectors (Specialized Analyzers)
-Detectors focus on what they know - they don't decide "fake or real":
+**2. Detectors (Specialized Analyzers)**
+Each detector focuses on what it knows:
 
-- **AI-Focused**: `SPAIDetector` - reports AI generation evidence
-- **Manipulation-Focused**: Future ELA/forensic detectors - report editing evidence
-- **Multi-Aspect**: `MetadataDetector` - may find AI tags OR manipulation signs
+- `MetadataDetector` - EXIF/XMP analysis for AI signatures
+- `SDXLDetector` - Organika/sdxl-detector ML model (Swin Transformer)
+- `SPAIDetector` - SPAI spectral analysis (ViT + frequency analysis)
 
-Each returns: confidence + score + detected_types (what they found)
+Returns: `{method, verdict, confidence, score, evidence}`
 
-**Key**: Detectors are specialized - some only see AI, some only see edits, some see both
+**3. Engine Auditor (`lib/analyzer/auditor.py`)**
+- NOT part of ai_detection package
+- Reads `ai_detection.detection_layers[]` from results
+- Creates audit findings: positive/negative, LOW/MEDIUM/HIGH
+- Calculates final authenticity score (0-100)
 
-### 3. ⚖️ Auditor (`ComplianceAuditor`)
-**THE GATEKEEPER** - Not a detector!
-- Reviews results after each detector
-- Decides when to stop early (saves compute)
-- Performs final compliance audit
-- **Consolidates varied findings into three buckets**:
-  1. Authenticity Score (0-100): fake ← → real
-  2. AI Generation Probability: synthetic content evidence
-  3. Manipulation Probability: traditional editing evidence
-
-**Why consolidation matters**: Different detectors report different things (AI, manipulation, both). Auditor unifies into consistent three-bucket output.
-
-## Key Design Principle
-
-> **The auditor is NOT a detector.** It's a separate gatekeeper component that reviews detectors and makes all decisions.
-
-```python
-# Clear separation
-orchestrator.detectors = [MetadataDetector(), SPAIDetector()]
-orchestrator.auditor = ComplianceAuditor()  # Not in detectors list!
-```
+**Key Design**: Detectors report findings, engine auditor scores them.
 
 ## Structure
 
@@ -62,13 +56,13 @@ ai_detection/
 ├── README.md              # This file
 ├── Makefile              # Setup and installation
 ├── requirements.txt      # PyTorch + dependencies
-├── spai_infer.py         # Standalone inference script
+├── spai_infer.py         # Standalone SPAI inference script
 ├── detectors/            # Detection framework
 │   ├── __init__.py
 │   ├── base.py           # BaseDetector interface
 │   ├── metadata.py       # MetadataDetector (EXIF/XMP)
-│   ├── spai_detector.py  # SPAIDetector (ML wrapper)
-│   ├── compliance_audit.py  # ComplianceAuditor (THE GATEKEEPER)
+│   ├── sdxl_detector.py  # Organika/sdxl-detector wrapper
+│   ├── spai_detector.py  # SPAI wrapper
 │   └── orchestrator.py   # MultiLayerDetector
 ├── spai/                 # SPAI model implementation
 │   ├── config.py         # Model configuration
@@ -83,21 +77,19 @@ ai_detection/
 ```python
 from ai_detection.detectors.orchestrator import MultiLayerDetector
 
-# Initialize (creates detectors + auditor)
+# Initialize
 detector = MultiLayerDetector()
 
 # Run detection
 result = detector.detect('image.jpg')
 
-# Get final verdict (from auditor)
-print(f"Authenticity: {result['authenticity_score']}/100")
-print(f"Verdict: {'FAKE' if result['overall_verdict'] else 'REAL'}")
+# Result contains raw detection layers
+for layer in result['detection_layers']:
+    print(f"{layer['method']}: {layer['verdict']} ({layer['confidence']})")
+    print(f"  Evidence: {layer['evidence']}")
+
+# Engine auditor (lib/analyzer/auditor.py) will score these findings
 ```
-
-## Detection Framework
-
-### Orchestrator
-Coordinates multiple detection methods:
 - Runs detectors in order (lowest order first)
 - Early stopping: Stops at CERTAIN/HIGH confidence
 - Weighted combination: Combines results when no single method is decisive
