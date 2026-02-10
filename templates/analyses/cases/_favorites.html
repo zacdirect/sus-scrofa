@@ -1,6 +1,6 @@
-<div class="row-fluid">
-    <table class="table table-bordered table-striped responsive">
-        <thead>
+<div class="table-responsive">
+    <table class="table table-hover table-striped align-middle mb-0">
+        <thead class="table-light">
             <tr>
                 <th>File name</th>
                 <th>Owner</th>
@@ -13,28 +13,29 @@
                 {% for image in images %}
                     <tr>
                         <td>
-                            <a href="{% url "show_analysis" image.id %}">{{ image.file_name }}</a></td>
+                            <a href="{% url "show_analysis" image.id %}" class="text-decoration-none fw-bold">{{ image.file_name }}</a></td>
                         <td>{{ image.owner.username }}</td>
                         <td>{{ image.created_at }}</td>
                         <td>
-                            <div class="btn-group">
-                                <a class="btn tool fancybox" title="Show preview" href="{% url "image" image.image_id %}">
-                                    <i class="icon-picture"> </i>
+                            <div class="btn-group btn-group-sm">
+                                <a class="btn btn-outline-secondary" title="Show preview" href="{% url "image" image.image_id %}" target="_blank">
+                                    <i class="fa-solid fa-image"></i>
                                 </a>
-                                <a class="btn tool" title="Show analysis" href="{% url "show_analysis" image.id %}">
-                                    <i class="icon-list-alt"> </i>
+                                <a class="btn btn-outline-secondary" title="Show analysis" href="{% url "show_analysis" image.id %}">
+                                    <i class="fa-solid fa-file-lines"></i>
                                 </a>
-                                <a class="btn tool btn-warning unfavorite" id="{% url "favorite" image.id %}" rel="{{ image.id }}" title="Unfavorite">
-                                    <i class="icon-star"> </i>
-                                </a>
+                                <button class="btn btn-warning text-white unfavorite" data-url="{% url "favorite" image.id %}" title="Unfavorite">
+                                    <i class="fa-solid fa-star"></i>
+                                </button>
                             </div>
                         </td>
                     </tr>
                 {% endfor %}
             {% else %}
                 <tr>
-                    <td colspan="4">
-                        No data available in table
+                    <td colspan="4" class="text-center py-4 text-muted">
+                        <i class="fa-solid fa-folder-open fa-2x mb-2 d-block"></i>
+                        No favorites found in this case.
                     </td>
                 </tr>
             {% endif %}
@@ -44,13 +45,12 @@
 
 <script type="text/javascript">
 $('.unfavorite').click(function(){
-   var id = $(this).attr("id");
-   var rel = $(this).attr("rel");
+   var url = $(this).data("url");
    $.ajax({
        type: "GET",
-       url: id,
+       url: url,
        success: function(){
-           window.location.href="{% url "list_images" 'favorites' %}";
+           window.location.reload();
        }
    });
 });

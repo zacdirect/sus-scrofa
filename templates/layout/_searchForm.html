@@ -1,133 +1,180 @@
+{# templates/layout/_searchForm.html #}
 <div class="content-body">
-    <ul class="nav nav-pills">
-        <li class="active">
-            <a href="#property" data-toggle="tab">Property</a>
+    <ul class="nav nav-tabs mb-3" id="searchTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="property-tab" data-bs-toggle="tab" data-bs-target="#property" type="button" role="tab" aria-controls="property" aria-selected="true">
+                <i class="fa-solid fa-file-lines me-2"></i> Property
+            </button>
         </li>
-        <li>
-            <a href="#location" data-toggle="tab">Location</a>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="location-tab" data-bs-toggle="tab" data-bs-target="#location" type="button" role="tab" aria-controls="location" aria-selected="false">
+                <i class="fa-solid fa-map-marker-alt me-2"></i> Location
+            </button>
         </li>
     </ul>
-    <div class="tab-content">
-        {% if error%}
-            <div class="alert alert-danger">
-                <b>Error</b>: {{ error }}
+    
+    <div class="tab-content" id="searchTabsContent">
+        {% if error %}
+            <div class="alert alert-danger d-flex align-items-center mb-3">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                <div><b>Error</b>: {{ error }}</div>
             </div>
         {% endif %}
-        <form id="property" action="{% url "search" "list" %}" method="get" class="form-horizontal form-model tab-pane active">{% csrf_token %}
-            <div class="control-group">
-                <label class="control-label" for="filename">Filename</label>
-                <div class="controls">
-                    <input id="filename" type="text" name="filename" class="height-large">
-                    <a href="#" data-trigger="hover" class="pop" data-toggle="popover" title="Search by file name" data-content="Search for file names containing this string.">
-                        <span class="badge badge-info"><i class="icon-info"></i></span>
-                    </a>
-                </div>
-            </div>
-            <div class="control-group">
-                <label class="control-label" for="filetype">Filetype</label>
-                <div class="controls">
-                    <input id="filetype" type="text" name="filetype" class="height-large">
-                    <a href="#" data-trigger="hover" class="pop" data-toggle="popover" title="Search by file type" data-content="Search for file type containing this string.">
-                        <span class="badge badge-info"><i class="icon-info"></i></span>
-                    </a>
-                </div>
-            </div>
-            <div class="control-group">
-                <label class="control-label" for="filetype">Hash</label>
-                <div class="controls">
-                    <select name="cipher" id="id_cipher">
-                        <option value="SHA1">SHA1</option>
-                        <option value="SHA224">SHA224</option>
-                        <option value="SHA384">SHA384</option>
-                        <option value="CRC32">CRC32</option>
-                        <option value="SHA256">SHA256</option>
-                        <option value="SHA512">SHA512</option>
-                        <option value="MD5">MD5</option>
-                    </select>
-                    <input id="hash" type="text" name="hash" class="height-large input-medium">
-                    <a href="#" data-trigger="hover" class="pop" data-toggle="popover" title="Search by hash" data-content="Search for images with this hash.">
-                        <span class="badge badge-info"><i class="icon-info"></i></span>
-                    </a>
-                </div>
-            </div>
-            <div class="control-group">
-                <label class="control-label" for="metadata">Metadata</label>
-                <div class="controls">
-                    <input id="metadata_key" type="text" name="metadata_key" class="height-large input-small" placeholder="METADATA KEY">
-                    <input id="metadata_value" type="text" name="metadata_value" class="height-large input-small" placeholder="METADATA VALUE">
-                    <a href="#" data-trigger="hover" class="pop" data-toggle="popover" title="Search by metadata value" data-content="Search for a value contained in a metadata key (key format example 'Exif.Photo.Camera').">
-                        <span class="badge badge-info"><i class="icon-info"></i></span>
-                    </a>
-                </div>
-            </div>
-            <div class="control-group">
-                <label class="control-label" for="signature">Signature</label>
-                <div class="controls">
-                    <input id="signature" type="text" name="signature" class="height-large">
-                    <a href="#" data-trigger="hover" class="pop" data-toggle="popover" title="Search by signature" data-content="Search for signature containing this text.">
-                        <span class="badge badge-info"><i class="icon-info"></i></span>
-                    </a>
-                </div>  
-            </div>
-            {# Detects if the search form is called inside a case or not. (Search scope) #}
-            {% if in_case_id %}
-                <input type="hidden" value="{{ case.id }}" name="in_case" id="in_case">
-            {% else %}
-                <div class="control-group">
-                    <label class="control-label" for="case">Case</label>
-                    <div class="controls">
-                        <select style="width: 715px" name="in_case">
-                            <option value="all">All cases</option>
-                            {% for case in available_cases %}
-                                <option value="{{ case.id }}">{{ case.name }}</option>
-                            {% endfor %}
-                        </select>
-                        <a href="#" data-trigger="hover" class="pop" data-toggle="popover" title="Search in case" data-content="Search only in selected case.">
-                            <span class="badge badge-info"><i class="icon-info"></i></span>
-                        </a>
+
+        <!-- Property Search Form -->
+        <div class="tab-pane fade show active" id="property" role="tabpanel" aria-labelledby="property-tab">
+            <form action="{% url "search" "list" %}" method="get" class="p-4 border border-top-0 rounded-bottom bg-white shadow-sm">{% csrf_token %}
+                
+                <div class="row mb-3">
+                    <label for="filename" class="col-sm-3 col-form-label">Filename</label>
+                    <div class="col-sm-9">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="filename" name="filename">
+                            <span class="input-group-text bg-light" data-bs-toggle="popover" data-bs-trigger="hover" data-bs-placement="top" title="Search by file name" data-bs-content="Search for file names containing this string.">
+                                <i class="fa-solid fa-info-circle text-info"></i>
+                            </span>
+                        </div>
                     </div>
                 </div>
-            {% endif %}
-            <div class="control-group">
-                <label class="control-label" for="metadata">Match condition</label>
-                <div class="controls">
-                   <label class="radio">
-                        <input type="radio" name="optionsRadios" id="and" value="and" checked>
-                        AND
-                   </label>
-                   <label class="radio">
-                        <input type="radio" name="optionsRadios" id="or" value="or">
-                        OR
-                    </label>
+
+                <div class="row mb-3">
+                    <label for="filetype" class="col-sm-3 col-form-label">Filetype</label>
+                    <div class="col-sm-9">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="filetype" name="filetype">
+                            <span class="input-group-text bg-light" data-bs-toggle="popover" data-bs-trigger="hover" data-bs-placement="top" title="Search by file type" data-bs-content="Search for file type containing this string.">
+                                <i class="fa-solid fa-info-circle text-info"></i>
+                            </span>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div class="form-actions">
-                <button id="btn_submit" type="submit" class="btn btn-large btn-success">
-                    Search
-                </button>
-            </div>
-        </form>
-        <form id="location" action="{% url "search" "list" %}" method="get" class="form-horizontal form-model tab-pane">{% csrf_token %}
-            <div class="control-group">
-                <label class="control-label" for="metadata">Location</label>
-                <div class="controls">
-                    <input id="lat" type="text" name="lat" placeholder="LATITUDE" class="height-large input-small-three">
-                    <input id="long" type="text" name="long" placeholder="LONGITUDE" class="height-large input-small-three">
-                    <input id="dist" type="text" name="dist" placeholder="MAX DISTANCE" class="height-large input-small-three">
-                    {# Detects if the search form is called inside a case or not. (Search scope) #}
-                    {% if in_case_id %}
-                        <input type="hidden" value="{{ case.id }}" name="in_case" id="in_case">
-                    {% endif %}
-                    <a href="#" data-trigger="hover" class="pop" data-toggle="popover" title="Search by location" data-content="Search for photos near this point.">
-                        <span class="badge badge-info"><i class="icon-info"></i></span>
-                    </a>
+
+                <div class="row mb-3">
+                    <label for="hash" class="col-sm-3 col-form-label">Hash</label>
+                    <div class="col-sm-9">
+                        <div class="input-group">
+                            <select class="form-select" name="cipher" id="id_cipher" style="max-width: 120px;">
+                                <option value="SHA1">SHA1</option>
+                                <option value="SHA224">SHA224</option>
+                                <option value="SHA384">SHA384</option>
+                                <option value="CRC32">CRC32</option>
+                                <option value="SHA256">SHA256</option>
+                                <option value="SHA512">SHA512</option>
+                                <option value="MD5">MD5</option>
+                            </select>
+                            <input type="text" class="form-control" id="hash" name="hash">
+                            <span class="input-group-text bg-light" data-bs-toggle="popover" data-bs-trigger="hover" data-bs-placement="top" title="Search by hash" data-bs-content="Search for images with this hash.">
+                                <i class="fa-solid fa-info-circle text-info"></i>
+                            </span>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div class="form-actions">
-                <button id="btn_submit" type="submit" class="btn btn-large btn-success">
-                    Search
-                </button>
-            </div>
-        </form>
+
+                <div class="row mb-3">
+                    <label for="metadata_key" class="col-sm-3 col-form-label">Metadata</label>
+                    <div class="col-sm-9">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="metadata_key" name="metadata_key" placeholder="Key (e.g. Exif.Photo.Camera)">
+                            <input type="text" class="form-control" id="metadata_value" name="metadata_value" placeholder="Value">
+                            <span class="input-group-text bg-light" data-bs-toggle="popover" data-bs-trigger="hover" data-bs-placement="top" title="Search by metadata value" data-bs-content="Search for a value contained in a metadata key.">
+                                <i class="fa-solid fa-info-circle text-info"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <label for="signature" class="col-sm-3 col-form-label">Signature</label>
+                    <div class="col-sm-9">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="signature" name="signature">
+                            <span class="input-group-text bg-light" data-bs-toggle="popover" data-bs-trigger="hover" data-bs-placement="top" title="Search by signature" data-bs-content="Search for signature containing this text.">
+                                <i class="fa-solid fa-info-circle text-info"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if in_case_id %}
+                    <input type="hidden" value="{{ case.id }}" name="in_case" id="in_case">
+                {% else %}
+                <div class="row mb-3">
+                    <label for="in_case" class="col-sm-3 col-form-label">Case</label>
+                    <div class="col-sm-9">
+                        <div class="input-group">
+                            <select class="form-select" name="in_case">
+                                <option value="all">All cases</option>
+                                {% for case in available_cases %}
+                                    <option value="{{ case.id }}">{{ case.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <span class="input-group-text bg-light" data-bs-toggle="popover" data-bs-trigger="hover" data-bs-placement="top" title="Search in case" data-bs-content="Search only in selected case.">
+                                <i class="fa-solid fa-info-circle text-info"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="row mb-3">
+                    <label class="col-sm-3 col-form-label pt-0">Match condition</label>
+                    <div class="col-sm-9">
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="optionsRadios" id="and" value="and" checked>
+                            <label class="form-check-label" for="and">AND</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="optionsRadios" id="or" value="or">
+                            <label class="form-check-label" for="or">OR</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <button id="btn_submit_property" type="submit" class="btn btn-success px-4">
+                        <i class="fa-solid fa-search me-2"></i> Search
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Location Search Form -->
+        <div class="tab-pane fade" id="location" role="tabpanel" aria-labelledby="location-tab">
+             <form action="{% url "search" "list" %}" method="get" class="p-4 border border-top-0 rounded-bottom bg-white shadow-sm">{% csrf_token %}
+                 <div class="row mb-3">
+                    <label class="col-sm-3 col-form-label">Coordinates</label>
+                    <div class="col-sm-9">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="lat" name="lat" placeholder="Latitude">
+                            <input type="text" class="form-control" id="long" name="long" placeholder="Longitude">
+                            <input type="text" class="form-control" id="dist" name="dist" placeholder="Max Distance (m)">
+                            <span class="input-group-text bg-light" data-bs-toggle="popover" data-bs-trigger="hover" data-bs-placement="top" title="Search by location" data-bs-content="Search for photos near this point.">
+                                <i class="fa-solid fa-info-circle text-info"></i>
+                            </span>
+                        </div>
+                        <div class="form-text">Enter decimal coordinates and distance in meters.</div>
+                    </div>
+                </div>
+                
+                {% if in_case_id %}
+                    <input type="hidden" value="{{ case.id }}" name="in_case" id="in_case_loc">
+                {% endif %}
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <button id="btn_submit_location" type="submit" class="btn btn-success px-4">
+                         <i class="fa-solid fa-search-location me-2"></i> Search
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
+<script>
+    // Initialize popovers
+    document.addEventListener('DOMContentLoaded', function() {
+        var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
+        var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+          return new bootstrap.Popover(popoverTriggerEl)
+        })
+    });
+</script>

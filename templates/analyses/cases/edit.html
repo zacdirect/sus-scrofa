@@ -1,29 +1,33 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="span11">
-    <div class="content content-large">
-        <div class="content-header">
-            <h2><i class="icon-briefcase"> </i> Cases</h2>
+<div class="row mb-4 animate__animated animate__fadeIn">
+    <div class="col-12">
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">
+                <i class="fa-solid fa-briefcase text-secondary me-2"></i> Edit Case
+            </h1>
+            <div class="btn-toolbar mb-2 mb-md-0">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="/" class="text-decoration-none"><i class="fa-solid fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url "list_cases" %}" class="text-decoration-none"><i class="fa-solid fa-briefcase"></i> Cases</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Edit</li>
+                    </ol>
+                </nav>
+            </div>
         </div>
-        <div class="content-breadcrumb">
-            <ul class="breadcrumb">
-                <li>
-                    <a href="/"><i class="icon-home"> </i> Dashboard</a><span class="divider">&rsaquo;</span>
-                </li>
-                <li>
-                    <a href="{% url "list_cases" %}"><i class="icon-briefcase"> </i> Cases</a>
-                    <span class="divider">&rsaquo;</span>
-                </li>
-                <li class="active">
-                    Edit
-                </li>
-            </ul>
-        </div>
-        <div class="content-body">
-            <form action="{% url "edit_case" case.id %}" method="POST">{% csrf_token %}
-                {% include "layout/_form.html" %}
-            </form>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+                <form action="{% url "edit_case" case.id %}" method="POST">{% csrf_token %}
+                    {% include "layout/_form.html" %}
+                </form>
+            </div>
         </div>
     </div>
 </div>

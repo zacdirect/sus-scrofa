@@ -21,7 +21,8 @@ ftfy>=6.1.0
 regex>=2023.0.0
 
 # CLIP for alternative backbones (optional but used in backbones.py)
-git+https://github.com/openai/CLIP.git
+# Using open-clip-torch for better Python 3.13+ compatibility
+open-clip-torch
 
 # HuggingFace Transformers (for Swin-based detectors: Organika/sdxl-detector, etc.)
 transformers>=4.36.0

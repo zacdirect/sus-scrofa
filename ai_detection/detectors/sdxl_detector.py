@@ -54,20 +54,10 @@ class SDXLDetector(BaseDetector):
         return 60
 
     def check_deps(self) -> bool:
-        """Check if ai_detection venv, transformers, and cached model exist."""
+        """Check if transformers and cached model exist."""
         try:
             ai_det_dir = Path(__file__).parent.parent
-            venv_python = ai_det_dir / ".venv" / "bin" / "python"
-            infer_script = ai_det_dir / "sdxl_infer.py"
             model_cache = ai_det_dir / "models" / "Organika-sdxl-detector"
-
-            if not venv_python.exists():
-                logger.warning("SDXLDetector: ai_detection venv not found — run: make ai-setup")
-                return False
-
-            if not infer_script.exists():
-                logger.warning("SDXLDetector: sdxl_infer.py not found")
-                return False
 
             if not model_cache.exists():
                 logger.warning(
@@ -76,16 +66,24 @@ class SDXLDetector(BaseDetector):
                 )
                 return False
 
+            # Check if transformers is available
+            import transformers
+            import torch
+            
             self._ai_detection_dir = ai_det_dir
             return True
 
+        except ImportError as e:
+            logger.warning(f"SDXLDetector: dependencies not available: {e}")
+            logger.info("Run: make ai-setup to install AI detection dependencies")
+            return False
         except Exception as e:
             logger.error("Error checking SDXLDetector dependencies: %s", e)
             return False
 
     def detect(self, image_path: str, context=None) -> DetectionResult:
         """
-        Classify an image as AI-generated or real via subprocess.
+        Classify an image as AI-generated or real using transformers pipeline.
 
         Returns a DetectionResult with:
           - score: probability the image is artificial (0.0-1.0)
@@ -106,46 +104,32 @@ class SDXLDetector(BaseDetector):
             )
 
         try:
-            venv_python = self._ai_detection_dir / ".venv" / "bin" / "python"
-            infer_script = self._ai_detection_dir / "sdxl_infer.py"
-
-            # Resolve to absolute path — subprocess runs with cwd=ai_detection/
-            # so relative image paths from Sus Scrofa's root won't work otherwise.
-            abs_image_path = str(Path(image_path).resolve())
-
-            result = subprocess.run(
-                [str(venv_python), str(infer_script), abs_image_path],
-                capture_output=True,
-                text=True,
-                timeout=60,
-                cwd=str(self._ai_detection_dir),
-            )
-
-            if result.returncode != 0:
-                return DetectionResult(
-                    method=DetectionMethod.ML_MODEL,
-                    is_ai_generated=None,
-                    confidence=ConfidenceLevel.NONE,
-                    score=0.0,
-                    evidence=f"SDXL inference failed: {result.stderr[:200]}",
+            import time
+            from transformers import pipeline
+            from PIL import Image
+            
+            # Lazy load pipeline (only once)
+            if not hasattr(self, '_pipeline'):
+                model_cache = self._ai_detection_dir / "models" / "Organika-sdxl-detector"
+                self._pipeline = pipeline(
+                    "image-classification",
+                    model=str(model_cache),
+                    device=-1  # CPU
                 )
-
-            data = json.loads(result.stdout)
-
-            if not data.get("success", False):
-                return DetectionResult(
-                    method=DetectionMethod.ML_MODEL,
-                    is_ai_generated=None,
-                    confidence=ConfidenceLevel.NONE,
-                    score=0.0,
-                    evidence=f"SDXL error: {data.get('error', 'unknown')}",
-                )
-
-            ai_score = data["artificial_score"]
-            human_score = data["human_score"]
+            
+            # Load and classify image
+            start_time = time.time()
+            image = Image.open(image_path).convert("RGB")
+            results = self._pipeline(image)
+            elapsed = time.time() - start_time
+            
+            # Parse results - format: [{'label': 'artificial', 'score': 0.99}, ...]
+            scores = {r['label']: r['score'] for r in results}
+            ai_score = scores.get('artificial', 0.0)
+            human_score = scores.get('human', 0.0)
+            
             is_ai = ai_score > human_score
             confidence = self._calculate_confidence(ai_score)
-            elapsed = data.get("inference_time_s", 0)
 
             verdict = "AI-generated" if is_ai else "Real"
             return DetectionResult(
@@ -166,14 +150,6 @@ class SDXLDetector(BaseDetector):
                 },
             )
 
-        except subprocess.TimeoutExpired:
-            return DetectionResult(
-                method=DetectionMethod.ML_MODEL,
-                is_ai_generated=None,
-                confidence=ConfidenceLevel.NONE,
-                score=0.0,
-                evidence="SDXL inference timed out (>60s)",
-            )
         except Exception as e:
             logger.error("SDXLDetector error: %s", e, exc_info=True)
             return DetectionResult(

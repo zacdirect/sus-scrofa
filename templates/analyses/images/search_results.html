@@ -1,91 +1,128 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="span11">
-    <div class="content content-large">
-        <div class="content-header">
-            <h2><i class="icon-search"> </i> Search</h2>
-        </div>
-        <div class="content-breadcrumb">
-            <ul class="breadcrumb">
-                <li>
-                    <a href="/"><i class="icon-home"> </i> Dashboard</a><span class="divider">&rsaquo;</span>
-                </li>
-                <li class="active">
-                    Search
-                </li>
-            </ul>
-        </div>
-        <div class="content-body">
-            <div class="row-fluid">
-                <ul class="nav nav-pills">
-                    <li {% if pagename == "list" %} class="active" {% endif %}>
-                        <a href="{% url "search" "list"%}?{{get_params.urlencode}}">List</a>
-                    </li>
-                    {% if not hide_thumb %}
-                        <li {% if pagename == "thumb" %} class="active" {% endif %}>
-                            <a href="{% url "search" "thumb" %}?{{get_params.urlencode}}">Thumbnails</a>
-                        </li>
-                    {% endif %}
-                    <li {% if pagename == "map" %} class="active" {% endif %}>
-                        <a href="{% url "search" "map" %}?{{get_params.urlencode}}">Map</a>
-                    </li>
-                </ul>
+<div class="row mb-4 animate__animated animate__fadeIn">
+    <div class="col-12">
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">
+                <i class="fa-solid fa-magnifying-glass text-secondary me-2"></i> Search Results
+            </h1>
+            <div class="btn-toolbar mb-2 mb-md-0">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="/" class="text-decoration-none"><i class="fa-solid fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Search</li>
+                    </ol>
+                </nav>
             </div>
-            <div>
-            {% if pagename == "list" %}
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <!-- View Tabs -->
+        <ul class="nav nav-pills mb-3" role="tablist">
+            <li class="nav-item" role="presentation">
+                <a class="nav-link {% if pagename == "list" %}active{% endif %}" href="{% url "search" "list"%}?{{get_params.urlencode}}">
+                    <i class="fa-solid fa-list me-1"></i> List
+                </a>
+            </li>
+            {% if not hide_thumb %}
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link {% if pagename == "thumb" %}active{% endif %}" href="{% url "search" "thumb" %}?{{get_params.urlencode}}">
+                        <i class="fa-solid fa-images me-1"></i> Thumbnails
+                    </a>
+                </li>
+            {% endif %}
+            <li class="nav-item" role="presentation">
+                <a class="nav-link {% if pagename == "map" %}active{% endif %}" href="{% url "search" "map" %}?{{get_params.urlencode}}">
+                    <i class="fa-solid fa-map me-1"></i> Map
+                </a>
+            </li>
+        </ul>
+
+        <!-- Content -->
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+                {% if pagename == "list" %}
                     {% include "analyses/cases/_list_image.html" %}
                     {% if images %}
-                        <div class="pagination text-center">
-                            {% if images.has_previous %}
-                                <ul>
-                                    <li>
-                                        <a href="{% url "search" "list" %}?{{get_params.urlencode}}&page={{ images.previous_page_number }}">← Previous</a>
+                        <nav aria-label="Search results pagination" class="p-3 border-top">
+                            <ul class="pagination justify-content-center mb-0">
+                                {% if images.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{% url "search" "list" %}?{{get_params.urlencode}}&page={{ images.previous_page_number }}">
+                                            <i class="fa-solid fa-chevron-left me-1"></i> Previous
+                                        </a>
                                     </li>
-                                </ul>
-                            {% endif %}
-                            <span class="current pull-left">
-                                <small>Page {{ images.number }} of {{ images.paginator.num_pages }}</small>
-                            </span>
-                            {% if images.has_next %}
-                                <ul>
-                                    <li>
-                                        <a href="{% url "search" "list" %}?{{get_params.urlencode}}&page={{ images.next_page_number }}">Next → </a>
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link"><i class="fa-solid fa-chevron-left me-1"></i> Previous</span>
                                     </li>
-                                </ul>
-                            {% endif %}
-                        </div>
+                                {% endif %}
+                                
+                                <li class="page-item disabled">
+                                    <span class="page-link">Page {{ images.number }} of {{ images.paginator.num_pages }}</span>
+                                </li>
+                                
+                                {% if images.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{% url "search" "list" %}?{{get_params.urlencode}}&page={{ images.next_page_number }}">
+                                            Next <i class="fa-solid fa-chevron-right ms-1"></i>
+                                        </a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">Next <i class="fa-solid fa-chevron-right ms-1"></i></span>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
                     {% endif %}
-            {% elif pagename == "thumb" %}
+                {% elif pagename == "thumb" %}
                     {% include "analyses/cases/_thum_image.html" %}
                     {% if images %}
-                        <div class="pagination text-center">
-                            {% if images.has_previous %}
-                                <ul>
-                                    <li>
-                                        <a href="{% url "search" "thumb" %}?{{get_params.urlencode}}&page={{ images.previous_page_number }}">← Previous</a>
+                        <nav aria-label="Search results pagination" class="p-3 border-top">
+                            <ul class="pagination justify-content-center mb-0">
+                                {% if images.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{% url "search" "thumb" %}?{{get_params.urlencode}}&page={{ images.previous_page_number }}">
+                                            <i class="fa-solid fa-chevron-left me-1"></i> Previous
+                                        </a>
                                     </li>
-                                </ul>
-                            {% endif %}
-                            <span class="current pull-left">
-                                <small>Page {{ images.number }} of {{ images.paginator.num_pages }}</small>
-                            </span>        
-                            {% if images.has_next %}
-                                <ul>
-                                    <li>
-                                        <a href="{% url "search" "thumb" %}?{{get_params.urlencode}}&page={{ images.next_page_number }}">Next → </a>
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link"><i class="fa-solid fa-chevron-left me-1"></i> Previous</span>
                                     </li>
-                                </ul>
-                            {% endif %}
-                        </div> 
+                                {% endif %}
+                                
+                                <li class="page-item disabled">
+                                    <span class="page-link">Page {{ images.number }} of {{ images.paginator.num_pages }}</span>
+                                </li>
+                                
+                                {% if images.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{% url "search" "thumb" %}?{{get_params.urlencode}}&page={{ images.next_page_number }}">
+                                            Next <i class="fa-solid fa-chevron-right ms-1"></i>
+                                        </a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">Next <i class="fa-solid fa-chevron-right ms-1"></i></span>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
                     {% else %}
-                        <div class="alert">
-                            <strong>Warning!</strong> there are not any photos.
-                        </div> 
+                        <div class="alert alert-warning m-3">
+                            <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                            <strong>No Results:</strong> There are no photos matching your search criteria.
+                        </div>
                     {% endif %}
-            {% elif pagename == "map" %}
+                {% elif pagename == "map" %}
                     {% include "analyses/cases/_map_image.html" %}
-            {% endif %}
+                {% endif %}
             </div>
         </div>
     </div>

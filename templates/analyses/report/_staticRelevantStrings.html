@@ -1,8 +1,8 @@
 {% load analyses_tags %}
 
 {% if analysis.report.file_data|to_relevant_strings %}
-    <h4>Relevant strings</h4>
-    <div class="well">
+    <h5 class="mb-3 text-primary"><i class="fa-solid fa-highlighter me-2"></i> Relevant strings</h5>
+    <div class="alert alert-info font-monospace small mb-4">
         {% for s in analysis.report.file_data|to_relevant_strings %}
             {{ s }}<br>
         {% endfor %}

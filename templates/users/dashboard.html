@@ -1,201 +1,284 @@
 {% extends "base.html" %}
 {% load analyses_tags %}
 
+{% block extra_head %}
+<script src="https://code.highcharts.com/highcharts.js"></script>
+{% endblock %}
+
 {% block content %}
-<div class="span11">
-    <div class="content content-large">
-        <div class="content-header">
-            <h2><i class="icon-dashboard"> </i> Dashboard<small> welcome to sus scrofa</small></h2>
+<div class="row mb-4 animate__animated animate__fadeIn">
+    <div class="col-12">
+        <div
+            class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2"><i class="fa-solid fa-tachometer-alt text-secondary me-2"></i> Dashboard <small
+                    class="text-muted fs-6">Welcome to Sus Scrofa</small></h1>
+            <div class="btn-toolbar mb-2 mb-md-0">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item active" aria-current="page">Dashboard</li>
+                    </ol>
+                </nav>
+            </div>
         </div>
-        <div class="content-breadcrumb">
-            <ul class="breadcrumb">
-                <li class="active icon-home">
-                    Dashboard
-                </li>
-            </ul>
-            <ul class="breadcrumb hide newVersion" id="yellow">
-                <button type="button" class="close" data-dismiss="alert">&times;</button>
-                <li>
-                    <a href="https://github.com/zacdirect/sus_scrofa"><strong>Info!</strong> Sus Scrofa is a fork of SusScrofa with enhanced AI detection. <i class="icon-download-alt"></i></a>
-                </li>
-            </ul>
+
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            <i class="fa-solid fa-circle-info me-2"></i> <strong>Info!</strong>Sus Scrofa is a fork of Ghiro with
+            enhanced AI detection.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
-        <div class="content-body">
-            <div class="row-fluid stats-box">
-                <div class="span3">
-                    <div class="stats-box-title">
-                        <span class="badge">Users</span>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card shadow-sm h-100 border-start border-4 border-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted text-uppercase mb-1">Users</h6>
+                        <h2 class="mb-0 fw-bold">{{ users_count }}</h2>
                     </div>
-                    <div class="stats-box-all-info">
-                        {% if request.user.is_stuff or request.user.is_superuser %}
-                            <a href="{% url "admin_list_users" %}"><i class="icon-user"> </i> {{ users_count }}</a>
-                        {% else %}
-                            <i class="icon-user"> </i> {{ users_count }}
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="span3">
-                    <div class="stats-box-title">
-                        <span class="badge badge-info">Open cases</span>
-                    </div>
-                    <div class="stats-box-all-info">
-                        <a href="{% url "list_cases" %}"><i class="icon-briefcase"> </i> {{ open_cases_count }}</a>
+                    <div class="rounded-circle bg-light p-3 text-primary">
+                        <i class="fa-solid fa-users fa-2x"></i>
                     </div>
                 </div>
-                <div class="span3">
-                    <div class="stats-box-title">
-                        <span class="badge badge-success">Analyses completed</span>
+                {% if request.user.is_staff or request.user.is_superuser %}
+                <a href="{% url "admin_list_users" %}" class="stretched-link"></a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm h-100 border-start border-4 border-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted text-uppercase mb-1">Open Cases</h6>
+                        <h2 class="mb-0 fw-bold">{{ open_cases_count }}</h2>
                     </div>
-                    <div class="stats-box-all-info">
-                        <i class="icon-book"> </i> {{ analyses_complete_count }}
+                    <div class="rounded-circle bg-light p-3 text-info">
+                        <i class="fa-solid fa-briefcase fa-2x"></i>
                     </div>
                 </div>
-                <div class="span3">
-                    <div class="stats-box-title">
-                        <span class="badge badge-warning">Analyses waiting</span>
+                <a href="{% url "list_cases" %}" class="stretched-link"></a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm h-100 border-start border-4 border-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted text-uppercase mb-1">Analyses Completed</h6>
+                        <h2 class="mb-0 fw-bold">{{ analyses_complete_count }}</h2>
                     </div>
-                    <div class="stats-box-all-info">
-                        <i class="icon-time"> </i> {{ analyses_wait_count }}
+                    <div class="rounded-circle bg-light p-3 text-success">
+                        <i class="fa-solid fa-check-circle fa-2x"></i>
                     </div>
                 </div>
             </div>
-            <div class="row-fluid stats-box">
-                <div class="span6">
-                    <blockquote>
-                        <p>Last opened cases</p>
-                    </blockquote>
-                    <table class="table table-bordered table-striped responsive">
-                        <thead>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm h-100 border-start border-4 border-warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted text-uppercase mb-1">Waiting</h6>
+                        <h2 class="mb-0 fw-bold">{{ analyses_wait_count }}</h2>
+                    </div>
+                    <div class="rounded-circle bg-light p-3 text-warning">
+                        <i class="fa-solid fa-clock fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Recent Cases -->
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0"><i class="fa-solid fa-folder-open me-2"></i>Last Opened Cases</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light">
                             <tr>
                                 <th>Name</th>
-                                <th>Created at</th>
+                                <th>Created At</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% if last_cases %}
-                                {% for case in last_cases %}
-                                <tr>
-                                    <td>
-                                        <a href="{% url "show_case" case.id "list" %}">
-                                            {% if case.name|length > 30 %}
-                                                {{ case.name|slice:":30" }} ...
-                                            {% else %}
-                                                {{ case.name }}
-                                            {% endif %}
-                                        </a>
-                                    </td>
-                                    <td>{{ case.created_at }}</td>
-                                </tr>
-                                {% endfor %}
-                            {% else %}
-                                <tr>
-                                    <td colspan="2">
-                                        No data available in table
-                                    </td>
-                                </tr>
-                            {% endif %}
-                        </tbody>
-                    </table>
-                </div>
-                <div class="span6">
-                    <blockquote>
-                        <p>Last analyses completed</p>
-                    </blockquote>
-                    <table class="table table-bordered table-striped responsive">
-                        <thead>
+                            {% for case in last_cases %}
                             <tr>
-                                <th>File name</th>
-                                <th>Completed at</th>
+                                <td>
+                                    <a href="{% url "show_case" case.id "list" %}" class="text-decoration-none fw-bold">
+                                        {% if case.name|length > 30 %}
+                                        {{ case.name|slice:":30" }}...
+                                        {% else %}
+                                        {{ case.name }}
+                                        {% endif %}
+                                    </a>
+                                </td>
+                                <td class="text-muted small">{{ case.created_at|date:"M d, Y H:i" }}</td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            {% if last_analyses %}
-                                {% for anal in last_analyses %}
-                                    <tr>
-                                        <td>
-                                            <a href="{% url "show_analysis" anal.id %}">
-                                                {% if anal.file_name|length > 60 %}
-                                                    {{ anal.file_name|slice:":60" }} ...
-                                                {% else %}
-                                                    {{ anal.file_name }}
-                                                {% endif %}
-                                            </a>
-                                        </td>
-                                        <td>{{ anal.completed_at }}</td>
-                                    </tr>
-                                {% endfor %}
+                            {% endfor %}
                             {% else %}
-                                <tr>
-                                    <td colspan="2">
-                                        No data available in table
-                                    </td>
-                                </tr>
+                            <tr>
+                                <td colspan="2" class="text-center py-4 text-muted">No recent cases found.</td>
+                            </tr>
                             {% endif %}
                         </tbody>
                     </table>
                 </div>
             </div>
-            <div id="container" style="min-width: 310px; height: 400px; margin: 0 auto"></div>
+        </div>
+    </div>
+
+    <!-- Recent Analyses -->
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0"><i class="fa-solid fa-chart-line me-2"></i>Last Analyses Completed</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>File Name</th>
+                                <th>Completed At</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if last_analyses %}
+                            {% for anal in last_analyses %}
+                            <tr>
+                                <td>
+                                    <a href="{% url "show_analysis" anal.id %}" class="text-decoration-none">
+                                        <i class="fa-solid fa-file-image me-2 text-secondary"></i>
+                                        {% if anal.file_name|length > 40 %}
+                                        {{ anal.file_name|slice:":40" }}...
+                                        {% else %}
+                                        {{ anal.file_name }}
+                                        {% endif %}
+                                    </a>
+                                </td>
+                                <td class="text-muted small">{{ anal.completed_at|date:"M d, Y H:i" }}</td>
+                            </tr>
+                            {% endfor %}
+                            {% else %}
+                            <tr>
+                                <td colspan="2" class="text-center py-4 text-muted">No recent analyses found.</td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div id="container" style="min-width: 310px; height: 400px; margin: 0 auto"></div>
+            </div>
         </div>
     </div>
 </div>
 
 <script type="text/javascript">
-$(function () {
-    $('#container').highcharts({
-        chart: {
-            type: 'area'
-        },
-        credits: {
-            enabled: false
-        },
-        title: {
-            text: 'Last 30 days'
-        },
-        subtitle: {
-            text: 'Analyses processing trend'
-        },
-         xAxis: {
-            type: 'datetime'
-        },
-        yAxis: {
+    $(function () {
+        // Check if Highcharts is loaded
+        if (typeof Highcharts === 'undefined') {
+            console.error('Highcharts not loaded');
+            return;
+        }
+
+        Highcharts.chart('container', {
+            chart: {
+                type: 'area',
+                style: {
+                    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                }
+            },
+            credits: {
+                enabled: false
+            },
             title: {
-                text: 'Analyses'
-            }
-        },
-        tooltip: {
-            enabled: false
-        },
-        series: [{
-            name: 'Completed analyses',
-            color: "#A8CD59",
-            data: [
-                {% for item in completed_graph %}
-                    [Date.parse("{{item.created_at|to_date|date:"m/d/Y"}}","MM/dd/yyyy"), {{item.counter}}]
-                    {% if not forloop.last %}{% if forloop.revcounter == 2 %}, {% else %}, {% endif %}{% else %}{% endif %}
-                {% endfor %}
+                text: 'Analysis Trends',
+                align: 'left'
+            },
+            subtitle: {
+                text: 'Last 30 days activity',
+                align: 'left'
+            },
+            xAxis: {
+                type: 'datetime',
+                dateTimeLabelFormats: {
+                    day: '%e. %b'
+                }
+            },
+            yAxis: {
+                title: {
+                    text: 'Analyses Count'
+                },
+                gridLineDashStyle: 'Dash'
+            },
+            tooltip: {
+                shared: true,
+                crosshairs: true
+            },
+            plotOptions: {
+                area: {
+                    marker: {
+                        enabled: false,
+                        symbol: 'circle',
+                        radius: 2,
+                        states: {
+                            hover: {
+                                enabled: true
+                            }
+                        }
+                    }
+                }
+            },
+            colors: ['#28a745', '#dc3545', '#ffc107'], // Bootstrap success, danger, warning
+            series: [{
+                name: 'Completed',
+                // color: "#A8CD59", // Replaced by colors array
+                data: [
+                    {% for item in completed_graph %}
+            [Date.parse("{{item.created_at|to_date|date:'m/d/Y'}}"), {{ item.counter }}],
+            {% endfor %}
             ]
         }, {
-            name: 'Failed analyses',
-            color: "#AC4040",
+            name: 'Failed',
+            // color: "#AC4040",
             data: [
                 {% for item in failed_graph %}
-                    [Date.parse("{{item.created_at|to_date|date:"m/d/Y"}}","MM/dd/yyyy"), {{item.counter}}]
-                    {% if not forloop.last %}{% if forloop.revcounter == 2 %}, {% else %}, {% endif %}{% else %}{% endif %}
-                {% endfor %}
+        [Date.parse("{{item.created_at|to_date|date:'m/d/Y'}}"), {{ item.counter }}],
+        {% endfor %}
             ]
         }, {
-            name: 'Waiting analyses',
-            color: "#FFC90E",
+            name: 'Waiting',
+            // color: "#FFC90E",
             data: [
                 {% for item in waiting_graph %}
-                    [Date.parse("{{item.created_at|to_date|date:"m/d/Y"}}","MM/dd/yyyy"), {{item.counter}}]
-                    {% if not forloop.last %}{% if forloop.revcounter == 2 %}, {% else %}, {% endif %}{% else %}{% endif %}
-                {% endfor %}
+        [Date.parse("{{item.created_at|to_date|date:'m/d/Y'}}"), {{ item.counter }}],
+        {% endfor %}
             ]
         }]
     });
 });
 </script>
-
 {% endblock %}

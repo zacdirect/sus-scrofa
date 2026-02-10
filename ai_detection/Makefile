@@ -10,8 +10,9 @@ NC := \033[0m
 # Paths
 VENV_DIR := .venv
 VENV := $(VENV_DIR)/bin
-PYTHON := $(VENV)/python
-PIP := $(VENV)/pip
+# Allow PYTHON to be overridden from parent Makefile (for shared venv)
+PYTHON ?= $(VENV)/python
+PIP ?= $(VENV)/pip
 SYSTEM_PYTHON := python3
 
 # Weights
@@ -92,14 +93,14 @@ install: venv
 	echo "$(YELLOW)Installing PyTorch and dependencies...$(NC)"; \
 	echo "  This may take several minutes..."; \
 	echo ""; \
-	$(PIP) install --extra-index-url $$INDEX_URL torch>=2.0.0 torchvision>=0.15.0; \
-	$(PIP) install opencv-python>=4.10.0 pyyaml>=6.0.1 scipy>=1.14.0 \
-		timm==0.4.12 yacs>=0.1.8 numpy>=1.26.4 torchmetrics>=1.4.0 \
-		tqdm>=4.66.4 pillow>=10.4.0 einops>=0.8.0 ftfy>=6.1.0 regex>=2023.0.0; \
+	$(PIP) install --extra-index-url "$$INDEX_URL" "torch>=2.0.0" "torchvision>=0.15.0"; \
+	$(PIP) install "opencv-python>=4.10.0" "pyyaml>=6.0.1" "scipy>=1.14.0" \
+		"timm==0.4.12" "yacs>=0.1.8" "numpy>=1.26.4" "torchmetrics>=1.4.0" \
+		"tqdm>=4.66.4" "pillow>=10.4.0" "einops>=0.8.0" "ftfy>=6.1.0" "regex>=2023.0.0"; \
 	echo "$(YELLOW)Installing HuggingFace Transformers...$(NC)"; \
-	$(PIP) install transformers>=4.36.0 safetensors>=0.4.0; \
+	$(PIP) install "transformers>=4.36.0" "safetensors>=0.4.0"; \
 	echo "$(YELLOW)Installing CLIP (for alternative backbones)...$(NC)"; \
-	$(PIP) install git+https://github.com/openai/CLIP.git; \
+	$(PIP) install open-clip-torch; \
 	echo ""; \
 	echo "$(GREEN)✓ Dependencies installed$(NC)"
 
@@ -142,23 +143,30 @@ models: venv
 	@mkdir -p $(MODELS_DIR)
 	@for model in $(HF_MODELS); do \
 		safe_name=$$(echo $$model | tr '/' '--'); \
-		if [ -d "$(MODELS_DIR)/$$safe_name" ] && [ "$$(ls -A $(MODELS_DIR)/$$safe_name 2>/dev/null)" ]; then \
-			size=$$(du -sh "$(MODELS_DIR)/$$safe_name" | cut -f1); \
+		model_dir="$(MODELS_DIR)/$$safe_name"; \
+		\
+		if [ -f "$$model_dir/config.json" ]; then \
+			size=$$(du -sh "$$model_dir" | cut -f1); \
 			echo "$(GREEN)✓ $$model already downloaded ($$size)$(NC)"; \
 		else \
+			if [ -d "$$model_dir" ]; then \
+				echo "$(YELLOW)⚠ Cleaning up incomplete/old cache for $$model$(NC)"; \
+				rm -rf "$$model_dir"; \
+			fi; \
 			echo "$(YELLOW)Downloading $$model...$(NC)"; \
-			$(PYTHON) download_models.py "$$model" "$(MODELS_DIR)/$$safe_name"; \
-			if [ $$? -eq 0 ]; then \
-				size=$$(du -sh "$(MODELS_DIR)/$$safe_name" | cut -f1); \
-				echo "$(GREEN)✓ $$model downloaded ($$size)$(NC)"; \
+			$(PYTHON) download_models.py "$$model" "$$model_dir"; \
+			if [ $$? -eq 0 ] && [ -f "$$model_dir/config.json" ]; then \
+				size=$$(du -sh "$$model_dir" | cut -f1); \
+				echo "$(GREEN)✓ $$model downloaded successfully ($$size)$(NC)"; \
 			else \
 				echo "$(RED)✗ Failed to download $$model$(NC)"; \
+				echo "$(RED)  Model directory may be incomplete$(NC)"; \
 			fi; \
 		fi; \
 		echo ""; \
 	done
 	@echo "$(GREEN)✓ Model downloads complete$(NC)"
-	@echo "  Models cached in: $(MODELS_DIR)/ (git-ignored)"
+	@echo "  Models saved in: $(MODELS_DIR)/ (git-ignored)"
 
 models-clean:
 	@echo "$(YELLOW)Removing downloaded HuggingFace models...$(NC)"
@@ -170,11 +178,16 @@ models-list:
 	@echo "$(BLUE)Configured HuggingFace models:$(NC)"
 	@for model in $(HF_MODELS); do \
 		safe_name=$$(echo $$model | tr '/' '--'); \
-		if [ -d "$(MODELS_DIR)/$$safe_name" ] && [ "$$(ls -A $(MODELS_DIR)/$$safe_name 2>/dev/null)" ]; then \
-			size=$$(du -sh "$(MODELS_DIR)/$$safe_name" | cut -f1); \
+		model_dir="$(MODELS_DIR)/$$safe_name"; \
+		if [ -f "$$model_dir/config.json" ]; then \
+			size=$$(du -sh "$$model_dir" | cut -f1); \
 			echo "  $(GREEN)✓$(NC) $$model ($$size)"; \
 		else \
-			echo "  $(RED)✗$(NC) $$model (not downloaded)"; \
+			if [ -d "$$model_dir" ]; then \
+				echo "  $(YELLOW)⚠$(NC) $$model (incomplete - run 'make models')"; \
+			else \
+				echo "  $(RED)✗$(NC) $$model (not downloaded)"; \
+			fi; \
 		fi; \
 	done
 	@echo ""

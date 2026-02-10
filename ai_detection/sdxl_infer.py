@@ -34,22 +34,22 @@ def main():
         sys.exit(1)
 
     try:
-        import os
-
-        # Prefer offline if cache exists (avoids network latency)
-        if CACHE_DIR.exists():
-            os.environ.setdefault("HF_HUB_OFFLINE", "1")
-            os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
-
         from transformers import pipeline as hf_pipeline
         from PIL import Image
 
-        # Build pipeline (lazy-loaded — fast on subsequent calls if kept warm)
+        # Determine model path - use local if available, otherwise download
+        if CACHE_DIR.exists() and (CACHE_DIR / "config.json").exists():
+            model_path = str(CACHE_DIR)
+            print(json.dumps({"info": f"Using local model from {model_path}"}), file=sys.stderr)
+        else:
+            model_path = MODEL_ID
+            print(json.dumps({"info": f"Downloading model {MODEL_ID} (first run)"}), file=sys.stderr)
+
+        # Build pipeline
         pipe = hf_pipeline(
             "image-classification",
-            model=MODEL_ID,
+            model=model_path,
             device="cpu",
-            model_kwargs={"cache_dir": str(CACHE_DIR)},
         )
 
         # Run inference

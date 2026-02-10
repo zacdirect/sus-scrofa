@@ -1,7 +1,10 @@
-<ul class="nav nav-pills" id="tab-stat">
-    <li class="active">
-        <a>ELA</a>
-    </li>
-</ul>
-{% include 'analyses/report/_staticEla.html' %}
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white border-bottom-0">
+        <h5 class="mb-0"><i class="fa-solid fa-layer-group me-2"></i> Error Level Analysis</h5>
+    </div>
+    <div class="card-body text-center">
+        {% include 'analyses/report/_staticEla.html' %}
+        <p class="text-muted small mt-2"><i class="fa-solid fa-circle-info me-1"></i> Brighter areas indicate higher compression error levels, which may suggest manipulation.</p>
+    </div>
+</div>
 

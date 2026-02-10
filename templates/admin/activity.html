@@ -1,47 +1,47 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="span11">
-    <div class="content content-large">
-        <div class="content-header">
-            <h2><i class="icon-lock"> </i> Administration <small>activity logging</small></h2>
+<div class="row mb-4 animate__animated animate__fadeIn">
+    <div class="col-12">
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">
+                <i class="fa-solid fa-list-check text-secondary me-2"></i> Administration 
+                <small class="text-muted fs-6">Activity logging</small>
+            </h1>
+            <div class="btn-toolbar mb-2 mb-md-0">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="/" class="text-decoration-none"><i class="fa-solid fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url "admin_list_users" %}" class="text-decoration-none"><i class="fa-solid fa-user-lock"></i> Administration</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Activity</li>
+                    </ol>
+                </nav>
+            </div>
         </div>
-        <div class="content-breadcrumb">
-            <ul class="breadcrumb">
-                <li>
-                    <a href="/"><i class="icon-home"> </i> Dashboard</a><span class="divider">&rsaquo;</span>
-                </li>
-                <li>
-                    <a href="{% url "admin_list_users" %}"><i class="icon-lock"> </i> Administration</a><span class="divider">&rsaquo;</span>
-                </li>
-                <li class="active">
-                    Activity
-                </li>
-            </ul>
-        </div>
-        <div class="content-body">
-            <div class="box-header corner-top">
-                <ul class="nav nav-pills" id="cases_tab">
-                    <li>
-                        <a href="{% url "admin_list_users" %}">Users</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-bottom-0 pt-4 px-4 pb-0">
+                <ul class="nav nav-tabs card-header-tabs">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url "admin_list_users" %}">Users</a>
                     </li>
-                    <li class="active">
-                        <a href="{% url "admin_list_activity" %}">Activity</a>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url "admin_list_activity" %}">Activity</a>
                     </li>
-                    <li>
-                        <a href="{% url "dependencies_list" %}">Requirements</a>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url "dependencies_list" %}">Requirements</a>
                     </li>
                 </ul>
-                <div class="tab-content">
-                    <div class="tab-pane active" id="users">
-                        <div class="row-fluid">
-                            <div class="span12">
-                                <div class="box corner-all">
-                                    <div class="box-body">
-                                        {% include "admin/_list_activity.html" %}
-                                    </div>
-                                </div>
-                            </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="tab-content" id="admin_tab_content">
+                    <div class="tab-pane fade show active" id="activity" role="tabpanel">
+                        <div class="table-responsive">
+                            {% include "admin/_list_activity.html" %}
                         </div>
                     </div>
                 </div>

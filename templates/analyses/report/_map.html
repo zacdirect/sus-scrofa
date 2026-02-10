@@ -1,7 +1,8 @@
-<ul class="nav nav-pills" id="tab-stat">
-    <li class="active">
-        <a data-toggle="tab" href="#mapdiv">GPS Localization</a>
-    </li>
-</ul>
-
-{% include 'analyses/report/_staticMap.html' %}
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white border-bottom-0">
+        <h5 class="mb-0"><i class="fa-solid fa-map-location-dot me-2"></i> GPS Localization</h5>
+    </div>
+    <div class="card-body p-0">
+        {% include 'analyses/report/_staticMap.html' %}
+    </div>
+</div>

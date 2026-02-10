@@ -1,137 +1,151 @@
-    {% extends "base.html" %}
+{% extends "base.html" %}
 
-    {% block content %}
-    <div class="span11">
-        <div class="content content-large">
-            <div class="content-header">
-                <h2><i class="icon-briefcase"> </i> Cases</h2>
+{% block extra_head %}
+{# Styles #}
+<link rel="stylesheet" href="{{ STATIC_URL }}css/plupload/jquery.plupload.queue.css">
+<style>
+    /* Custom overrides for Plupload to match BS5 */
+    .plupload_header { background: #f8f9fa; border-bottom: 1px solid #dee2e6; }
+    .plupload_content { background: #fff; }
+    .plupload_filelist_footer { background: #f8f9fa; border-top: 1px solid #dee2e6; }
+    .plupload_file_name { font-weight: 500; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4 animate__animated animate__fadeIn">
+    <div class="col-12">
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">
+                <i class="fa-solid fa-briefcase text-secondary me-2"></i> Cases 
+                <small class="text-muted fs-6">Add new image</small>
+            </h1>
+            <div class="btn-toolbar mb-2 mb-md-0">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="/" class="text-decoration-none"><i class="fa-solid fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url "list_cases" %}" class="text-decoration-none">Cases</a></li>
+                        <li class="breadcrumb-item">
+                            <a href="{% url "show_case" case.id "list" %}" class="text-decoration-none">
+                                {% if case.name|length > 30 %}
+                                    {{ case.name|slice:":30" }}...
+                                {% else %}
+                                    {{ case.name }}
+                                {% endif %}
+                            </a>
+                        </li>
+                        <li class="breadcrumb-item active" aria-current="page">New Image</li>
+                    </ol>
+                </nav>
             </div>
-            <div class="content-breadcrumb">
-                <ul class="breadcrumb">
-                    <li>
-                        <a href="/"><i class="icon-home"></i> Dashboard</a><span class="divider">&rsaquo;</span>
-                    </li>
-                    <li>
-                        <a href="{% url "list_cases" %}"><i class="icon-briefcase"> </i> Cases</a>
-                        <span class="divider">&rsaquo;</span>
-                    </li>
-                    <li>
-                        <a href="{% url "show_case" case.id "list" %}"><i class="icon-book"> </i>
-                            {% if case.name|length > 70 %}
-                                {{ case.name|slice:":70" }} ...
-                            {% else %}
-                                {{ case.name }}
-                            {% endif %}
-                        </a><span class="divider">&rsaquo;</span>
-                    </li>
-                    <li class="active">
-                        New Image
-                    </li>
-                </ul>
-            </div>
-            <div class="content-body">
-                <div class="row-fluid">
-                    <p>
-                        <div id="uploader"></div>
-                    </p>
-                    <div id="filelist" class="hide">
-                        <strong id="generic_error">
-                            <i class="icon-warning-sign text-error"></i>
-                            Errors:
-                        </strong>
-                        <strong id="server_error" class="hide">
-                            <i class="icon-warning-sign text-error"></i>
-                            Server error: unexpected error, try to reload page and check logs.
-                        </strong>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <div id="uploader">
+                    <div class="text-center py-5">
+                        <p class="lead">Your browser doesn't have HTML5 support.</p>
                     </div>
+                </div>
+
+                <div id="filelist" class="d-none mt-3">
+                    <div id="generic_error" class="alert alert-danger d-none">
+                        <i class="fa-solid fa-triangle-exclamation me-2"></i> <strong>Errors:</strong>
+                    </div>
+                    <div id="server_error" class="alert alert-danger d-none">
+                        <i class="fa-solid fa-triangle-exclamation me-2"></i> <strong>Server error:</strong> unexpected error, try to reload page and check logs.
+                    </div>
+                </div>
+
+                <div class="plupload_buttons mt-3" style="display:none;">
+                    <!-- Back button will be appended here -->
                 </div>
             </div>
         </div>
     </div>
+</div>
+{% endblock %}
 
-    {# Styles #}
-    <link rel="stylesheet" href="{{ STATIC_URL }}css/plupload/jquery.plupload.queue.css">
-    {# JS #}
-    <script src="{{ STATIC_URL }}js/plupload/jquery-migrate-1.0.0.js"></script>
-    <script src="{{ STATIC_URL }}js/plupload/elfinder.min.js"></script>
-    <script src="{{ STATIC_URL }}js/plupload/jquery.plupload.queue.js"></script>
-    <script src="{{ STATIC_URL }}js/plupload/plupload.full.js"></script>
-    <script type="text/javascript">
+{% block extra_scripts %}
+{# JS #}
+<script src="{{ STATIC_URL }}js/plupload/jquery-migrate-1.0.0.js"></script>
+<script src="{{ STATIC_URL }}js/plupload/plupload.full.js"></script>
+<script src="{{ STATIC_URL }}js/plupload/jquery.plupload.queue.js"></script>
 
-        $(document).ready(function() {
+<script type="text/javascript">
+    $(document).ready(function() {
 
-            $("#uploader").pluploadQueue({
-                runtimes : 'html5,flash',
-                url : '{% url "new_image" case.id %}',
-                unique_names: false,
-                multipart: true,
-                file_data_name: 'image',
-                preinit: {
-                    Init: function () {
-                        $('#uploader_container').removeAttr("title");
-                    }
-                },
-                flash_swf_url : '{{ STATIC_URL }}js/plupload/plupload.flash.swf',
-                headers : {'X-Requested-With' : 'XMLHttpRequest', 'X-CSRFToken' : '{{csrf_token}}'}
-            });
-
-            $('form').submit(function(e) {
-                var uploader = $('#uploader').pluploadQueue();
-
-                if (uploader.total.uploaded == 0) {
-                    if (uploader.files.length > 0) {
-                        uploader.bind('UploadProgress', function() {
-                            if (uploader.total.uploaded == uploader.files.length)
-                                $('form').submit();
-                        });
-                        uploader.start();
-                    }
-                    e.preventDefault();
+        $("#uploader").pluploadQueue({
+            runtimes : 'html5',
+            url : '{% url "new_image" case.id %}',
+            unique_names: false,
+            multipart: true,
+            file_data_name: 'image',
+            preinit: {
+                Init: function (up, info) {
+                    $('#uploader_container').removeAttr("title");
                 }
-            });
+            },
+            headers : {'X-Requested-With' : 'XMLHttpRequest', 'X-CSRFToken' : '{{csrf_token}}'}
+        });
 
-            var uploader = $('#uploader').pluploadQueue();
+        var uploader = $('#uploader').pluploadQueue();
 
-            uploader.bind('FilesAdded', function() {
-                $('.plupload_start').show();
-                $('.result_button').hide();
-            });
-
-            uploader.bind('UploadComplete', function(up) {
-                if (up.total.queued == 0 && uploader.total.uploaded == up.files.length){
-                    window.location.href = "{% url "show_case" case.id "list" %}";
-                }else{
-                    $('.plupload_buttons').append("<a href='{% url "show_case" case.id 'list' %}' class='btn result_button'>Back</a>").show();
-                    $('.plupload_start').hide();
+        // Handle form submission if wrapped in a form (it isn't here, but keeping logic just in case)
+        $('form').submit(function(e) {
+            if (uploader.total.uploaded == 0) {
+                if (uploader.files.length > 0) {
+                    uploader.bind('UploadProgress', function() {
+                        if (uploader.total.uploaded == uploader.files.length)
+                            $('form').submit();
+                    });
+                    uploader.start();
                 }
-            });
+                e.preventDefault();
+            }
+        });
 
-            uploader.bind('FileUploaded', function(up, file, info) {
+        uploader.bind('FilesAdded', function(up, files) {
+            $('.plupload_start').show();
+            $('.result_button').hide();
+        });
+
+        uploader.bind('UploadComplete', function(up, files) {
+            if (up.total.failed == 0){
+                window.location.href = "{% url "show_case" case.id "list" %}";
+            } else {
+                $('.plupload_buttons').show().append('<a href="{% url "show_case" case.id "list" %}" class="btn btn-secondary result_button">Back to Case</a>');
+                $('.plupload_start').hide();
+            }
+        });
+
+        uploader.bind('FileUploaded', function(up, file, info) {
+            try {
                 var response = jQuery.parseJSON(info.response);
                 if(response.error){
                     file.status = plupload.FAILED;
-                    up.trigger('QueueChanged');
-                    $('#filelist').append("<div>" + (file ? " File: " + file.name : "") +
-                            ", Reason: " + response.error.message +
-                            "</div>"
-                    ).show();
-                }else{
-                    $('#generic_error').show();
-                    $('.result_button').hide();
+                    up.trigger('QueueChanged'); // Update UI
+                    $('#filelist').removeClass('d-none');
+                    $('#generic_error').removeClass('d-none').append("<div>" + (file ? " File: " + file.name : "") + ", Reason: " + response.error.message + "</div>");
                 }
-            });
+            } catch (e) {
+                // If response is not JSON
+                file.status = plupload.FAILED;
+                up.trigger('QueueChanged');
+                $('#filelist').removeClass('d-none');
+                $('#server_error').removeClass('d-none');
+            }
+        });
 
-            uploader.bind('Error', function(up, err) {
-                $('#filelist').append("<div>" +
-                        (err.file ? " File: " + err.file.name : "") +
-                        "</div>"
-                ).show();
-                $('#server_error').show();
-                $('.result_button').hide();
-            });
-
-        })
-
-    </script>
-
-    {% endblock %}
+        uploader.bind('Error', function(up, err) {
+            $('#filelist').removeClass('d-none');
+            $('#server_error').removeClass('d-none').append("<div>" + (err.file ? " File: " + err.file.name : "") + " Error: " + err.message + "</div>");
+            $('.result_button').hide();
+        });
+    });
+</script>
+{% endblock %}

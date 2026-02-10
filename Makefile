@@ -21,7 +21,7 @@ help:
 	@echo "$(GREEN)Sus Scrofa Development Commands$(NC)"
 	@echo ""
 	@echo "$(YELLOW)Setup:$(NC)"
-	@echo "  make setup       - Complete setup (venv, deps, MongoDB, migrations)"
+	@echo "  make setup       - Complete setup with ALL features (venv, deps, MongoDB, AI/ML)"
 	@echo "  make fresh       - Fresh start (reset DBs, recreate everything)"
 	@echo "  make venv        - Create Python virtual environment"
 	@echo "  make install     - Install Python dependencies"
@@ -129,7 +129,26 @@ install: venv
 	@$(VENV)/python -c "import numpy, scipy, cv2, skimage; print('  ✓ NumPy, SciPy, OpenCV, scikit-image')" 2>/dev/null || \
 		(echo "$(RED)  ✗ Scientific libraries not found. Run 'make install' again.$(NC)" && exit 1)
 	@echo ""
-	@echo "$(GREEN)✓ All dependencies installed$(NC)"
+	@echo "$(GREEN)✓ Core dependencies installed$(NC)"
+	@echo ""
+	@echo "$(GREEN)========================================$(NC)"
+	@echo "$(GREEN)Setting up AI Detection...$(NC)"
+	@echo "$(GREEN)========================================$(NC)"
+	@echo ""
+	@$(MAKE) ai-setup || (echo "$(RED)✗ AI setup failed. You can retry with: make ai-setup$(NC)" && exit 1)
+	@echo ""
+	@echo "$(GREEN)========================================$(NC)"
+	@echo "$(GREEN)✓ Installation complete!$(NC)"
+	@echo "$(GREEN)========================================$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Next steps:$(NC)"
+	@echo "  1. Start MongoDB:    make mongodb"
+	@echo "  2. Run migrations:   make migrate"
+	@echo "  3. Create superuser: make superuser"
+	@echo "  4. Start services:   make run"
+	@echo ""
+	@echo "$(YELLOW)Or run everything at once:$(NC)"
+	@echo "  make setup"
 
 setup: check-deps install mongodb
 	@echo ""
@@ -137,19 +156,48 @@ setup: check-deps install mongodb
 	@$(MAKE) migrate
 	@echo ""
 	@echo "$(GREEN)========================================$(NC)"
-	@echo "$(GREEN)✓ Setup complete!$(NC)"
+	@echo "$(GREEN)Setting up optional AI/ML features...$(NC)"
 	@echo "$(GREEN)========================================$(NC)"
+	@echo ""
+	@echo "$(YELLOW)1. Setting up Photoholmes forgery detection...$(NC)"
+	@$(MAKE) photoholmes-setup || echo "$(YELLOW)⚠ Photoholmes setup failed (optional)$(NC)"
+	@echo ""
+	@echo "$(YELLOW)2. Setting up research content analysis...$(NC)"
+	@$(MAKE) research-setup || echo "$(YELLOW)⚠ Research setup failed (optional)$(NC)"
+	@echo ""
+	@echo "$(YELLOW)3. Building and starting OpenCV service...$(NC)"
+	@$(MAKE) opencv-build || echo "$(YELLOW)⚠ OpenCV build failed (optional)$(NC)"
+	@$(MAKE) opencv-start || echo "$(YELLOW)⚠ OpenCV start failed (optional)$(NC)"
+	@echo ""
+	@echo "$(GREEN)========================================$(NC)"
+	@echo "$(GREEN)✓ Complete setup finished!$(NC)"
+	@echo "$(GREEN)========================================$(NC)"
+	@echo ""
+	@echo "$(GREEN)All features are now available:$(NC)"
+	@echo "  ✓ AI Detection (SPAI + SDXL)"
+	@echo "  ✓ Photoholmes Forgery Detection"
+	@echo "  ✓ Research Content Analysis"
+	@echo "  ✓ OpenCV Manipulation Detection"
+	@echo ""
+	@echo "$(YELLOW)Verify installations:$(NC)"
+	@echo "  make ai-verify"
+	@echo "  make photoholmes-verify"
+	@echo "  make research-verify"
+	@echo "  make opencv-test"
 	@echo ""
 	@echo "$(YELLOW)Important: Create a superuser account$(NC)"
 	@echo "  Run: make superuser"
 	@echo ""
-	@echo "Then start the application:"
-	@echo "  Run: make run"
+	@echo "$(YELLOW)Then start the application:$(NC)"
+	@echo "  make run"
 	@echo ""
+
 
 mongodb:
 	@echo "$(GREEN)Checking MongoDB container...$(NC)"
-	@if podman ps -a --format "{{.Names}}" | grep -q "^sus-scrofa-mongodb$$"; then \
+	@if lsof -i :27017 >/dev/null 2>&1 || nc -z localhost 27017 >/dev/null 2>&1; then \
+		echo "$(GREEN)✓ Port 27017 is already in use (assuming MongoDB is running)$(NC)"; \
+	elif podman ps -a --format "{{.Names}}" | grep -q "^sus-scrofa-mongodb$$"; then \
 		if podman ps --format "{{.Names}}" | grep -q "^sus-scrofa-mongodb$$"; then \
 			echo "$(GREEN)✓ MongoDB container is already running$(NC)"; \
 		else \
@@ -316,10 +364,30 @@ print(f'Deleted {count} Analysis records from SQLite')" 2>/dev/null || echo "$(Y
 	@echo ""
 
 # AI Detection Setup
-ai-setup:
+ai-setup: venv
 	@echo "$(GREEN)Setting up AI detection module...$(NC)"
 	@echo ""
-	@cd ai_detection && $(MAKE) setup
+	@echo "$(YELLOW)Installing AI detection dependencies into main venv...$(NC)"
+	@INDEX_URL=$$($(SYSTEM_PYTHON) scripts/detect_system.py --index-url); \
+	BACKEND=$$($(SYSTEM_PYTHON) scripts/detect_system.py --backend); \
+	echo "Backend: $$BACKEND"; \
+	echo "PyTorch Index: $$INDEX_URL"; \
+	echo ""; \
+	echo "$(YELLOW)Installing PyTorch and AI detection dependencies...$(NC)"; \
+	$(PIP) install --extra-index-url "$$INDEX_URL" "torch>=2.0.0" "torchvision>=0.15.0"; \
+	$(PIP) install "opencv-python>=4.10.0" "pyyaml>=6.0.1" "scipy>=1.14.0" \
+		"timm==0.4.12" "yacs>=0.1.8" "numpy>=1.26.4" "torchmetrics>=1.4.0" \
+		"tqdm>=4.66.4" "pillow>=10.4.0" "einops>=0.8.0" "ftfy>=6.1.0" "regex>=2023.0.0" \
+		"transformers>=4.36.0" "safetensors>=0.4.0" "open-clip-torch"; \
+	echo "$(GREEN)✓ Dependencies installed$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Downloading AI detection models...$(NC)"
+	@echo "  This may take a few minutes on first run..."
+	@echo ""
+	@cd ai_detection && PYTHON=../$(PYTHON) $(MAKE) weights models || \
+		(echo "$(RED)✗ Model download failed$(NC)" && \
+		 echo "$(YELLOW)You can retry with: cd ai_detection && make models$(NC)" && \
+		 exit 1)
 	@echo ""
 	@echo "$(GREEN)========================================$(NC)"
 	@echo "$(GREEN)✓ AI detection ready!$(NC)"
@@ -329,10 +397,14 @@ ai-setup:
 	@echo ""
 	@echo "Verify installation:"
 	@echo "  make ai-verify"
+	@echo ""
+	@echo "Check model status:"
+	@echo "  cd ai_detection && make models-list"
+
 
 ai-verify:
 	@echo "$(GREEN)Verifying AI detection module...$(NC)"
-	@cd ai_detection && $(MAKE) verify
+	@cd ai_detection && PYTHON=../$(PYTHON) $(MAKE) verify
 
 ai-clean:
 	@echo "$(YELLOW)Cleaning AI detection module...$(NC)"
@@ -358,7 +430,7 @@ photoholmes-setup:
 	$(PIP) install --index-url $$INDEX_URL torch torchvision; \
 	echo ""; \
 	echo "$(YELLOW)Step 2: Installing additional dependencies...$(NC)"; \
-	$(PIP) install jpegio>=0.4.0 torchmetrics torch_kmeans; \
+	$(PIP) install "jpegio>=0.4.0" torchmetrics torch_kmeans; \
 	echo ""; \
 	echo "$(YELLOW)Step 3: Installing photoholmes from GitHub...$(NC)"; \
 	echo "Since torch is already installed, pip won't re-download different version."; \

@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+    {# CSS #}
+    <link href="https://unpkg.com/@yaireo/tagify/dist/tagify.css" rel="stylesheet" type="text/css" />
+    <style>
+        .tagify {
+            --tags-border-color: #dee2e6;
+            --tags-hover-border-color: #86b7fe;
+            --tags-focus-border-color: #86b7fe;
+            --tag-bg: #e9ecef;
+            --tag-hover: #dde0e3;
+            --tag-text-color: #212529;
+            --tag-text-color--edit: #212529;
+            --tag-pad: 0.3rem 0.5rem;
+            --tag-inset-shadow-size: 1.1em;
+            --tag-invalid-color: #d39494;
+            --tag-invalid-bg: rgba(211, 148, 148, 0.5);
+            --tag-remove-bg: rgba(211, 148, 148, 0.3);
+            --tag-remove-btn-color: black;
+            --tag-remove-btn-bg: none;
+            --tag-remove-btn-bg--hover: #c77777;
+            
+            border-radius: 0.375rem;
+            width: 100%;
+            background: #fff;
+        }
+        
+        /* Custom styling to match Bootstrap inputs */
+        .tagify__input {
+            color: #212529;
+        }
+
+        /* Fix for tagify input height */
+        .tagify__tag {
+            margin-top: 2px;
+            margin-bottom: 2px;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4 animate__animated animate__fadeIn">
+    <div class="col-12">
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">
+                <i class="fa-solid fa-file-lines text-secondary me-2"></i> Report 
+                <small class="text-muted fs-6">Analysis details</small>
+            </h1>
+            <div class="btn-toolbar mb-2 mb-md-0">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="/" class="text-decoration-none"><i class="fa-solid fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url "list_cases" %}" class="text-decoration-none"><i class="fa-solid fa-briefcase"></i> Cases</a></li>
+                        <li class="breadcrumb-item">
+                            <a href="{% url "show_case" analysis.case.id "list" %}" class="text-decoration-none">
+                                <i class="fa-solid fa-folder-open"></i>
+                                {% if analysis.case.name|length > 20 %}
+                                    {{ analysis.case.name|slice:":20" }}...
+                                {% else %}
+                                    {{ analysis.case.name }}
+                                {% endif %}
+                            </a>
+                        </li>
+                        <li class="breadcrumb-item active" aria-current="page">Report</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <!-- Image Overview Header -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body">
+                <div class="d-flex flex-column flex-md-row align-items-center gap-3">
+                    <div class="flex-shrink-0">
+                        {% if analysis.thumb_id %}
+                            <a href="{% url "image" analysis.image_id %}" class="fancybox">
+                                <img src="{% url "image" analysis.thumb_id %}" class="img-thumbnail rounded" style="max-height: 100px;">
+                            </a>
+                        {% else %}
+                            <img src="{{ STATIC_URL }}img/no_image_large.jpg" class="img-thumbnail rounded" style="max-height: 100px;">
+                        {% endif %}
+                    </div>
+                    <div class="flex-grow-1 text-center text-md-start">
+                        <h4 class="mb-1">Image analysis: {{ analysis.report.hash.md5 }}</h4>
+                        
+                        <div class="d-flex flex-wrap justify-content-center justify-content-md-start gap-2 mt-2">
+                             <div class="btn-group btn-group-sm">
+                                {% if analysis.favorites.all %}
+                                    <button id="{% url "favorite" analysis.id %}" rel="{{ analysis.id }}" class="btn btn-warning favorite star{{ analysis.id }}" title="Unfavorite"> 
+                                        <i class="fa-solid fa-star"></i>
+                                    </button>
+                                {% else %}
+                                    <button id="{% url "favorite" analysis.id %}" rel="{{ analysis.id }}" class="btn btn-outline-secondary favorite star{{ analysis.id }}" title="Favorite"> 
+                                        <i class="fa-regular fa-star"></i>
+                                    </button>
+                                {% endif %}
+                                <a href="{% url "image" analysis.image_id %}" class="action_print btn btn-outline-info" title="Print"><i class="fa-solid fa-print"></i> </a>
+                                {% if analysis.state == "C" %}
+                                    <a href="{% url "reprocess_analysis" analysis.id %}" class="btn btn-outline-success" title="Re-process"><i class="fa-solid fa-rotate"></i> </a>
+                                {% endif %}
+                                <button class="btn btn-outline-danger btn-delete-report" data-url="{% url "delete_analysis" analysis.id %}" data-bs-toggle="modal" data-bs-target="#deleteReport" title="Delete"> 
+                                    <i class="fa-solid fa-trash"></i> 
+                                </button>
+                            </div>
+                            
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fa-solid fa-file-export me-1"></i> Export
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="{% url "static_report" analysis.id "pdf" %}"><i class="fa-solid fa-file-pdf me-2"></i> PDF report</a></li>
+                                    <li><a class="dropdown-item" href="{% url "static_report" analysis.id "html" %}"><i class="fa-solid fa-file-code me-2"></i> HTML report</a></li>
+                                </ul>
+                            </div>
+
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fa-solid fa-download me-1"></i> Download
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="{% url "export_json" analysis.id %}"><i class="fa-solid fa-file-code me-2"></i> JSON report</a></li>
+                                    <li><a class="dropdown-item" href="{% url "image" analysis.image_id %}"><i class="fa-solid fa-image me-2"></i> Original Image</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-bottom-0 pb-0 px-3">
+                <ul class="nav nav-tabs card-header-tabs">
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_tab == 'dashboard' %}active{% endif %}" href="{% url 'show_analysis' analysis.id %}">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_tab == 'static' %}active{% endif %}" href="{% url 'show_static' analysis.id %}">Static</a>
+                    </li>
+                    {% if analysis.report.metadata.Exif %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_tab == 'exif' %}active{% endif %}" href="{% url 'show_exif' analysis.id %}">EXIF</a>
+                    </li>
+                    {% endif %}
+                    {% if analysis.report.metadata.Iptc %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_tab == 'iptc' %}active{% endif %}" href="{% url 'show_iptc' analysis.id %}">IPTC</a>
+                    </li>
+                    {% endif %}
+                    {% if analysis.report.metadata.Xmp %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_tab == 'xmp' %}active{% endif %}" href="{% url 'show_xmp' analysis.id %}">XMP</a>
+                    </li>
+                    {% endif %}
+                    {% if analysis.report.metadata.preview and analysis.report.metadata.preview|length > 0  %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_tab == 'preview' %}active{% endif %}" href="{% url 'show_preview' analysis.id %}">Thumb</a>
+                    </li>
+                    {% endif %}
+                    {% if analysis.report.metadata.gps %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_tab == 'location' %}active{% endif %}" href="{% url 'show_location' analysis.id %}">Map</a>
+                    </li>
+                    {% endif %}
+                    {% if analysis.report.ai_detection or analysis.report.opencv_manipulation or analysis.report.confidence %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_tab == 'automated' %}active{% endif %}" href="{% url 'show_automated' analysis.id %}">Automated Analysis</a>
+                    </li>
+                    {% endif %}
+                    {% if analysis.report.ela %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_tab == 'ela' %}active{% endif %}" href="{% url 'show_ela' analysis.id %}">ELA</a>
+                    </li>
+                    {% endif %}
+                    {% if analysis.report.noise_analysis %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_tab == 'noise' %}active{% endif %}" href="{% url 'show_noise' analysis.id %}">Noise Analysis</a>
+                    </li>
+                    {% endif %}
+                    {% if analysis.report.frequency_analysis %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_tab == 'frequency' %}active{% endif %}" href="{% url 'show_frequency' analysis.id %}">Frequency</a>
+                    </li>
+                    {% endif %}
+                    {% if analysis.report.signatures and analysis.report.signatures|length > 0 %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_tab == 'signatures' %}active{% endif %}" href="{% url 'show_signatures' analysis.id %}">Signatures</a>
+                    </li>
+                    {% endif %}
+                    {% if anal.content_analysis.enabled %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_tab == 'research' %}active{% endif %}" href="{% url 'show_research' analysis.id %}"><i class="fa-solid fa-flask"></i> Research Findings</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+            <div class="card-body">
+                {% block report_content %}{% endblock %}
+            </div>
+        </div>
+
+        <!-- Comments Section -->
+        <div class="card shadow-sm border-0 mt-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="fa-regular fa-comments me-2"></i> Comments</h5>
+            </div>
+            <div class="card-body">
+                {% if analysis.comments.all %}
+                    <div class="list-group list-group-flush mb-3">
+                        {% for comment in analysis.comments.all %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1 text-primary">{{ comment.owner.username }}</h6>
+                                <small class="text-muted">{{ comment.created_at }}</small>
+                            </div>
+                            <p class="mb-1">{{ comment.message }}</p>
+                            <div class="text-end">
+                                <a href="{% url "delete_comment" comment.id %}" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i> Delete</a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center py-3">No comments yet. Be the first to add one!</p>
+                {% endif %}
+                
+                <form method="post" action="{% url "add_comment" analysis.id %}" class="mt-3">{% csrf_token %}
+                    <div class="mb-3">
+                        <textarea class="form-control" name="message" id="id_message" rows="3" placeholder="Insert your comment"></textarea>
+                    </div>
+                    <button class="btn btn-success"><i class="fa-solid fa-paper-plane me-2"></i> Save Comment</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    {% if analysis.state == "C" %}
+    <!-- Tags Section -->
+    <div class="card shadow-sm border-0 mt-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0"><i class="fa-solid fa-tags me-2"></i> Tags</h5>
+        </div>
+        <div class="card-body">
+            <input name="tags" class="form-control" placeholder="+ Add tag..." value="{% for tag in analysis.tag_set.all %}{{ tag.text }},{% endfor %}">
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% include "layout/_modalActionCase.html" %}
+
+{% endblock %}
+
+{% block extra_scripts %}
+    {# JS #}
+    <script src="https://unpkg.com/@yaireo/tagify"></script>
+    <script src="https://unpkg.com/@yaireo/tagify/dist/tagify.polyfills.min.js"></script>
+    <script src="{{ STATIC_URL }}js/highcharts.js"></script>
+    <script type="text/javascript">
+        document.addEventListener("DOMContentLoaded", function() {
+            var input = document.querySelector('input[name=tags]');
+            var tagify = new Tagify(input, {
+                 delimiters: ",", // add new tags when a comma or a space character is entered
+                 trim: true,
+            });
+
+            // Bind events
+            tagify.on('add', onAddTag)
+                  .on('remove', onRemoveTag);
+
+            function onAddTag(e){
+                var tagName = e.detail.data.value;
+                if(!tagName) return;
+
+                fetch('{% url "add_tag" analysis.id %}', {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': '{{csrf_token}}',
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'tagName=' + encodeURIComponent(tagName)
+                });
+            }
+
+            function onRemoveTag(e){
+                var tagName = e.detail.data.value;
+                if(!tagName) return;
+                
+                fetch('{% url "delete_tag" analysis.id %}', {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': '{{csrf_token}}',
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'tagName=' + encodeURIComponent(tagName)
+                });
+            }
+
+
+            
+            // Modal trigger fix (Bootstrap 5 vanilla JS)
+            var deleteModal = document.getElementById('deleteReport');
+            if(deleteModal){
+                 deleteModal.addEventListener('show.bs.modal', function (event) {
+                    var button = event.relatedTarget;
+                    var url = button.getAttribute('data-url');
+                    var confirmBtn = deleteModal.querySelector('#id-delete-report');
+                    if(confirmBtn && url) confirmBtn.setAttribute('href', url);
+                });
+            }
+        });
+    </script>
+{% endblock %}
