@@ -1,5 +1,5 @@
-<table class="table">
-    <thead>
+<table class="table table-striped table-hover align-middle">
+    <thead class="table-light">
         <tr>
             <th>Segment</th>
             <th>Key: Value</th>
@@ -8,7 +8,7 @@
     <tbody>
         {% for k, v in analysis.report.metadata.Exif.items %}
         <tr>
-            <td><b>{{ k|upper }}</b></td>
+            <td><span class="badge bg-secondary">{{ k|upper }}</span></td>
             <td> {% include 'analyses/report/_visualize_value.html' with value=v subgroup=k group="Exif" %} </td>
         </tr>
         {% endfor %}

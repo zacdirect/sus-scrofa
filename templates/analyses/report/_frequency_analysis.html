@@ -1,62 +1,64 @@
 {% load analyses_tags %}
 
-<div class="box">
-    <div class="wdgt-header">Frequency Domain Analysis
-        <span class="pull-right">
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white border-bottom-0 d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fa-solid fa-wave-square me-2"></i> Frequency Domain Analysis</h5>
+        <span>
             {% if analysis.report.frequency_analysis.suspicious %}
-                <span class="label label-warning">Anomalies Detected</span>
+                <span class="badge bg-warning text-dark">Anomalies Detected</span>
             {% else %}
-                <span class="label label-success">Normal</span>
+                <span class="badge bg-success">Normal</span>
             {% endif %}
         </span>
     </div>
-    <div class="wdgt-body">
+    <div class="card-body">
         {% if analysis.report.frequency_analysis.fft_image_id %}
-            <div class="row-fluid">
-                <div class="span6">
-                    <h4>FFT Magnitude Spectrum</h4>
-                    <a href="{% url 'image' analysis.report.frequency_analysis.fft_image_id %}" class="fancybox">
-                        <img src="{% url 'image' analysis.report.frequency_analysis.fft_image_id %}" 
-                             style="max-width: 100%;" 
-                             alt="FFT Spectrum" />
-                    </a>
-                    <p class="muted">
-                        <small>
-                            Bright spots indicate strong frequency components.<br>
-                            Regular patterns may suggest AI generation or manipulation.
-                        </small>
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <h6 class="mb-3">FFT Magnitude Spectrum</h6>
+                    <div class="text-center bg-light p-3 rounded mb-2">
+                        <a href="{% url 'image' analysis.report.frequency_analysis.fft_image_id %}" class="fancybox d-block">
+                            <img src="{% url 'image' analysis.report.frequency_analysis.fft_image_id %}" 
+                                 class="img-fluid rounded shadow-sm"
+                                 alt="FFT Spectrum" />
+                        </a>
+                    </div>
+                    <p class="text-muted small">
+                        <i class="fa-solid fa-info-circle me-1"></i>
+                        Bright spots indicate strong frequency components.
+                        Regular patterns may suggest AI generation or manipulation.
                     </p>
                 </div>
-                <div class="span6">
-                    <h4>Detection Results</h4>
-                    <table class="table table-striped">
+                <div class="col-md-6">
+                    <h6 class="mb-3">Detection Results</h6>
+                    <table class="table table-hover table-striped small mb-4">
                         <tr>
-                            <td><strong>Anomaly Score:</strong></td>
-                            <td>
-                                <span class="label {% if analysis.report.frequency_analysis.anomaly_score > 50 %}label-warning{% else %}label-success{% endif %}">
+                            <td class="fw-bold">Anomaly Score:</td>
+                            <td class="text-end">
+                                <span class="badge {% if analysis.report.frequency_analysis.anomaly_score > 50 %}bg-warning text-dark{% else %}bg-success{% endif %}">
                                     {{ analysis.report.frequency_analysis.anomaly_score|floatformat:2 }}%
                                 </span>
                             </td>
                         </tr>
                         <tr>
-                            <td><strong>Peak Ratio:</strong></td>
-                            <td>{{ analysis.report.frequency_analysis.peak_ratio|floatformat:4 }}%</td>
+                            <td class="fw-bold">Peak Ratio:</td>
+                            <td class="text-end font-monospace">{{ analysis.report.frequency_analysis.peak_ratio|floatformat:4 }}%</td>
                         </tr>
                         <tr>
-                            <td><strong>Checkerboard Score:</strong></td>
-                            <td>
-                                <span class="badge {% if analysis.report.frequency_analysis.checkerboard_score > 50 %}badge-warning{% endif %}">
+                            <td class="fw-bold">Checkerboard Score:</td>
+                            <td class="text-end">
+                                <span class="badge {% if analysis.report.frequency_analysis.checkerboard_score > 50 %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
                                     {{ analysis.report.frequency_analysis.checkerboard_score|floatformat:1 }}
                                 </span>
                             </td>
                         </tr>
                     </table>
                     
-                    <div class="alert {% if analysis.report.frequency_analysis.suspicious %}alert-warning{% else %}alert-info{% endif %}">
-                        <strong>Interpretation:</strong>
+                    <div class="alert {% if analysis.report.frequency_analysis.suspicious %}alert-warning{% else %}alert-info{% endif %} mb-0">
+                        <h6 class="alert-heading"><i class="fa-solid fa-magnifying-glass me-2"></i> Interpretation</h6>
                         {% if analysis.report.frequency_analysis.suspicious %}
-                            <p>Frequency domain anomalies detected. Possible causes:</p>
-                            <ul>
+                            <p class="small mb-2">Frequency domain anomalies detected. Possible causes:</p>
+                            <ul class="small mb-0 ps-3">
                                 {% if analysis.report.frequency_analysis.checkerboard_score > 50 %}
                                 <li><strong>GAN Artifacts:</strong> Checkerboard patterns typical of AI upsampling</li>
                                 {% endif %}
@@ -66,13 +68,16 @@
                                 <li>Multiple compression artifacts</li>
                             </ul>
                         {% else %}
-                            <p>Frequency domain appears normal with no significant anomalies.</p>
+                            <p class="small mb-0">Frequency domain appears normal with no significant anomalies.</p>
                         {% endif %}
                     </div>
                 </div>
             </div>
         {% else %}
-            <p class="muted">Frequency analysis not available.</p>
+            <div class="text-center py-5 text-muted">
+                <i class="fa-solid fa-ban fa-2x mb-3"></i>
+                <p>Frequency analysis not available for this file.</p>
+            </div>
         {% endif %}
     </div>
 </div>

@@ -1,123 +1,135 @@
 {% load analyses_tags %}
 
-<div class="box-tab corner-all">
-    <div class="box-header corner-top">
-        <div class="header-control pull-right">
-            <a data-box="collapse"><i class="icofont-caret-up"> </i></a>
-        </div>
-        <ul class="nav nav-pills" id="tab-stat">
-            <li class="active">
-                <a data-toggle="tab" href="#system-stat">Analysis results
-                {% if analysis.report.private %} <small>(flagged as private)</small> {% endif %}</a>
-            </li>
-            <li>
-                <a data-toggle="tab" href="#server-stat">Signature results</a>
-            </li>
-        </ul>
+<div class="d-flex flex-column flex-md-row gap-4">
+    <div class="nav flex-column nav-pills me-3" id="v-pills-dash-tab" role="tablist" aria-orientation="vertical" style="min-width: 200px;">
+        <button class="nav-link active text-start" id="v-pills-res-tab" data-bs-toggle="pill" data-bs-target="#system-stat" type="button" role="tab" aria-controls="system-stat" aria-selected="true">
+            <i class="fa-solid fa-microchip me-2"></i> Analysis Results
+            {% if analysis.report.private %} <span class="badge bg-secondary ms-2">Private</span> {% endif %}
+        </button>
+        <button class="nav-link text-start" id="v-pills-sig-tab" data-bs-toggle="pill" data-bs-target="#server-stat" type="button" role="tab" aria-controls="server-stat" aria-selected="false">
+            <i class="fa-solid fa-fingerprint me-2"></i> Signature Results
+        </button>
     </div>
-    <div class="box-body">
-        <div class="tab-content">
-            <div class="tab-pane fade in active" id="system-stat">
-                <div class="row-fluid">
-                    {% include 'analyses/report/_dashboardAnalysisResult.html' %}
-                </div>
+
+    <div class="tab-content flex-grow-1" id="v-pills-dashContent">
+        <div class="tab-pane fade show active" id="system-stat" role="tabpanel" aria-labelledby="v-pills-res-tab">
+            <div class="table-responsive">
+                {% include 'analyses/report/_dashboardAnalysisResult.html' %}
             </div>
-            <div class="tab-pane fade" id="server-stat">
-                <div class="row-fluid">
-                    {% if analysis.report.signatures %}
-                    <table>
-                        <tr>
-                            <td>
-                                <div id="container" style="min-width: 610px; height: 400px; margin: 0 auto"></div>
-                            </td>
-                            <td>
-                                <table class="table">
-                                    <thead>
-                                        <tr>
-                                            <th>Severity</th>
-                                            <th>Signatures matched</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td><span class="badge badge-success">Low</span></td>
-                                            <td class="text-success right"><b>{{ analysis.report.signatures|count_severity:"1" }}</b></td>
-                                        </tr>
-                                        <tr>
-                                            <td><span class="badge badge-warning">Medium</span></td>
-                                            <td class="text-warning right"><b>{{ analysis.report.signatures|count_severity:"2" }}</b></td>
-                                        </tr>
-                                        <tr>
-                                            <td><span class="badge badge-important">High</span></td>
-                                            <td class="text-error right"><b>{{ analysis.report.signatures|count_severity:"3" }}</b></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </td>
-                        </tr>
-                    </table>
-
-                    <script type="text/javascript">
-                    $(function () {
-                        $('#container').highcharts({
-                            chart: {
-                                plotBackgroundColor: null,
-                                plotBorderWidth: null,
-                                plotShadow: false
-                            },
-                            credits: {
-                                enabled: false
-                            },
-                            title: {
-                                text: 'Signatures matched by severity'
-                            },
-                            tooltip: {
-                                pointFormat: '<b>{point.percentage:.1f}%</b></b>'
-                            },
-                            plotOptions: {
-                                pie: {
-                                    allowPointSelect: true,
-                                    cursor: 'pointer',
-                                    dataLabels: {
-                                        enabled: true,
-                                        color: '#000000',
-                                        connectorColor: '#000000',
-                                        format: '<b>{point.name}</b>: {point.y}'
-                                    }
-                                }
-                            },
-                            series: [{
-                                type: 'pie',
-                                name: 'Signatures matched',
-                                data: [
-                                     {
-                                        name: 'Low',
-                                        y: {{ analysis.report.signatures|count_severity:"1" }},
-                                        color: '#468847'
-                                    },
-                                    {
-                                        name: 'Medium',
-                                        y: {{ analysis.report.signatures|count_severity:"2" }},
-                                        color: '#F89406'
-                                    },
-                                     {
-                                        name: 'High',
-                                        y: {{ analysis.report.signatures|count_severity:"3" }},
-                                        color: '#B94A48'
-                                    },
-                                ]
-                            }]
-                        });
-                    });
-                    </script>
-
-                    {% else %}
-                    <div class="alert">
-                        <strong>Warning!</strong> No signature matched.
+        </div>
+        <div class="tab-pane fade" id="server-stat" role="tabpanel" aria-labelledby="v-pills-sig-tab">
+            {% if analysis.report.signatures %}
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <div id="container" style="min-width: 100%; height: 400px; margin: 0 auto"></div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card bg-light border-0">
+                        <div class="card-body">
+                            <h6 class="card-title mb-3">Signature Severity</h6>
+                            <table class="table table-sm table-borderless mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Severity</th>
+                                        <th class="text-end">Count</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><span class="badge bg-success">Low</span></td>
+                                        <td class="text-end fw-bold text-success">{{ analysis.report.signatures|count_severity:"1" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="badge bg-warning text-dark">Medium</span></td>
+                                        <td class="text-end fw-bold text-warning">{{ analysis.report.signatures|count_severity:"2" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="badge bg-danger">High</span></td>
+                                        <td class="text-end fw-bold text-danger">{{ analysis.report.signatures|count_severity:"3" }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                    {% endif %}
                 </div>
             </div>
+            
+            <script type="text/javascript">
+            document.addEventListener('DOMContentLoaded', function() {
+                $('#container').highcharts({
+                    chart: {
+                        plotBackgroundColor: null,
+                        plotBorderWidth: null,
+                        plotShadow: false,
+                        style: {
+                            fontFamily: 'inherit'
+                        }
+                    },
+                    credits: {
+                        enabled: false
+                    },
+                    title: {
+                        text: 'Signatures matched by severity'
+                    },
+                    tooltip: {
+                        pointFormat: '<b>{point.percentage:.1f}%</b>'
+                    },
+                    plotOptions: {
+                        pie: {
+                            allowPointSelect: true,
+                            cursor: 'pointer',
+                            dataLabels: {
+                                enabled: true,
+                                color: '#000000',
+                                connectorColor: '#000000',
+                                format: '<b>{point.name}</b>: {point.y}'
+                            }
+                        }
+                    },
+                    series: [{
+                        type: 'pie',
+                        name: 'Signatures matched',
+                        data: [
+                             {
+                                name: 'Low',
+                                y: {{ analysis.report.signatures|count_severity:"1" }},
+                                color: '#198754' // Bootstrap success
+                            },
+                            {
+                                name: 'Medium',
+                                y: {{ analysis.report.signatures|count_severity:"2" }},
+                                color: '#ffc107' // Bootstrap warning
+                            },
+                             {
+                                name: 'High',
+                                y: {{ analysis.report.signatures|count_severity:"3" }},
+                                color: '#dc3545' // Bootstrap danger
+                            },
+                        ]
+                    }]
+                });
+
+                // Fixed: Reflow chart when tab is shown to correct initial 0 width
+                var tabEl = document.getElementById('v-pills-sig-tab');
+                if (tabEl) {
+                    tabEl.addEventListener('shown.bs.tab', function (event) {
+                         var chart = $('#container').highcharts();
+                         if (chart) {
+                             chart.reflow();
+                         }
+                    });
+                }
+            });
+            </script>
+
+            {% else %}
+            <div class="alert alert-info d-flex align-items-center" role="alert">
+                <i class="fa-solid fa-info-circle me-2"></i>
+                <div>
+                     <strong>No signatures matched.</strong> This file did not trigger any known analysis signatures.
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>

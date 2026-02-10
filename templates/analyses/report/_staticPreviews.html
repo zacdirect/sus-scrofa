@@ -1,72 +1,49 @@
 {% load analyses_tags %}
-<ul class="thumbnails">
+<div class="row row-cols-1 row-cols-md-3 g-4">
     {% for preview in analysis.report.metadata.preview %}
-        <li>
-            <div class="thumbnail">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>
-                                {% if preview.original_file %}
-                                    <a class="fancybox" href="{% url "image" preview.original_file %}">
-                                {% else %}
-                                    <a class="fancybox" href="{% url "image" preview.file %}">
-                                {% endif %}
-                                {% if embed %}
-                                    <img src="{{ preview.file|to_base64 }}" />
-                                {% else %}
-                                    <img src="{% url "image" preview.file %}">
-                                {% endif %}
-                                </a>
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody class="pull-left">
-                        <tr>
-                            <td>
-                                <b>Size:</b>
-                            </td>
-                            <td>
-                                {{ preview.size }} bytes
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <b>Mime type:</b>
-                            </td>
-                            <td>
-                                {{ preview.mime_type }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <b>Extension:</b>
-                            </td>
-                            <td>
-                                {{ preview.ext }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <b>Dimension:</b>
-                            </td>
-                            <td>
-                                {{ preview.dimensions }}
-                            </td>
-                        </tr>
-                        {% if preview.diff %}
-                        <tr>
-                            <td>
-                                <b>Differ:</b>
-                            </td>
-                            <td>
-                                <span class="badge badge-important">{{ preview.diff }}</span>
-                            </td>
-                        </tr>
-                        {% endif %}
-                    </tbody>
+    <div class="col">
+        <div class="card h-100 shadow-sm">
+            <div class="card-img-top text-center p-3 bg-light" style="min-height: 200px; display: flex; align-items: center; justify-content: center;">
+                {% if preview.original_file %}
+                    <a class="fancybox d-block" href="{% url "image" preview.original_file %}">
+                {% else %}
+                    <a class="fancybox d-block" href="{% url "image" preview.file %}">
+                {% endif %}
+                
+                {% if embed %}
+                    <img src="{{ preview.file|to_base64 }}" class="img-fluid rounded" style="max-height: 200px; object-fit: contain;">
+                {% else %}
+                    <img src="{% url "image" preview.file %}" class="img-fluid rounded" style="max-height: 200px; object-fit: contain;">
+                {% endif %}
+                </a>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless mb-0 small">
+                    <tr>
+                        <th class="ps-0">Size:</th>
+                        <td class="text-end pe-0">{{ preview.size }} bytes</td>
+                    </tr>
+                    <tr>
+                        <th class="ps-0">Mime type:</th>
+                        <td class="text-end pe-0 font-monospace">{{ preview.mime_type }}</td>
+                    </tr>
+                    <tr>
+                        <th class="ps-0">Extension:</th>
+                        <td class="text-end pe-0 font-monospace">{{ preview.ext }}</td>
+                    </tr>
+                    <tr>
+                        <th class="ps-0">Dimensions:</th>
+                        <td class="text-end pe-0 font-monospace">{{ preview.dimensions }}</td>
+                    </tr>
+                    {% if preview.diff %}
+                    <tr>
+                        <th class="ps-0 text-danger">Difference:</th>
+                        <td class="text-end pe-0"><span class="badge bg-danger">{{ preview.diff }}</span></td>
+                    </tr>
+                    {% endif %}
                 </table>
             </div>
-        </li>
+        </div>
+    </div>
     {% endfor %}
-</ul>
+</div>

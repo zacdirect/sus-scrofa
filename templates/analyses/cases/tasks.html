@@ -1,13 +1,13 @@
 <div>
-    <ul class="nav nav-pills">
-        <li class="active">
-            <a href="#tasks" data-toggle="tab">Tasks</a>
+    <ul class="nav nav-pills mb-3" id="tasksTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="tasks-tab" data-bs-toggle="pill" data-bs-target="#tasks" type="button" role="tab" aria-controls="tasks" aria-selected="true">Tasks</button>
         </li>
-        <li>
-            <a href="#owned" data-toggle="tab">Owned</a>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="owned-tab" data-bs-toggle="pill" data-bs-target="#owned" type="button" role="tab" aria-controls="owned" aria-selected="false">Owned</button>
         </li>
-        <li>
-            <a href="#others" data-toggle="tab">Not owned</a>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="others-tab" data-bs-toggle="pill" data-bs-target="#others" type="button" role="tab" aria-controls="others" aria-selected="false">Not owned</button>
         </li>
     </ul>
     <div class="tab-content">

@@ -1,49 +1,67 @@
-<div class="row-fluid">
-    <div class="span12">
-        <div class="box corner-all">
-            <div class="box-body">
-                <table class="table table-bordered table-striped responsive datatables">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Status</th>
-                            <th>Created at</th>
-                            <th>Owner</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for case in cases %}
-                            <tr>
-                                <td>
-                                    <a href="{% url "show_case" case.id "list" %}">
-                                        {% if case.name|length > 70 %}
-                                            {{ case.name|slice:":70" }} ...
-                                        {% else %}
-                                            {{ case.name }}
-                                        {% endif %}
-                                    </a>
-                                </td>
-                                <td>{{ case.get_state_display }}</td>
-                                <td>{{ case.created_at }}</td>
-                                <td>{{ case.owner.username }}</td>
-                                <td>
-                                <div class="btn-group">
-                                    {% if case.state == "C" %}
-                                        <a class="btn tool" title="No actions available" disabled="disabled"> <i class="icon-edit"></i> </a>
-                                        <a class="btn btn-warning tool" disabled="disabled" title="Case already closed"> <i class="icon-remove"></i> </a>
-                                        <a class="btn btn-danger tool btn-delete-case" id="{% url "delete_case" case.id %}" title="Delete case" href="#delete" role="button" data-toggle="modal"> <i class="icon-trash"></i> </a>
-                                    {% else %}
-                                        <a class="btn tool" title="Edit case" href="{% url "edit_case" case.id %}"> <i class="icon-edit"></i> </a>
-                                        <a class="btn btn-warning tool btn-close-case" id="{% url "close_case" case.id %}" title="Close case" href="#close" role="button" data-toggle="modal"> <i class="icon-remove"></i> </a>
-                                        <a class="btn btn-danger tool btn-delete-case" id="{% url "delete_case" case.id %}" title="Delete case" href="#delete" role="button" data-toggle="modal"> <i class="icon-trash"></i> </a>
-                                    {% endif %}
-                                </div></td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Name</th>
+                        <th>Status</th>
+                        <th>Created At</th>
+                        <th>Owner</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for case in cases %}
+                    <tr>
+                        <td class="ps-4">
+                            <a href="{% url "show_case" case.id "list" %}"
+                                class="fw-bold text-decoration-none text-dark">
+                                {% if case.name|length > 70 %}
+                                {{ case.name|slice:":70" }}...
+                                {% else %}
+                                {{ case.name }}
+                                {% endif %}
+                            </a>
+                        </td>
+                        <td>
+                            {% if case.state == "O" %}
+                            <span class="badge bg-success">Open</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Closed</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-muted small">{{ case.created_at|date:"M d, Y H:i" }}</td>
+                        <td>
+                            <span class="d-flex align-items-center">
+                                <i class="fa-solid fa-user-circle text-secondary me-2"></i>
+                                {{ case.owner.username }}
+                            </span>
+                        </td>
+                        <td class="text-end pe-4">
+                            <div class="btn-group btn-group-sm">
+                                {% if case.state == "C" %}
+                                <button class="btn btn-outline-secondary" disabled title="No actions available"><i class="fa-solid fa-pen"></i></button>
+                                <button class="btn btn-outline-warning" disabled title="Case already closed"><i class="fa-solid fa-lock"></i></button>
+                                <button class="btn btn-outline-danger btn-delete-case" data-url="{% url "delete_case" case.id %}" title="Delete case" data-bs-toggle="modal" data-bs-target="#delete"><i class="fa-solid fa-trash"></i></button>
+                                {% else %}
+                                <a class="btn btn-outline-primary" title="Edit case" href="{% url "edit_case" case.id %}"><i class="fa-solid fa-pen"></i></a>
+                                <button class="btn btn-outline-warning btn-close-case" data-url="{% url "close_case" case.id %}" title="Close case" data-bs-toggle="modal" data-bs-target="#close"><i class="fa-solid fa-lock"></i></button>
+                                <button class="btn btn-outline-danger btn-delete-case" data-url="{% url "delete_case" case.id %}" title="Delete case" data-bs-toggle="modal" data-bs-target="#delete"><i class="fa-solid fa-trash"></i></button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-folder-open fa-3x mb-3"></i>
+                            <p>No cases found.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 </div>

@@ -1,60 +1,85 @@
 {% load analyses_tags %}
 
-<div class="row-fluid">
-    <ul class="sus-scrofa-thumbnails">
-        {% for image in images %}
-            <li>
-                {% if image.thumb_id %}
-                    <a class="fancybox" rel="group" href="{% url "image" image.image_id %}" title="{{ image.file_name }}">
-                        <img src="{% url "image" image.thumb_id %}" />
-                    </a>
-                    <div class="tags">
+<div class="row g-3">
+    {% for image in images %}
+    <div class="col-sm-6 col-md-4 col-lg-3">
+        <div class="card h-100 shadow-sm">
+            {% if image.thumb_id %}
+                <a href="{% url "image" image.image_id %}" target="_blank">
+                    <img src="{% url "image" image.thumb_id %}" class="card-img-top" alt="{{ image.file_name }}" style="height: 200px; object-fit: cover;">
+                </a>
+                <div class="card-body p-2">
+                    <h6 class="card-title text-truncate" title="{{ image.file_name }}">{{ image.file_name }}</h6>
+                    <div class="d-flex flex-wrap gap-1">
                         {% if image.report.confidence.authenticity_score is not None %}
-                            <span class="label-holder">
-                                {% if image.report.confidence.authenticity_score >= 80 %}
-                                    <span class="label label-success" title="Authenticity Score">Auth: {{ image.report.confidence.authenticity_score }}</span>
-                                {% elif image.report.confidence.authenticity_score >= 60 %}
-                                    <span class="label label-info" title="Authenticity Score">Auth: {{ image.report.confidence.authenticity_score }}</span>
-                                {% elif image.report.confidence.authenticity_score >= 40 %}
-                                    <span class="label label-warning" title="Authenticity Score">Auth: {{ image.report.confidence.authenticity_score }}</span>
-                                {% else %}
-                                    <span class="label label-important" title="Authenticity Score">Auth: {{ image.report.confidence.authenticity_score }}</span>
-                                {% endif %}
-                            </span>
+                            {% if image.report.confidence.authenticity_score >= 80 %}
+                                <span class="badge bg-success" title="Authenticity Score">Auth: {{ image.report.confidence.authenticity_score }}</span>
+                            {% elif image.report.confidence.authenticity_score >= 60 %}
+                                <span class="badge bg-info" title="Authenticity Score">Auth: {{ image.report.confidence.authenticity_score }}</span>
+                            {% elif image.report.confidence.authenticity_score >= 40 %}
+                                <span class="badge bg-warning text-dark" title="Authenticity Score">Auth: {{ image.report.confidence.authenticity_score }}</span>
+                            {% else %}
+                                <span class="badge bg-danger" title="Authenticity Score">Auth: {{ image.report.confidence.authenticity_score }}</span>
+                            {% endif %}
                         {% endif %}
+                        
                         {% if image.report.signatures|count_severity:"1" %}
-                            <span class="label-holder">
-                                <span class="label label-success">{{ image.report.signatures|count_severity:"1" }}</span>
-                            </span>
+                            <span class="badge bg-success" title="Severity 1">{{ image.report.signatures|count_severity:"1" }}</span>
                         {% endif %}
                         {% if image.report.signatures|count_severity:"2" %}
-                            <span class="label-holder">
-                                <span class="label label-warning">{{ image.report.signatures|count_severity:"2" }}</span>
-                            </span>
+                            <span class="badge bg-warning text-dark" title="Severity 2">{{ image.report.signatures|count_severity:"2" }}</span>
                         {% endif %}
                         {% if image.report.signatures|count_severity:"3" %}
-                            <span class="label-holder">
-                                <span class="label label-important">{{ image.report.signatures|count_severity:"3" }}</span>
-                            </span>
+                            <span class="badge bg-danger" title="Severity 3">{{ image.report.signatures|count_severity:"3" }}</span>
                         {% endif %}
                     </div>
-                    <div class="tools">
-                        <a href="{% url "show_analysis" image.id %}" title="Show report"> <i class="icon-list-alt"> </i></a>
-                        {% if image.favorites.all %}
-                            <a id="{% url "favorite" image.id %}" rel="{{ image.id }}" class="favorite btn-warning star{{image.id}}" title="Un-set as favorite"> <i class="icon-star"> </i></a>
-                        {% else %}
-                            <a id="{% url "favorite" image.id %}" rel="{{ image.id }}" class="favorite star{{image.id}}" title="Set as favorite"> <i class="icon-star"> </i></a>
-                        {% endif %}
-                        <a class="fancybox" href="{% url "image" image.image_id %}" title="View image: {{ image.file_name }}"><i class="icon-picture"> </i></a>
-                    </div>
-                {% else %}
-                    <img src="{{ STATIC_URL }}img/no_image_large.jpg" />
-                    <div class="tools">
-                        <a href="{% url "show_analysis" image.id %}"> <i class="icon-list-alt"> </i></a>
-                        <a class="fancybox" href="{% url "image" image.image_id %}" title="{{ image.file_name }}"><i class="icon-picture"> </i></a>
-                    </div>
-                {% endif %}
-            </li>
-        {% endfor %}
-    </ul>
+                </div>
+                <div class="card-footer bg-white border-top-0 d-flex justify-content-between">
+                    <a href="{% url "show_analysis" image.id %}" class="btn btn-sm btn-outline-primary" title="Show report"><i class="fa-solid fa-file-lines"></i></a>
+                    
+                    {% if image.favorites.all %}
+                        <button class="btn btn-sm btn-warning text-white favorite star{{image.id}}" data-url="{% url "favorite" image.id %}" title="Un-set as favorite"><i class="fa-solid fa-star"></i></button>
+                    {% else %}
+                        <button class="btn btn-sm btn-outline-warning favorite star{{image.id}}" data-url="{% url "favorite" image.id %}" title="Set as favorite"><i class="fa-solid fa-star"></i></button>
+                    {% endif %}
+                    
+                    <a href="{% url "image" image.image_id %}" class="btn btn-sm btn-outline-secondary" target="_blank" title="View image"><i class="fa-solid fa-image"></i></a>
+                </div>
+            {% else %}
+                <div class="d-flex align-items-center justify-content-center bg-light" style="height: 200px;">
+                    <i class="fa-solid fa-image fa-3x text-muted"></i>
+                </div>
+                <div class="card-body p-2">
+                     <h6 class="card-title text-truncate" title="{{ image.file_name }}">{{ image.file_name }}</h6>
+                </div>
+                <div class="card-footer bg-white border-top-0 d-flex justify-content-between">
+                    <a href="{% url "show_analysis" image.id %}" class="btn btn-sm btn-outline-primary" title="Show report"><i class="fa-solid fa-file-lines"></i></a>
+                    <a href="{% url "image" image.image_id %}" class="btn btn-sm btn-outline-secondary" target="_blank" title="View image"><i class="fa-solid fa-image"></i></a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
 </div>
+
+<script type="text/javascript">
+$('.favorite').click(function(e){
+    e.preventDefault();
+    var btn = $(this);
+    var url = btn.data("url");
+    $.ajax({
+        type: "GET",
+        url: url,
+        success: function(){
+            // Toggle appearance
+            if (btn.hasClass('btn-warning')) {
+                btn.removeClass('btn-warning text-white').addClass('btn-outline-warning');
+                btn.attr('title', 'Set as favorite');
+            } else {
+                btn.removeClass('btn-outline-warning').addClass('btn-warning text-white');
+                btn.attr('title', 'Un-set as favorite');
+            }
+        }
+    });
+});
+</script>

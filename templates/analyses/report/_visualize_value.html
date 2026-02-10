@@ -1,30 +1,36 @@
 {% load analyses_tags %}
 
 {% if value|classname == "dict" %}
+    <ul class="list-unstyled mb-0">
     {% for a, b in value.items %}
+        <li>
         {% if b|classname == "list" %}
-            <b>{{ a }}</b>:
+            <strong>{{ a }}</strong>:
+            <ul class="d-inline list-inline mb-0">
             {% for item in b %}
-                {{ item }}
+                <li class="list-inline-item">{{ item }}</li>
             {% endfor %}
-            <br />
+            </ul>
         {% elif b|classname == "dict" %}
-            <b>{{ a }}</b>:
+            <strong>{{ a }}</strong>:
+            <ul class="d-inline list-inline mb-0">
             {% for k,v in b.items %}
-                {{ k }}: {{ v}};
-        {% endfor %}
-            <br />
+                <li class="list-inline-item">{{ k }}: {{ v}};</li>
+            {% endfor %}
+            </ul>
         {% else %}
             {# Re-create fully qualified metadata key name. #}
             {% with group|add:"."|add:subgroup|add:"."|add:a as key_full %}
                 {# Check if a description is available for this metadata key and show help popup. #}
-                <span data-trigger="hover" class="pop" data-toggle="popover" data-placement="top" title="{{ key_full }}" data-content="{{ key_full|get_metadata_description }}">
+                <span data-bs-trigger="hover" class="pop cursor-help" data-bs-toggle="popover" data-bs-placement="top" title="{{ key_full }}" data-bs-content="{{ key_full|get_metadata_description }}">
+                    <strong>{{ a }}</strong>:
+                </span>
             {% endwith %}
-                <b>{{ a }}</b>:
-            </span>
-            {{ b }}<br />
+            {{ b }}
         {% endif %}
+        </li>
     {% endfor %}
+    </ul>
 {% else %}
     {{ value }}
 {% endif %}

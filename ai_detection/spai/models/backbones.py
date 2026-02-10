@@ -43,7 +43,7 @@ class Hook:
 class CLIPBackbone(nn.Module):
     def __init__(
         self,
-        clip_model: str = "ViT-B/16",
+        clip_model: str = "ViT-B-16",  # open_clip uses hyphens instead of slashes
         device: str = "cpu"
     ) -> None:
         super().__init__()
@@ -74,8 +74,8 @@ class CLIPBackbone(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Processes a batch of images using a CLIP backbone and returns intermediate layers."""
         # Make sure that the parameters of LayerNorm are always in FP32, even during FP16
-        # training. Otherwise, it will crash, since clip utilizes a custom LayerNorm that
-        # always converts the input to LayerNorm to FP32.
+        # training. Otherwise, it will crash, since some LayerNorm implementations
+        # always convert the input to FP32.
         if self.clip.visual.transformer.resblocks[1].ln_1.weight.dtype != torch.float32:
             for m in self.clip.modules():
                 if isinstance(m, (nn.LayerNorm, open_clip.model.LayerNorm)):

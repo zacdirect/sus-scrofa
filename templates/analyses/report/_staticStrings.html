@@ -1,9 +1,9 @@
 {% load analyses_tags %}
 
-{% include 'analyses/report/_staticRelevantStrings.html' %}
+{% include 'analyses/report/_staticRelevantStrings.html' with analysis=analysis %}
 
-<h4>All strings</h4>
-<div class="well">
+<h5 class="mb-3"><i class="fa-solid fa-list me-2 text-secondary"></i> All strings</h5>
+<div class="bg-light p-3 rounded font-monospace small" style="max-height: 400px; overflow-y: auto;">
     {% for s in analysis.report.file_data|to_strings %}
         {{ s }}<br>
     {% endfor %}

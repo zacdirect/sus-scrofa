@@ -1,37 +1,42 @@
 {% load analyses_tags %}
 
-<li>
-    {% if image.thumb_id %}
-        <a href="{% url "analyses.views.show_analysis" image.id %}" title="{{ image.file_name }}">
-            <img src="{% url "analyses.views.image" image.thumb_id %}" />
-        </a>
-        <div class="tags">
-            {% if image.report.signatures|count_severity:"1" %}
-                <span class="label-holder">
-                    <span class="label label-success label-round">{{ image.report.signatures|count_severity:"1" }}</span>
-                </span>
-            {% endif %}
-            {% if image.report.signatures|count_severity:"2" %}
-                <span class="label-holder">
-                    <span class="label label-warning label-round">{{ image.report.signatures|count_severity:"2" }}</span>
-                </span>
-            {% endif %}
-            {% if image.report.signatures|count_severity:"3" %}
-                <span class="label-holder">
-                    <span class="label label-danger label-round">{{ image.report.signatures|count_severity:"3" }}</span>
-                </span>
-            {% endif %}
-        </div>
-        <div class="icns">
-            <a href="{% url "analyses.views.image" image.image_id %}"  title="Save image"> <i class="icon icon-save"></i></a>
-            {% if image.favorites.all %}
-                <a id="{% url "analyses.views.favorite" image.id %}" rel="{{ image.id }}" class="favorite btn-warning star{{image.id}}" title="Un-set as favorite"> <i class="icon icon-star"></i></a>
+<div class="col">
+    <div class="card h-100 shadow-sm">
+        <div class="position-relative">
+            {% if image.thumb_id %}
+                <a href="{% url "analyses.views.show_analysis" image.id %}" title="{{ image.file_name }}" class="d-block ratio ratio-4x3">
+                    <img src="{% url "analyses.views.image" image.thumb_id %}" class="card-img-top object-fit-cover" alt="Thumbnail">
+                </a>
+                <div class="position-absolute top-0 end-0 p-2">
+                    {% if image.report.signatures|count_severity:"3" %}
+                        <span class="badge rounded-pill bg-danger mb-1 shadow-sm">{{ image.report.signatures|count_severity:"3" }}</span>
+                    {% endif %}
+                    {% if image.report.signatures|count_severity:"2" %}
+                        <span class="badge rounded-pill bg-warning text-dark mb-1 shadow-sm">{{ image.report.signatures|count_severity:"2" }}</span>
+                    {% endif %}
+                    {% if image.report.signatures|count_severity:"1" %}
+                        <span class="badge rounded-pill bg-success mb-1 shadow-sm">{{ image.report.signatures|count_severity:"1" }}</span>
+                    {% endif %}
+                </div>
             {% else %}
-                <a id="{% url "analyses.views.favorite" image.id %}" rel="{{ image.id }}" class="favorite star{{image.id}}" title="Set as favorite"> <i class="icon icon-star"></i></a>
+                <div class="ratio ratio-4x3 bg-light d-flex align-items-center justify-content-center text-muted">
+                    <i class="fa-solid fa-image fa-3x"></i>
+                </div>
             {% endif %}
-            <a class="fancybox" href="{% url "analyses.views.image" image.image_id %}" title="View image: {{ image.file_name }}"><i class="icon icon-camera"></i></a>
         </div>
-    {% else %}
-        <img src="{{ STATIC_URL }}img/no_image_large.jpg" />
-    {% endif %}
-</li>
+        
+        <div class="card-footer bg-white border-top-0 d-flex justify-content-around py-2">
+            {% if image.image_id %}
+                <a href="{% url "analyses.views.image" image.image_id %}" class="btn btn-sm btn-outline-secondary w-100 me-1" title="Save image"><i class="fa-solid fa-download"></i></a>
+                
+                {% if image.favorites.all %}
+                     <button type="button" data-url="{% url "analyses.views.favorite" image.id %}" data-id="{{ image.id }}" class="favorite btn btn-sm btn-warning w-100 mx-1 star{{image.id}}" title="Un-set as favorite"><i class="fa-solid fa-star"></i></button>
+                {% else %}
+                     <button type="button" data-url="{% url "analyses.views.favorite" image.id %}" data-id="{{ image.id }}" class="favorite btn btn-sm btn-outline-warning w-100 mx-1 star{{image.id}}" title="Set as favorite"><i class="fa-regular fa-star"></i></button>
+                {% endif %}
+                
+                <a href="{% url "analyses.views.image" image.image_id %}" class="fancybox btn btn-sm btn-outline-info w-100 ms-1" title="View image: {{ image.file_name }}"><i class="fa-solid fa-expand"></i></a>
+            {% endif %}
+        </div>
+    </div>
+</div>

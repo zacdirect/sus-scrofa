@@ -27,28 +27,41 @@ class SPAIDetector(BaseDetector):
     def __init__(self):
         super().__init__()
         self._spai = None
-        self._ai_detection_dir = None
+        self._weights_path = None
     
     def get_order(self) -> int:
         """Run last - slowest method."""
         return 100
     
     def check_deps(self) -> bool:
-        """Check if SPAI environment is available."""
-        # Check for ai_detection directory and venv
+        """Check if SPAI dependencies and weights are available."""
         try:
+            # Check for weights file
             ai_det_dir = Path(__file__).parent.parent
-            venv_python = ai_det_dir / '.venv' / 'bin' / 'python'
+            weights_path = ai_det_dir / 'weights' / 'spai.pth'
             
-            if not venv_python.exists():
-                logger.warning("SPAI venv not found - run: make ai-setup")
+            if not weights_path.exists():
+                logger.warning(f"SPAI model weights not found at {weights_path} — run: make ai-setup")
                 return False
             
-            self._ai_detection_dir = ai_det_dir
+            # Try importing SPAI dependencies
+            import torch
+            import torchvision
+            
+            # Add SPAI module to path if not already there
+            spai_dir = ai_det_dir / 'spai'
+            if str(spai_dir) not in sys.path:
+                sys.path.insert(0, str(spai_dir))
+            
+            self._weights_path = weights_path
             return True
             
+        except ImportError as e:
+            logger.warning(f"SPAI dependencies not available: {e}")
+            logger.info("Run: make ai-setup to install AI detection dependencies")
+            return False
         except Exception as e:
-            logger.error(f"Error checking SPAI dependencies: {e}")
+            logger.error(f"Error checking SPAI dependencies: {e}") 
             return False
     
     def detect(self, image_path: str, context=None) -> DetectionResult:
@@ -105,8 +118,8 @@ class SPAIDetector(BaseDetector):
             # Parse JSON result
             inference_result = json.loads(result.stdout)
             
-            if not inference_result.get('success', False):
-                error_msg = inference_result.get('error', 'Unknown error')
+            if not result.get('success', False):
+                error_msg = result.get('error', 'Unknown error')
                 return DetectionResult(
                     method=DetectionMethod.ML_MODEL,
                     is_ai_generated=None,
@@ -153,6 +166,8 @@ class SPAIDetector(BaseDetector):
             
         except Exception as e:
             logger.error(f"SPAI detection error: {e}")
+            import traceback
+            logger.debug(traceback.format_exc())
             return DetectionResult(
                 method=DetectionMethod.ML_MODEL,
                 is_ai_generated=None,
@@ -160,3 +175,4 @@ class SPAIDetector(BaseDetector):
                 score=0.0,
                 evidence=f"SPAI error: {str(e)}"
             )
+

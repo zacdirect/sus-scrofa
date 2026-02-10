@@ -1,142 +1,282 @@
 {% load add_get_parameter %}
 
 {% if case.state == "O" %}
-    <div class="pull-right btn-group">
-        <a type="button" class="btn btn-success tool" title="Add" data-toggle="dropdown">
-            <i class="icon-plus"></i> <span class="caret"></span>
-        </a>
-        <ul class="dropdown-menu">
-            <li>
-                <a href="{% url "new_image" case.id %}"><i class="icon-picture"></i> Add image</a>
-            </li>
-            <li>
-                <a href="{% url "new_url" case.id %}"><i class="icon-link"></i> Add image url</a>
-            </li>
-            <li class="divider"></li>
-            <li>
-                <a href="{% url "new_folder" case.id %}"><i class="icon-folder-open"></i> Add folder</a>
-            </li>
-        </ul>
-        <a href="{% url "edit_case" case.id %}" class="btn tool" title="Edit case"><i class="icon-edit"></i></a>
-        <a href="{% url "reprocess_case" case.id %}" class="btn btn-info tool" title="Re-process all completed images"><i class="icon-refresh"></i></a>
-        <a class="btn btn-warning tool btn-close-case" id="{% url "close_case" case.id %}" title="Close case" href="#close" role="button" data-toggle="modal"> <i class="icon-remove"></i> </a>
-        <a class="btn btn-danger tool btn-delete-case" id="{% url "delete_case" case.id %}" title="Delete case" href="#delete" role="button" data-toggle="modal"> <i class="icon-trash"></i> </a>
-    </div>
-    <div class="pull-right">
-        <a class="btn" onClick="window.location.reload();return false;"><i class="icon-refresh"></i></a><span class="notice-new" id="notice"></span>
+    <div class="d-flex justify-content-end mb-3 gap-2">
+        <div class="btn-group">
+            <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" title="Add">
+                <i class="fa-solid fa-plus"></i>
+            </button>
+            <ul class="dropdown-menu">
+                <li>
+                    <a class="dropdown-item" href="{% url "new_image" case.id %}"><i class="fa-solid fa-image me-2"></i> Add image</a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="{% url "new_url" case.id %}"><i class="fa-solid fa-link me-2"></i> Add image url</a>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <a class="dropdown-item" href="{% url "new_folder" case.id %}"><i class="fa-solid fa-folder-open me-2"></i> Add folder</a>
+                </li>
+            </ul>
+        </div>
+        <a href="{% url "edit_case" case.id %}" class="btn btn-outline-secondary tool" title="Edit case"><i class="fa-solid fa-pen"></i></a>
+        <a href="{% url "reprocess_case" case.id %}" class="btn btn-info tool text-white" title="Re-process all completed images"><i class="fa-solid fa-sync"></i></a>
+        <button class="btn btn-warning tool btn-close-case text-dark" data-url="{% url "close_case" case.id %}" title="Close case" data-bs-toggle="modal" data-bs-target="#close"> <i class="fa-solid fa-lock"></i> </button>
+        <button class="btn btn-danger tool btn-delete-case" data-url="{% url "delete_case" case.id %}" title="Delete case" data-bs-toggle="modal" data-bs-target="#delete"> <i class="fa-solid fa-trash"></i> </button>
+        
+        <!-- Manual refresh button removed in favor of HTMX polling -->
+        <span class="notice-new badge bg-info text-dark align-self-center ms-2" id="notice"></span>
     </div>
 {% else %}
-    <div class="pull-right btn-group">
-        <a href="{% url "reprocess_case" case.id %}" class="btn btn-info tool" title="Re-process all completed images"><i class="icon-refresh"></i></a>
-        <a class="btn btn-danger tool btn-delete-case" id="{% url "delete_case" case.id %}" title="Delete case" href="#delete" role="button" data-toggle="modal"> <i class="icon-trash"></i> </a>
+    <div class="d-flex justify-content-end mb-3 gap-2">
+        <a href="{% url "reprocess_case" case.id %}" class="btn btn-info tool text-white" title="Re-process all completed images"><i class="fa-solid fa-sync"></i></a>
+        <button class="btn btn-danger tool btn-delete-case" data-url="{% url "delete_case" case.id %}" title="Delete case" data-bs-toggle="modal" data-bs-target="#delete"> <i class="fa-solid fa-trash"></i> </button>
     </div>
 {% endif %}
-<div>
-    <dl class="dl-horizontal">
-        {% if case.description %}
-        <dt>
-            Description:
-        </dt>
-        <dd>
-            {% if case.description|length > 70 %}
-                {{ case.description|slice:":70" }} ...
-            {% else %}
-                {{ case.description }}
-            {% endif %}
-        </dd>
+<div class="row mb-4">
+    {% if case.description %}
+    <div class="col-sm-3 fw-bold">Description:</div>
+    <div class="col-sm-9">
+        {% if case.description|length > 70 %}
+            {{ case.description|slice:":70" }} ...
+        {% else %}
+            {{ case.description }}
         {% endif %}
-        <dt>
-            Status:
-        </dt>
-        <dd>
-            {{ case.get_state_display }}
-        </dd>
-        <dt>
-            Owner:
-        </dt>
-        <dd>
-            {{ case.owner.username }}
-        </dd>
-        <dt>
-            Created at:
-        </dt>
-        <dd>
-            {{ case.created_at }}
-        </dd>
-        <dt>
-            Case Id:
-        </dt>
-        <dd>
-            {{ case.id }}
-        </dd>
-    </dl>
+    </div>
+    {% endif %}
+    
+    <div class="col-sm-3 fw-bold">Status:</div>
+    <div class="col-sm-9">{{ case.get_state_display }}</div>
+    
+    <div class="col-sm-3 fw-bold">Owner:</div>
+    <div class="col-sm-9">{{ case.owner.username }}</div>
+    
+    <div class="col-sm-3 fw-bold">Created at:</div>
+    <div class="col-sm-9">{{ case.created_at }}</div>
+    
+    <div class="col-sm-3 fw-bold">Case Id:</div>
+    <div class="col-sm-9">{{ case.id }}</div>
 </div>
-<ul class="nav nav-pills">
-    <li {% if pagename == "list" %} class="active" {% endif %}>
-        <a href="{% url "show_case" case.id "list" %}">Tasks</a>
+<ul class="nav nav-pills mb-3">
+    <li class="nav-item">
+        <a class="nav-link {% if pagename == "list" %}active{% endif %}" href="{% url "show_case" case.id "list" %}">Tasks</a>
     </li>
-    <li {% if pagename == "owned" %} class="active" {% endif %}>
-        <a href="{% url "show_case" case.id "owned" %}">Owned</a>
+    <li class="nav-item">
+        <a class="nav-link {% if pagename == "owned" %}active{% endif %}" href="{% url "show_case" case.id "owned" %}">Owned</a>
     </li>
-    <li {% if pagename == "others" %} class="active" {% endif %}>
-        <a href="{% url "show_case" case.id "others" %}">Not owned</a>
+    <li class="nav-item">
+        <a class="nav-link {% if pagename == "others" %}active{% endif %}" href="{% url "show_case" case.id "others" %}">Not owned</a>
     </li>
-    <li {% if pagename == "thumb" %} class="active" {% endif %}>
-        <a href="{% url "show_case" case.id "thumb" %}">Thumbnails</a>
+    <li class="nav-item">
+        <a class="nav-link {% if pagename == "thumb" %}active{% endif %}" href="{% url "show_case" case.id "thumb" %}">Thumbnails</a>
     </li>
-    <li {% if pagename == "map" %} class="active" {% endif %}>
-        <a href="{% url "show_case" case.id "map" %}">Map</a>
+    <li class="nav-item">
+        <a class="nav-link {% if pagename == "map" %}active{% endif %}" href="{% url "show_case" case.id "map" %}">Map</a>
     </li>
-    <li {% if pagename == "favorites" %} class="active" {% endif %}>
-        <a href="{% url "show_case" case.id "favorites" %}">Favorites</a>
+    <li class="nav-item">
+        <a class="nav-link {% if pagename == "favorites" %}active{% endif %}" href="{% url "show_case" case.id "favorites" %}">Favorites</a>
     </li>
-    <li {% if pagename == "search" %} class="active" {% endif %}>
-        <a href="{% url "show_case" case.id "search" %}">Search</a>
+    <li class="nav-item">
+        <a class="nav-link {% if pagename == "search" %}active{% endif %}" href="{% url "show_case" case.id "search" %}">Search</a>
     </li>
 </ul>
 {% if pagename == "list" %}
-    <table class="table table-bordered table-striped responsive">
-        <thead>
-            <tr>
-                <th>File name</th>
-                <th>Authenticity</th>
-                <th>Status
-                    {% if filtered %}
-                        <a href="{% url "show_case" case.id "list" %}" class="tool" title="Show all tasks"><i class="icon-eye-close"></i></a></th>
-                    {% else %}
-                        <a href="{% add_get filter='completed' %}" class="tool" title="Show only completed tasks"><i class="icon-eye-open"></i></a></th>
-                    {% endif %}
-                <th>Owner</th>
-                <th>Submitted at</th>
-            </tr>
-        </thead>
-        <tbody>
+    <div class="table-responsive" id="case-tasks-list" hx-get="{% url 'show_case' case.id 'list' %}" hx-trigger="every 5s" hx-select="#case-tasks-list" hx-swap="outerHTML">
+        <table class="table table-hover table-striped align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>File name</th>
+                    <th>Authenticity</th>
+                    <th>Status
+                        {% if filtered %}
+                            <a href="{% url "show_case" case.id "list" %}" class="tool text-decoration-none" title="Show all tasks"><i class="fa-solid fa-eye-slash"></i></a>
+                        {% else %}
+                            <a href="{% add_get filter='completed' %}" class="tool text-decoration-none" title="Show only completed tasks"><i class="fa-solid fa-eye"></i></a>
+                        {% endif %}
+                    </th>
+                    <th>Owner</th>
+                    <th>Submitted at</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if tasks %}
+                    {% for task in tasks %}
+                    <tr>
+                        <td> 
+                        {% if task.state == "C" %} 
+                            <a href="{% url "show_analysis" task.id %}" class="text-decoration-none fw-bold">{{ task.file_name }}</a> 
+                        {% else %}
+                            {{ task.file_name }}
+                        {% endif %} 
+                        </td>
+                        <td>
+                        {% if task.state == "C" and task.report.confidence.authenticity_score is not None %}
+                            {% if task.report.confidence.authenticity_score >= 80 %}
+                                <span class="badge bg-success">{{ task.report.confidence.authenticity_score }}/100</span>
+                            {% elif task.report.confidence.authenticity_score >= 60 %}
+                                <span class="badge bg-info">{{ task.report.confidence.authenticity_score }}/100</span>
+                            {% elif task.report.confidence.authenticity_score >= 40 %}
+                                <span class="badge bg-warning text-dark">{{ task.report.confidence.authenticity_score }}/100</span>
+                            {% else %}
+                                <span class="badge bg-danger">{{ task.report.confidence.authenticity_score }}/100</span>
+                            {% endif %}
+                        {% elif task.state == "C" %}
+                            <span class="text-muted">N/A</span>
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                        </td>
+                        <td>{{ task.get_state_display }}</td>
+                        <td>{{ task.owner.username }}</td>
+                        <td>{{ task.created_at }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">
+                            <i class="fa-solid fa-folder-open fa-2x mb-2 d-block"></i>
+                            No data available in table
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    {% if tasks %}
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if tasks.has_previous %}
+                    <li class="page-item">
+                        {% if filtered %}
+                            <a class="page-link" href="{% url "show_case" case.id "list" %}?page={{ tasks.previous_page_number }}&filter=completed">← Previous</a>
+                        {% else %}
+                            <a class="page-link" href="{% url "show_case" case.id "list" %}?page={{ tasks.previous_page_number }}">← Previous</a>
+                        {% endif %}
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">← Previous</span></li>
+                {% endif %}
+                
+                <li class="page-item disabled">
+                    <span class="page-link">Page {{ tasks.number }} of {{ tasks.paginator.num_pages }}</span>
+                </li>
+
+                {% if tasks.has_next %}
+                    <li class="page-item">
+                        {% if filtered %}
+                            <a class="page-link" href="{% url "show_case" case.id "list" %}?page={{ tasks.next_page_number }}&filter=completed">Next → </a>
+                        {% else %}
+                            <a class="page-link" href="{% url "show_case" case.id "list" %}?page={{ tasks.next_page_number }}">Next → </a>
+                        {% endif %}
+                    </li>
+                {% else %}
+                     <li class="page-item disabled"><span class="page-link">Next →</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+{% elif pagename == "owned" %}
+    <div class="table-responsive" id="case-owned-list" hx-get="{% url 'show_case' case.id 'owned' %}" hx-trigger="every 5s" hx-select="#case-owned-list" hx-swap="outerHTML">
+        <table class="table table-hover table-striped align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>File name</th>
+                    <th>Status
+                        {% if filtered %}
+                            <a href="{% url "show_case" case.id "owned" %}" class="tool text-decoration-none" title="Show all reports"><i class="fa-solid fa-eye-slash"></i></a>
+                        {% else %}
+                            <a href="{% add_get filter='completed' %}" class="tool text-decoration-none" title="Show only completed reports"><i class="fa-solid fa-eye"></i></a>
+                        {% endif %}
+                    </th>
+                    <th>Submitted at</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if tasks %}
+                    {% for task in tasks %}
+                    <tr>
+                        <td> 
+                        {% if task.state == "C" %} 
+                            <a href="{% url "show_analysis" task.id %}" class="text-decoration-none fw-bold">{{ task.file_name }}</a> 
+                        {% else %}
+                            {{ task.file_name }}
+                        {% endif %} 
+                        </td>
+                        <td>{{ task.get_state_display }}</td>
+                        <td>{{ task.created_at }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center py-4 text-muted">
+                            <i class="fa-solid fa-folder-open fa-2x mb-2 d-block"></i>
+                            No data available in table
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    {% if tasks %}
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if tasks.has_previous %}
+                    <li class="page-item">
+                        {% if filtered %}
+                            <a class="page-link" href="{% url "show_case" case.id "owned" %}?page={{ tasks.previous_page_number }}&filter=completed">← Previous</a>
+                        {% else %}
+                            <a class="page-link" href="{% url "show_case" case.id "owned" %}?page={{ tasks.previous_page_number }}">← Previous</a>
+                        {% endif %}
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">← Previous</span></li>
+                {% endif %}
+                
+                <li class="page-item disabled">
+                    <span class="page-link">Page {{ tasks.number }} of {{ tasks.paginator.num_pages }}</span>
+                </li>
+
+                {% if tasks.has_next %}
+                    <li class="page-item">
+                        {% if filtered %}
+                            <a class="page-link" href="{% url "show_case" case.id "owned" %}?page={{ tasks.next_page_number }}&filter=completed">Next → </a>
+                        {% else %}
+                            <a class="page-link" href="{% url "show_case" case.id "owned" %}?page={{ tasks.next_page_number }}">Next → </a>
+                        {% endif %}
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">Next →</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+{% elif pagename == "others" %}
+    <div class="table-responsive" id="case-others-list" hx-get="{% url 'show_case' case.id 'others' %}" hx-trigger="every 5s" hx-select="#case-others-list" hx-swap="outerHTML">
+        <table class="table table-hover table-striped align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>File name</th>
+                    <th>Status
+                        {% if filtered %}
+                            <a href="{% url "show_case" case.id "others" %}" class="tool text-decoration-none" title="Show all reports"><i class="fa-solid fa-eye-slash"></i></a>
+                        {% else %}
+                            <a href="{% add_get filter='completed' %}" class="tool text-decoration-none" title="Show only completed reports"><i class="fa-solid fa-eye"></i></a>
+                        {% endif %}
+                    </th>
+                    <th>Owner</th>
+                    <th>Submitted at</th>
+                </tr>
+            </thead>
+            <tbody>
             {% if tasks %}
                 {% for task in tasks %}
                 <tr>
                     <td> 
                     {% if task.state == "C" %} 
-                        <a href="{% url "show_analysis" task.id %}">{{ task.file_name }}</a> 
+                        <a href="{% url "show_analysis" task.id %}" class="text-decoration-none fw-bold">{{ task.file_name }}</a> 
                     {% else %}
                         {{ task.file_name }}
                     {% endif %} 
-                    </td>
-                    <td>
-                    {% if task.state == "C" and task.report.confidence.authenticity_score is not None %}
-                        {% if task.report.confidence.authenticity_score >= 80 %}
-                            <span class="label label-success">{{ task.report.confidence.authenticity_score }}/100</span>
-                        {% elif task.report.confidence.authenticity_score >= 60 %}
-                            <span class="label label-info">{{ task.report.confidence.authenticity_score }}/100</span>
-                        {% elif task.report.confidence.authenticity_score >= 40 %}
-                            <span class="label label-warning">{{ task.report.confidence.authenticity_score }}/100</span>
-                        {% else %}
-                            <span class="label label-important">{{ task.report.confidence.authenticity_score }}/100</span>
-                        {% endif %}
-                    {% elif task.state == "C" %}
-                        <span class="muted">N/A</span>
-                    {% else %}
-                        <span class="muted">-</span>
-                    {% endif %}
                     </td>
                     <td>{{ task.get_state_display }}</td>
                     <td>{{ task.owner.username }}</td>
@@ -145,205 +285,79 @@
                 {% endfor %}
             {% else %}
                 <tr>
-                    <td colspan="5">
+                    <td colspan="4" class="text-center py-4 text-muted">
+                        <i class="fa-solid fa-folder-open fa-2x mb-2 d-block"></i>
                         No data available in table
                     </td>
                 </tr>
             {% endif %}
-        </tbody>
-    </table>
+            </tbody>
+        </table>
+    </div>
     {% if tasks %}
-        <div class="pagination text-center">
-            {% if tasks.has_previous %}
-                <ul>
-                    <li>
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if tasks.has_previous %}
+                    <li class="page-item">
                         {% if filtered %}
-                            <a href="{% url "show_case" case.id "list" %}?page={{ tasks.previous_page_number }}&filter=completed">← Previous</a>
+                            <a class="page-link" href="{% url "show_case" case.id "others" %}?page={{ tasks.previous_page_number }}&filter=completed">← Previous</a>
                         {% else %}
-                            <a href="{% url "show_case" case.id "list" %}?page={{ tasks.previous_page_number }}">← Previous</a>
+                            <a class="page-link" href="{% url "show_case" case.id "others" %}?page={{ tasks.previous_page_number }}">← Previous</a>
                         {% endif %}
                     </li>
-                </ul>
-            {% endif %}
-            <span class="current pull-left">
-                <small>Page {{ tasks.number }} of {{ tasks.paginator.num_pages }}</small>
-            </span>
-            {% if tasks.has_next %}
-                <ul>
-                    <li>
-                        {% if filtered %}
-                            <a href="{% url "show_case" case.id "list" %}?page={{ tasks.next_page_number }}&filter=completed">Next → </a>
-                        {% else %}
-                            <a href="{% url "show_case" case.id "list" %}?page={{ tasks.next_page_number }}">Next → </a>
-                        {% endif %}
-                    </li>
-                </ul>
-            {% endif %}
-        </div>
-    {% endif %}
-{% elif pagename == "owned" %}
-    <table class="table table-bordered table-striped responsive">
-        <thead>
-            <tr>
-                <th>File name</th>
-                <th>Status
-                    {% if filtered %}
-                        <a href="{% url "show_case" case.id "owned" %}" class="tool" title="Show all reports"><i class="icon-eye-close"></i></a></th>
-                    {% else %}
-                        <a href="{% add_get filter='completed' %}" class="tool" title="Show only completed reports"><i class="icon-eye-open"></i></a></th>
-                    {% endif %}
-                </th>
-                <th>Submitted at</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% if tasks %}
-                {% for task in tasks %}
-                <tr>
-                    <td> 
-                    {% if task.state == "C" %} 
-                        <a href="{% url "show_analysis" task.id %}">{{ task.file_name }}</a> 
-                    {% else %}
-                        {{ task.file_name }}
-                    {% endif %} 
-                    </td>
-                    <td>{{ task.get_state_display }}</td>
-                    <td>{{ task.created_at }}</td>
-                </tr>
-                {% endfor %}
-            {% else %}
-                <tr>
-                    <td colspan="4">
-                        No data available in table
-                    </td>
-                </tr>
-            {% endif %}
-        </tbody>
-    </table>
-    {% if tasks %}
-        <div class="pagination text-center">
-            {% if tasks.has_previous %}
-                <ul>
-                    <li>
-                        {% if filtered %}
-                            <a href="{% url "show_case" case.id "owned" %}?page={{ tasks.previous_page_number }}&filter=completed">← Previous</a>
-                        {% else %}
-                            <a href="{% url "show_case" case.id "owned" %}?page={{ tasks.previous_page_number }}">← Previous</a>
-                        {% endif %}
-                    </li>
-                </ul>
-            {% endif %}
-            <span class="current pull-left">
-                <small>Page {{ tasks.number }} of {{ tasks.paginator.num_pages }}</small>
-            </span>
-            {% if tasks.has_next %}
-                <ul>
-                    <li>
-                        {% if filtered %}
-                            <a href="{% url "show_case" case.id "owned" %}?page={{ tasks.next_page_number }}&filter=completed">Next → </a>
-                        {% else %}
-                            <a href="{% url "show_case" case.id "owned" %}?page={{ tasks.next_page_number }}">Next → </a>
-                        {% endif %}
-                    </li>
-                </ul>
-            {% endif %}
-        </div>
-    {% endif %}
-{% elif pagename == "others" %}
-    <table class="table table-bordered table-striped responsive">
-        <thead>
-            <tr>
-                <th>File name</th>
-                <th>Status
-                    {% if filtered %}
-                        <a href="{% url "show_case" case.id "others" %}" class="tool" title="Show all reports"><i class="icon-eye-close"></i></a></th>
-                    {% else %}
-                        <a href="{% add_get filter='completed' %}" class="tool" title="Show only completed reports"><i class="icon-eye-open"></i></a></th>
-                    {% endif %}
-                </th>
-                <th>Owner</th>
-                <th>Submitted at</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% if tasks %}
-            {% for task in tasks %}
-            <tr>
-                <td> 
-                {% if task.state == "C" %} 
-                    <a href="{% url "show_analysis" task.id %}">{{ task.file_name }}</a> 
                 {% else %}
-                    {{ task.file_name }}
-                {% endif %} 
-                </td>
-                <td>{{ task.get_state_display }}</td>
-                <td>{{ task.owner.username }}</td>
-                <td>{{ task.created_at }}</td>
-            </tr>
-            {% endfor %}
-        {% else %}
-            <tr>
-                <td colspan="4">
-                    No data available in table
-                </td>
-            </tr>
-        {% endif %}
-        </tbody>
-    </table>
-    {% if tasks %}
-        <div class="pagination text-center">
-            {% if tasks.has_previous %}
-                <ul>
-                    <li>
+                    <li class="page-item disabled"><span class="page-link">← Previous</span></li>
+                {% endif %}
+                
+                <li class="page-item disabled">
+                    <span class="page-link">Page {{ tasks.number }} of {{ tasks.paginator.num_pages }}</span>
+                </li>
+
+                {% if tasks.has_next %}
+                    <li class="page-item">
                         {% if filtered %}
-                            <a href="{% url "show_case" case.id "others" %}?page={{ tasks.previous_page_number }}&filter=completed">← Previous</a>
+                            <a class="page-link" href="{% url "show_case" case.id "others" %}?page={{ tasks.next_page_number }}&filter=completed">Next → </a>
                         {% else %}
-                            <a href="{% url "show_case" case.id "others" %}?page={{ tasks.previous_page_number }}">← Previous</a>
+                            <a class="page-link" href="{% url "show_case" case.id "others" %}?page={{ tasks.next_page_number }}">Next → </a>
                         {% endif %}
                     </li>
-                </ul>
-            {% endif %}
-            <span class="current pull-left">
-                <small>Page {{ tasks.number }} of {{ tasks.paginator.num_pages }}</small>
-            </span>
-            {% if tasks.has_next %}
-                <ul>
-                    <li>
-                        {% if filtered %}
-                            <a href="{% url "show_case" case.id "others" %}?page={{ tasks.next_page_number }}&filter=completed">Next → </a>
-                        {% else %}
-                            <a href="{% url "show_case" case.id "others" %}?page={{ tasks.next_page_number }}">Next → </a>
-                        {% endif %}
-                    </li>
-                </ul>
-            {% endif %}
-        </div>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">Next →</span></li>
+                {% endif %}
+            </ul>
+        </nav>
     {% endif %}
 {% elif pagename == "thumb" %}
-    {% include "analyses/cases/_thum_image.html" with images=tasks %}
+    <div id="case-thumb-list" hx-get="{% url 'show_case' case.id 'thumb' %}" hx-trigger="every 10s" hx-select="#case-thumb-list" hx-swap="outerHTML">
+        {% include "analyses/cases/_thum_image.html" with images=tasks %}
+    </div>
         {% if tasks %}
-            <div class="pagination text-center">
-                {% if tasks.has_previous %}
-                    <ul>
-                        <li>
-                            <a href="{% url "show_case" case.id "thumb" %}?page={{ tasks.previous_page_number }}">← Previous</a>
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if tasks.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="{% url "show_case" case.id "thumb" %}?page={{ tasks.previous_page_number }}">← Previous</a>
                         </li>
-                    </ul>
-                {% endif %}
-                <span class="current pull-left">
-                    <small>Page {{ tasks.number }} of {{ tasks.paginator.num_pages }}</small>
-                </span>        
-                {% if tasks.has_next %}
-                    <ul>
-                        <li>
-                            <a href="{% url "show_case" case.id "thumb" %}?page={{ tasks.next_page_number }}">Next → </a>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">← Previous</span></li>
+                    {% endif %}
+                    
+                    <li class="page-item disabled">
+                        <span class="page-link">Page {{ tasks.number }} of {{ tasks.paginator.num_pages }}</span>
+                    </li>
+
+                    {% if tasks.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{% url "show_case" case.id "thumb" %}?page={{ tasks.next_page_number }}">Next → </a>
                         </li>
-                    </ul>
-                {% endif %}
-            </div> 
+                    {% else %}
+                         <li class="page-item disabled"><span class="page-link">Next →</span></li>
+                    {% endif %}
+                </ul>
+            </nav> 
         {% else %}
-            <div class="alert">
-                <strong>Warning!</strong> there are not any photos.
+            <div class="alert alert-warning">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i> <strong>Warning!</strong> There are no photos.
             </div> 
         {% endif %}
 {% elif pagename == "map" %}

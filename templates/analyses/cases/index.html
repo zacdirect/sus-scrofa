@@ -1,53 +1,61 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="span11">
-    <div class="content content-large">
-        <div class="content-header">
-            <h2><i class="icon-briefcase"> </i> Cases <small>browse all cases</small></h2>
-        </div>
-        <div class="content-breadcrumb">
-            <ul class="breadcrumb">
-                <li>
-                    <a href="/"><i class="icon-home"> </i> Dashboard</a><span class="divider">&rsaquo;</span>
-                </li>
-                <li class="active">
-                    Cases
-                </li>
-            </ul>
-        </div>
-        <div class="content-body">
-            <div>
-                <h3><a href="{% url "new_case" %}"></a></h3>
+<div class="row mb-4 animate__animated animate__fadeIn">
+    <div class="col-12">
+        <div
+            class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2"><i class="fa-solid fa-briefcase text-secondary me-2"></i> Cases <small
+                    class="text-muted fs-6">Browse all cases</small></h1>
+            <div class="btn-toolbar mb-2 mb-md-0">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="/" class="text-decoration-none"><i
+                                    class="fa-solid fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Cases</li>
+                    </ol>
+                </nav>
             </div>
-            <div class="corner-all">
-                <div class="header-control pull-right">
-                    <a href="{% url "new_case" %}" class="btn btn-success tool" title="Add case">
-                        <i class="icon-plus"> </i>
-                    </a>
-                </div>
-                <div class="box-header corner-top">
-                    <ul class="nav nav-pills" id="cases_tab">
-                        <li class="active">
-                            <a href="#all" data-toggle="tab">All</a>
-                        </li>
-                        <li>
-                            <a href="#owned" data-toggle="tab">Owned</a>
-                        </li>
-                        <li>
-                            <a href="#others" data-toggle="tab">Not owned</a>
-                        </li>
-                    </ul>
-                    <div class="tab-content">
-                        <div class="tab-pane active" id="all">
-                            {% include "layout/_indexCase.html" with cases=last_cases %}
-                        </div>
-                        <div class="tab-pane" id="owned">
-                            {% include "layout/_indexCase.html" with cases=my_cases %}
-                        </div>
-                        <div class="tab-pane" id="others">
-                            {% include "layout/_indexCase.html" with cases=others_cases %}
-                        </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="text-end mb-3">
+            <a href="{% url "new_case" %}" class="btn btn-primary shadow-sm">
+                <i class="fa-solid fa-plus me-2"></i> Add New Case
+            </a>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-bottom-0 pt-4 px-4 pb-0">
+                <ul class="nav nav-tabs card-header-tabs" id="cases_tab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all"
+                            type="button" role="tab" aria-controls="all" aria-selected="true">All Cases</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="owned-tab" data-bs-toggle="tab" data-bs-target="#owned"
+                            type="button" role="tab" aria-controls="owned" aria-selected="false">My Cases</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="others-tab" data-bs-toggle="tab" data-bs-target="#others"
+                            type="button" role="tab" aria-controls="others" aria-selected="false">Shared With
+                            Me</button>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body p-0">
+                <div class="tab-content" id="cases_tab_content">
+                    <div class="tab-pane fade show active" id="all" role="tabpanel" aria-labelledby="all-tab">
+                        {% include "layout/_indexCase.html" with cases=last_cases %}
+                    </div>
+                    <div class="tab-pane fade" id="owned" role="tabpanel" aria-labelledby="owned-tab">
+                        {% include "layout/_indexCase.html" with cases=my_cases %}
+                    </div>
+                    <div class="tab-pane fade" id="others" role="tabpanel" aria-labelledby="others-tab">
+                        {% include "layout/_indexCase.html" with cases=others_cases %}
                     </div>
                 </div>
             </div>
@@ -57,11 +65,31 @@
 
 {% include "layout/_modalActionCase.html" %}
 
-<script type="text/javascript">
-$('.datatables').dataTable({
-"sDom" : '<"top">t<"bottom"lp><"clear">',
-"aaSorting": [[ 2, "desc" ]]
-});
-</script>
+{% endblock %}
 
-{%  endblock %}
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Handle modal URL transfer
+        const handleModalTrigger = function (event) {
+            let trigger = event.relatedTarget; // The button that triggered the modal
+            if (trigger) {
+                let url = trigger.getAttribute('data-url');
+                let targetId = trigger.getAttribute('data-bs-target');
+                if (targetId && url) {
+                    let confirmBtn = document.querySelector(targetId + ' .modal-footer .btn-danger, ' + targetId + ' .modal-footer .btn-warning');
+                    if (confirmBtn) {
+                        confirmBtn.setAttribute('href', url);
+                    }
+                }
+            }
+        };
+
+        // Bootstrap 5 modal events
+        var modals = document.querySelectorAll('.modal');
+        modals.forEach(function (modalEl) {
+            modalEl.addEventListener('show.bs.modal', handleModalTrigger);
+        });
+    });
+</script>
+{% endblock %}

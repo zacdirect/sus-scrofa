@@ -1,84 +1,67 @@
 {% load analyses_tags %}
-<div class="box-tab corner-all">
-    <div class="box-header corner-top">
-        <div class="header-control pull-right">
-            <a data-box="collapse"><i class="icofont-caret-up"></i></a>
-        </div>
-        <ul class="nav nav-pills" id="tab-stat">
-            <li class="active">
-                <a data-toggle="tab" href="#system-info">Static info</a>
-            </li>
-            <li>
-                <a data-toggle="tab" href="#server-type">FileType</a>
-            </li>
-            <li>
-                <a data-toggle="tab" href="#server-hash">Hashes</a>
-            </li>
-            {% if analysis.list_set.all %}
-             <li>
-                <a data-toggle="tab" href="#server-hash-match">Hash matched</a>
-            </li>
-            {% endif %}
-            <li>
-                <a data-toggle="tab" href="#strings">Strings</a>
-            </li>
-            <li>
-                <a data-toggle="tab" href="#server-hex">Hex dump</a>
-            </li>
-        </ul>
+<div class="d-flex flex-column flex-md-row gap-4">
+    <div class="nav flex-column nav-pills me-3" id="v-pills-tab" role="tablist" aria-orientation="vertical" style="min-width: 200px;">
+        <button class="nav-link active text-start" id="v-pills-info-tab" data-bs-toggle="pill" data-bs-target="#system-info" type="button" role="tab" aria-controls="system-info" aria-selected="true"><i class="fa-solid fa-info-circle me-2"></i> Static Info</button>
+        <button class="nav-link text-start" id="v-pills-type-tab" data-bs-toggle="pill" data-bs-target="#server-type" type="button" role="tab" aria-controls="server-type" aria-selected="false"><i class="fa-solid fa-file me-2"></i> File Type</button>
+        <button class="nav-link text-start" id="v-pills-hash-tab" data-bs-toggle="pill" data-bs-target="#server-hash" type="button" role="tab" aria-controls="server-hash" aria-selected="false"><i class="fa-solid fa-hashtag me-2"></i> Hashes</button>
+        {% if analysis.list_set.all %}
+        <button class="nav-link text-start" id="v-pills-match-tab" data-bs-toggle="pill" data-bs-target="#server-hash-match" type="button" role="tab" aria-controls="server-hash-match" aria-selected="false"><i class="fa-solid fa-check-double me-2"></i> Hash Matches</button>
+        {% endif %}
+        <button class="nav-link text-start" id="v-pills-strings-tab" data-bs-toggle="pill" data-bs-target="#strings" type="button" role="tab" aria-controls="strings" aria-selected="false"><i class="fa-solid fa-font me-2"></i> Strings</button>
+        <button class="nav-link text-start" id="v-pills-hex-tab" data-bs-toggle="pill" data-bs-target="#server-hex" type="button" role="tab" aria-controls="server-hex" aria-selected="false"><i class="fa-solid fa-binary me-2"></i> Hex Dump</button>
     </div>
-    <div class="box-body">
-        <div class="tab-content">
-            <div class="tab-pane fade in active" id="system-info">
-                <div class="row-fluid">
-                    {% include 'analyses/report/_staticInfo.html' %}
-                </div>
+    
+    <div class="tab-content flex-grow-1" id="v-pills-tabContent">
+        <div class="tab-pane fade show active" id="system-info" role="tabpanel" aria-labelledby="v-pills-info-tab">
+            <div class="table-responsive">
+                {% include 'analyses/report/_staticInfo.html' %}
             </div>
-            <div class="tab-pane fade" id="server-type">
-                <div class="row-fluid">
-                    {% include 'analyses/report/_staticFileType.html' %}
-                </div>
+        </div>
+        <div class="tab-pane fade" id="server-type" role="tabpanel" aria-labelledby="v-pills-type-tab">
+            <div class="table-responsive">
+                {% include 'analyses/report/_staticFileType.html' %}
             </div>
-            <div class="tab-pane fade" id="server-hash">
-                <div class="row-fluid">
-                    {% include 'analyses/report/_staticHashes.html' %}
-                </div>
+        </div>
+        <div class="tab-pane fade" id="server-hash" role="tabpanel" aria-labelledby="v-pills-hash-tab">
+            <div class="table-responsive">
+                {% include 'analyses/report/_staticHashes.html' %}
             </div>
-            <div class="tab-pane fade" id="server-hash-match">
-                <div class="row-fluid">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Description</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        {% if analysis.list_set.all %}
-                            {% for match in analysis.list_set.all %}
-                            <tr>
-                                <td><strong>{{ match.name }}</strong></td>
-                                <td>{{ match.description }}</td>
-                            </tr>
-                            {% endfor %}
-                       {% endif %}
-                        </tbody>
-                    </table>
-                </div>
+        </div>
+        <div class="tab-pane fade" id="server-hash-match" role="tabpanel" aria-labelledby="v-pills-match-tab">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% if analysis.list_set.all %}
+                        {% for match in analysis.list_set.all %}
+                        <tr>
+                            <td><strong>{{ match.name }}</strong></td>
+                            <td>{{ match.description }}</td>
+                        </tr>
+                        {% endfor %}
+                   {% endif %}
+                    </tbody>
+                </table>
             </div>
-            <div class="tab-pane fade" id="strings">
-                <div class="row-fluid">
-                    {% include 'analyses/report/_staticStrings.html' %}
-                </div>
+        </div>
+        <div class="tab-pane fade" id="strings" role="tabpanel" aria-labelledby="v-pills-strings-tab">
+            <div class="table-responsive">
+                {% include 'analyses/report/_staticStrings.html' %}
             </div>
-            <div class="tab-pane fade" id="server-hex">
-                <div class="row-fluid">
-                    <div class="hexview"></div>
-                    <img class="hide" id="wait" src="{{ STATIC_URL }}img/ico/icona_wait.gif">
-                    <br>
-                    <div class="center">
-                        <a id="hexdown" class="btn">Prev</a>
-                        <a id="hexup" class="btn">Next</a>
+        </div>
+        <div class="tab-pane fade" id="server-hex" role="tabpanel" aria-labelledby="v-pills-hex-tab">
+            <div class="card bg-light border-0">
+                <div class="card-body">
+                    <div class="hexview font-monospace small bg-white p-3 border rounded mb-3" style="min-height: 400px; overflow-y: auto;"></div>
+                    <div class="d-flex justify-content-center align-items-center gap-2">
+                        <button id="hexdown" class="btn btn-primary"><i class="fa-solid fa-chevron-left me-1"></i> Prev</button>
+                        <span id="wait" class="badge bg-warning text-dark d-none">Loading...</span>
+                        <button id="hexup" class="btn btn-primary">Next <i class="fa-solid fa-chevron-right ms-1"></i></button>
                     </div>
                 </div>
             </div>
@@ -87,7 +70,6 @@
 </div>
 
 <script type="text/javascript">
-
     var current_page = 0;
 
     $(document).ready(function() {
@@ -95,22 +77,23 @@
     });
 
     function loadPage(page){
+        $('#wait').removeClass('d-none');
         $.get('{% url "hex_dump" analysis.id %}?page='+ page, function(data) {
             $('.hexview').html(data);
-            $('#wait').hide();
+            $('#wait').addClass('d-none');
         });
     }
 
-    $('#hexdown').click(function(){
+    $('#hexdown').click(function(e){
+        e.preventDefault();
         if(current_page > 0){
-            $('#wait').show();
             current_page = (current_page - 1);
             loadPage(current_page);
         }
     });
 
-    $('#hexup').click(function(){
-        $('#wait').show();
+    $('#hexup').click(function(e){
+        e.preventDefault();
         current_page = (current_page + 1);
         loadPage(current_page);
     });
