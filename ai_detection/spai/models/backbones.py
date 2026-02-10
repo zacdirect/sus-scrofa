@@ -16,7 +16,7 @@
 
 import torch
 from torch import nn
-import clip
+import open_clip
 
 
 CLIP_MEAN: tuple[float, ...] = (0.48145466, 0.4578275, 0.40821073)
@@ -39,14 +39,27 @@ class Hook:
 class CLIPBackbone(nn.Module):
     def __init__(
         self,
-        clip_model: str = "ViT-B/16",
+        clip_model: str = "ViT-B-16",  # open_clip uses hyphens instead of slashes
         device: str = "cpu"
     ) -> None:
         super().__init__()
 
-        # Load and freeze CLIP
-        self.clip, self.preprocess = clip.load(clip_model, device=device)
-        # self.clip = self.clip.float()
+        # Map old-style model names to open_clip format
+        model_map = {
+            "ViT-B/16": "ViT-B-16",
+            "ViT-L/14": "ViT-L-14",
+            "ViT-B/32": "ViT-B-32",
+        }
+        clip_model = model_map.get(clip_model, clip_model)
+
+        # Load and freeze CLIP using open_clip
+        self.clip, _, self.preprocess = open_clip.create_model_and_transforms(
+            clip_model, 
+            pretrained='openai',
+            device=device
+        )
+        self.clip.eval()
+        
         for name, param in self.clip.named_parameters():
             param.requires_grad = False
 
@@ -60,11 +73,11 @@ class CLIPBackbone(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Processes a batch of images using a CLIP backbone and returns intermediate layers."""
         # Make sure that the parameters of LayerNorm are always in FP32, even during FP16
-        # training. Otherwise, it will crash, since clip utilizes a custom LayerNorm that
-        # always converts the input to LayerNorm to FP32.
+        # training. Otherwise, it will crash, since some LayerNorm implementations
+        # always convert the input to FP32.
         if self.clip.visual.transformer.resblocks[1].ln_1.weight.dtype != torch.float32:
             for m in self.clip.modules():
-                if isinstance(m, clip.model.LayerNorm):
+                if isinstance(m, nn.LayerNorm):
                     m.float()
 
         self.clip.encode_image(x)

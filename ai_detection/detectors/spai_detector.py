@@ -87,7 +87,7 @@ class SPAIDetector(BaseDetector):
         try:
             # Lazy import SPAI (only when needed)
             if self._spai is None:
-                from inference import SPAIDetector as SPAI
+                from spai.inference import SPAIDetector as SPAI
                 self._spai = SPAI(str(self._weights_path))
             
             # Run inference

@@ -129,9 +129,26 @@ install: venv
 	@$(VENV)/python -c "import numpy, scipy, cv2, skimage; print('  ✓ NumPy, SciPy, OpenCV, scikit-image')" 2>/dev/null || \
 		(echo "$(RED)  ✗ Scientific libraries not found. Run 'make install' again.$(NC)" && exit 1)
 	@echo ""
-	@echo "$(GREEN)✓ All dependencies installed$(NC)"
+	@echo "$(GREEN)✓ Core dependencies installed$(NC)"
 	@echo ""
-	@$(MAKE) ai-setup
+	@echo "$(GREEN)========================================$(NC)"
+	@echo "$(GREEN)Setting up AI Detection...$(NC)"
+	@echo "$(GREEN)========================================$(NC)"
+	@echo ""
+	@$(MAKE) ai-setup || (echo "$(RED)✗ AI setup failed. You can retry with: make ai-setup$(NC)" && exit 1)
+	@echo ""
+	@echo "$(GREEN)========================================$(NC)"
+	@echo "$(GREEN)✓ Installation complete!$(NC)"
+	@echo "$(GREEN)========================================$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Next steps:$(NC)"
+	@echo "  1. Start MongoDB:    make mongodb"
+	@echo "  2. Run migrations:   make migrate"
+	@echo "  3. Create superuser: make superuser"
+	@echo "  4. Start services:   make run"
+	@echo ""
+	@echo "$(YELLOW)Or run everything at once:$(NC)"
+	@echo "  make setup"
 
 setup: check-deps install mongodb
 	@echo ""
@@ -365,7 +382,12 @@ ai-setup: venv
 	echo "$(GREEN)✓ Dependencies installed$(NC)"
 	@echo ""
 	@echo "$(YELLOW)Downloading AI detection models...$(NC)"
-	@cd ai_detection && PYTHON=../$(PYTHON) $(MAKE) weights models
+	@echo "  This may take a few minutes on first run..."
+	@echo ""
+	@cd ai_detection && PYTHON=../$(PYTHON) $(MAKE) weights models || \
+		(echo "$(RED)✗ Model download failed$(NC)" && \
+		 echo "$(YELLOW)You can retry with: cd ai_detection && make models$(NC)" && \
+		 exit 1)
 	@echo ""
 	@echo "$(GREEN)========================================$(NC)"
 	@echo "$(GREEN)✓ AI detection ready!$(NC)"
@@ -375,11 +397,14 @@ ai-setup: venv
 	@echo ""
 	@echo "Verify installation:"
 	@echo "  make ai-verify"
+	@echo ""
+	@echo "Check model status:"
+	@echo "  cd ai_detection && make models-list"
 
 
 ai-verify:
 	@echo "$(GREEN)Verifying AI detection module...$(NC)"
-	@cd ai_detection && $(MAKE) verify
+	@cd ai_detection && PYTHON=../$(PYTHON) $(MAKE) verify
 
 ai-clean:
 	@echo "$(YELLOW)Cleaning AI detection module...$(NC)"
@@ -405,7 +430,7 @@ photoholmes-setup:
 	$(PIP) install --index-url $$INDEX_URL torch torchvision; \
 	echo ""; \
 	echo "$(YELLOW)Step 2: Installing additional dependencies...$(NC)"; \
-	$(PIP) install jpegio>=0.4.0 torchmetrics torch_kmeans; \
+	$(PIP) install "jpegio>=0.4.0" torchmetrics torch_kmeans; \
 	echo ""; \
 	echo "$(YELLOW)Step 3: Installing photoholmes from GitHub...$(NC)"; \
 	echo "Since torch is already installed, pip won't re-download different version."; \
