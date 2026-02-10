@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4 animate__animated animate__fadeIn">
+    <div class="col-12">
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">
+                <i class="fa-solid fa-tag text-secondary me-2"></i> Tag: <span class="badge bg-primary">{{ tag_text }}</span>
+                <small class="text-muted fs-6">Images across all cases</small>
+            </h1>
+            <div class="btn-toolbar mb-2 mb-md-0">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="/" class="text-decoration-none"><i class="fa-solid fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'list_tags' %}" class="text-decoration-none">Tags</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">{{ tag_text }}</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                {% if images %}
+                    <div class="alert alert-info mb-4">
+                        <i class="fa-solid fa-layer-group me-2"></i>
+                        <strong>Cross-Case View:</strong> Showing all images tagged with "{{ tag_text }}" from all cases you have access to.
+                    </div>
+
+                    {% include "analyses/cases/_list_image.html" %}
+                    
+                    {% if images %}
+                        <nav aria-label="Page navigation" class="mt-4">
+                            <ul class="pagination justify-content-center">
+                                {% if images.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{% url 'show_tag' tag_text %}?page={{ images.previous_page_number }}">← Previous</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled"><span class="page-link">← Previous</span></li>
+                                {% endif %}
+                                
+                                <li class="page-item disabled">
+                                    <span class="page-link">Page {{ images.number }} of {{ images.paginator.num_pages }}</span>
+                                </li>
+
+                                {% if images.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{% url 'show_tag' tag_text %}?page={{ images.next_page_number }}">Next → </a>
+                                    </li>
+                                {% else %}
+                                     <li class="page-item disabled"><span class="page-link">Next →</span></li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    {% endif %}
+                {% else %}
+                    <div class="alert alert-warning text-center py-5">
+                        <i class="fa-solid fa-triangle-exclamation fa-3x mb-3 d-block mx-auto" style="width: 60px;"></i>
+                        <h4>No Images Found</h4>
+                        <p class="mb-0">No images with tag "{{ tag_text }}" found in your accessible cases.</p>
+                        <a href="{% url 'list_tags' %}" class="btn btn-primary mt-3">
+                            <i class="fa-solid fa-arrow-left me-2"></i>Back to Tags
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

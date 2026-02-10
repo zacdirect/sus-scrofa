@@ -42,6 +42,8 @@ urlpatterns = [
     re_path(r"^search/(?P<page_name>[\w]+)/$", views.search, name="search"),
     re_path(r"^images/tag/add/(?P<id>[\d]+)/$", views.add_tag, name="add_tag"),
     re_path(r"^images/tag/delete/(?P<id>[\d]+)/$", views.delete_tag, name="delete_tag"),
+    re_path(r"^tags/$", views.list_tags, name="list_tags"),
+    re_path(r"^tags/show/(?P<tag_text>.+)/$", views.show_tag, name="show_tag"),
     re_path(r"^show/(?P<analysis_id>[\d]+)/report/(?P<report_type>[\w]+)/$", views.static_report, name="static_report"),
     re_path(r"^show/(?P<analysis_id>[\d]+)/export/json/$", views.export_json, name="export_json"),
 ]

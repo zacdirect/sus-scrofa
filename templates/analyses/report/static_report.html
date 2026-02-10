@@ -3,10 +3,10 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>SUS SCROFA</title>
+    <title>Sus Scrofa Analysis Report</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Sus Scrofa - automated image forensic tool">
-    <meta name="author" content="Sus Scrofa developers">
+    <meta name="description" content="Sus Scrofa - automated image forensic analysis tool">
+    <meta name="author" content="Sus Scrofa">
     <meta http-equiv="X-UA-Compatible" content="IE=9" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <link rel="shortcut icon" href="/static/img/ico/favicon.ico">
@@ -39,7 +39,7 @@
 <table>
     <tr>
         <td style="padding-top:30px">
-            <h2>Dashboard</h2>
+            <h2>Analysis Dashboard</h2>
         </td>
     </tr>
     <tr>
@@ -51,6 +51,69 @@
             </table>
         </td>
     </tr>
+    {% if analysis.report.confidence %}
+    <tr>
+        <td style="padding-top:30px">
+            <h2>Automated Analysis Results</h2>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <table class="tftable">
+                {% if analysis.report.confidence.authenticity_score is not None %}
+                <tr>
+                    <th colspan="2">Authenticity Assessment</th>
+                </tr>
+                <tr>
+                    <td style="width: 200px"><strong>Authenticity Score:</strong></td>
+                    <td><strong>{{ analysis.report.confidence.authenticity_score }}/100</strong></td>
+                </tr>
+                <tr>
+                    <td><strong>Verdict:</strong></td>
+                    <td>{{ analysis.report.confidence.verdict_label }}</td>
+                </tr>
+                {% if analysis.report.confidence.detected_types %}
+                <tr>
+                    <td><strong>Detected Types:</strong></td>
+                    <td>{{ analysis.report.confidence.detected_types|join:", " }}</td>
+                </tr>
+                {% endif %}
+                <tr>
+                    <td><strong>AI Generation Probability:</strong></td>
+                    <td>{{ analysis.report.confidence.ai_generated_probability|floatformat:1 }}%</td>
+                </tr>
+                <tr>
+                    <td><strong>Manipulation Suspicion:</strong></td>
+                    <td>{{ analysis.report.confidence.confidence_score|floatformat:1 }}%</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <th colspan="2">Analysis Verdict</th>
+                </tr>
+                <tr>
+                    <td style="width: 200px"><strong>Verdict:</strong></td>
+                    <td>{{ analysis.report.confidence.verdict_label }}</td>
+                </tr>
+                {% if analysis.report.confidence.verdict == 'ai_generated' %}
+                <tr>
+                    <td><strong>Confidence:</strong></td>
+                    <td>{{ analysis.report.confidence.verdict_confidence|floatformat:0 }}%</td>
+                </tr>
+                {% elif analysis.report.confidence.verdict == 'manipulated' %}
+                <tr>
+                    <td><strong>Suspicion Level:</strong></td>
+                    <td>{{ analysis.report.confidence.confidence_score|floatformat:0 }}%</td>
+                </tr>
+                {% endif %}
+                <tr>
+                    <td><strong>Certainty:</strong></td>
+                    <td>{{ analysis.report.confidence.verdict_certainty|capfirst }}</td>
+                </tr>
+                {% endif %}
+            </table>
+        </td>
+    </tr>
+    {% endif %}
     <tr>
         <td style="padding-top:30px">
             <h2>Static Data</h2>
