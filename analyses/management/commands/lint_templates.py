@@ -113,14 +113,23 @@ class Command(BaseCommand):
         
         issues_found = []
         files_checked = 0
+        fixed_count = 0
         
         # Files to exclude from linting (base templates, layouts, partials)
+        # However, for fixing lightbox, we might want to check partials if they contain image links.
+        # But let's stick to the current logic for exclude_patterns for now, unless 'fix' is on?
+        # Actually partials like _list_image.html definitely need fixing.
+        
+        # Let's reduce the strictness of excludes for the fix pass or generally.
+        # The user's request implies _list_image.html needs to be fixed.
+        # So I will remove '_' from excludes, but maybe keep 'base.html'.
+        
         exclude_patterns = [
             'base.html',
             'base_index.html',
             'error.html',
             'layout/',
-            '_',  # Partials that start with underscore
+             # '_',  Removed to allow fixing partials
         ]
         
         # Scan all HTML templates
@@ -129,17 +138,20 @@ class Command(BaseCommand):
             relative_str = str(relative_path)
             
             # Skip excluded files
-            # Check for base templates and layout directory
-            if any(pattern in relative_str for pattern in ['base.html', 'base_index.html', 'error.html', 'layout/']):
-                continue
-            # Skip partials (files starting with underscore)
-            if relative_path.name.startswith('_'):
-                continue
+            should_exclude = False
+            for pattern in exclude_patterns:
+                if pattern in relative_str:
+                    should_exclude = True
+                    break
             
+            if should_exclude:
+                continue
+                
             files_checked += 1
             
             try:
                 content = template_file.read_text()
+                original_content = content
                 file_issues = []
                 
                 # Check legacy patterns
@@ -168,9 +180,52 @@ class Command(BaseCommand):
                             'match': '',
                         })
                 
+                # Check for missing lightbox class
+                # Find <a> tags pointing to 'image' URL
+                lightbox_pattern = r'(<a\s+[^>]*href="{% url "image" [^"]+"[^>]*>)'
+                lightbox_matches = re.finditer(lightbox_pattern, content)
+                for match in lightbox_matches:
+                    tag = match.group(0)
+                    if 'glightbox' not in tag:
+                        line_num = content[:match.start()].count('\n') + 1
+                        file_issues.append({
+                            'file': str(relative_path),
+                            'line': line_num,
+                            'severity': 'WARNING',
+                            'message': 'Image link missing lightbox class',
+                            'pattern': 'missing_lightbox',
+                            'match': tag,
+                        })
+
                 if file_issues:
                     issues_found.extend(file_issues)
+                
+                # Apply fixes if requested
+                if options['fix']:
+                    modified = False
                     
+                    # Fix lightbox
+                    def lightbox_replacer(match):
+                        tag = match.group(0)
+                        if 'glightbox' in tag:
+                            return tag
+                        if 'class="' in tag:
+                            return re.sub(r'class="([^"]*)"', r'class="\1 glightbox"', tag)
+                        elif "class='" in tag:
+                            return re.sub(r"class='([^']*)'", r"class='\1 glightbox'", tag)
+                        else:
+                            return tag.replace('<a ', '<a class="glightbox" ')
+                            
+                    new_content = re.sub(lightbox_pattern, lightbox_replacer, content)
+                    if new_content != content:
+                        content = new_content
+                        modified = True
+                        fixed_count += 1
+                    
+                    if modified:
+                        template_file.write_text(content)
+                        self.stdout.write(self.style.SUCCESS(f'Fixed {relative_path}'))
+
             except Exception as e:
                 self.stdout.write(self.style.ERROR(f'Error reading {relative_path}: {e}'))
         
@@ -178,6 +233,9 @@ class Command(BaseCommand):
         self.stdout.write('\n' + '='*80)
         self.stdout.write(self.style.SUCCESS(f'Template Linter Results'))
         self.stdout.write('='*80 + '\n')
+        
+        if options['fix']:
+             self.stdout.write(self.style.SUCCESS(f'Fixed {fixed_count} issues.'))
         
         if not issues_found:
             self.stdout.write(self.style.SUCCESS(f'✓ No issues found in {files_checked} templates!'))

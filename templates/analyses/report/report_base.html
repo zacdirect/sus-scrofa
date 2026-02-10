@@ -78,7 +78,7 @@
                 <div class="d-flex flex-column flex-md-row align-items-center gap-3">
                     <div class="flex-shrink-0">
                         {% if analysis.thumb_id %}
-                            <a href="{% url "image" analysis.image_id %}" class="fancybox">
+                            <a href="{% url "image" analysis.image_id %}" class="fancybox glightbox" data-gallery="single-{{ analysis.id }}" data-type="image">
                                 <img src="{% url "image" analysis.thumb_id %}" class="img-thumbnail rounded" style="max-height: 100px;">
                             </a>
                         {% else %}
@@ -124,7 +124,7 @@
                                 </button>
                                 <ul class="dropdown-menu">
                                     <li><a class="dropdown-item" href="{% url "export_json" analysis.id %}"><i class="fa-solid fa-file-code me-2"></i> JSON report</a></li>
-                                    <li><a class="dropdown-item" href="{% url "image" analysis.image_id %}"><i class="fa-solid fa-image me-2"></i> Original Image</a></li>
+                                    <li><a class="dropdown-item glightbox" href="{% url "image" analysis.image_id %}"><i class="fa-solid fa-image me-2"></i> Original Image</a></li>
                                 </ul>
                             </div>
                         </div>

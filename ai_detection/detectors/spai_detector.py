@@ -36,18 +36,26 @@ class SPAIDetector(BaseDetector):
     
     def check_deps(self) -> bool:
         """Check if SPAI environment is available."""
-        # Check for ai_detection directory and venv
         try:
+            # Check for ai_detection directory
             ai_det_dir = Path(__file__).parent.parent
-            venv_python = ai_det_dir / '.venv' / 'bin' / 'python'
-            
-            if not venv_python.exists():
-                logger.warning("SPAI venv not found - run: make ai-setup")
-                return False
-            
             self._ai_detection_dir = ai_det_dir
+            
+            # Check for weights
+            weights_path = ai_det_dir / 'weights' / 'spai.pth'
+            if not weights_path.exists():
+                logger.warning("SPAI weights not found - run: make ai-setup")
+                return False
+
+            # Verify dependencies in shared environment
+            import timm
+            import yacs
+            import torch
             return True
             
+        except ImportError as e:
+            logger.warning(f"SPAI dependencies missing ({e}) - run: make ai-setup")
+            return False
         except Exception as e:
             logger.error(f"Error checking SPAI dependencies: {e}")
             return False
@@ -73,13 +81,11 @@ class SPAIDetector(BaseDetector):
             )
         
         try:
-            # Import SPAI from isolated environment
-            # Note: This runs in the main process but SPAI is in its own venv
-            # We use subprocess approach from the plugin
+            # Run inference in subprocess (using shared environment)
             import subprocess
             import json
             
-            venv_python = self._ai_detection_dir / '.venv' / 'bin' / 'python'
+            venv_python = sys.executable
             infer_script = self._ai_detection_dir / 'spai_infer.py'
             weights_path = self._ai_detection_dir / 'weights' / 'spai.pth'
             

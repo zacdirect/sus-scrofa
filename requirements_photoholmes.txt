@@ -33,7 +33,7 @@ torch>=2.1
 torchvision>=0.16
 
 # Step 2: Additional photoholmes dependencies
-jpegio>=0.4.0          # JPEG DCT coefficient extraction (required for DQ method)
+jpegio>=0.2.8          # JPEG DCT coefficient extraction (required for DQ method)
 torchmetrics           # Metrics for torch models
 torch_kmeans           # K-means clustering for torch
 

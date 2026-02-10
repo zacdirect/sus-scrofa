@@ -45,10 +45,13 @@
 
 <script type="text/javascript">
     // Simple active state handler based on the session variable provided by Django context
-    $(document).ready(function () {
+    document.addEventListener("DOMContentLoaded", function () {
         var activeId = "{{ request.session.sidebar_active }}";
         if (activeId) {
-            $("#" + activeId).addClass("active");
+            var el = document.getElementById(activeId);
+            if (el) {
+                el.classList.add("active");
+            }
         }
     });
 </script>

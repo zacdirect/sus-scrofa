@@ -64,6 +64,13 @@
         body, .bg-dark, .bg-light { 
             transition: background-color 0.3s ease, color 0.3s ease; 
         }
+
+        /* GLightbox fixes */
+        .glightbox-clean .gslide-media img {
+            max-height: 90vh !important;
+            max-width: 90vw !important;
+            object-fit: contain;
+        }
     </style>
     
     {% block extra_head %}{% endblock %}
@@ -137,7 +144,30 @@
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script> <!-- Keep jQuery for legacy scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/glightbox/dist/css/glightbox.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/glightbox/dist/js/glightbox.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <script type="text/javascript">
+        document.addEventListener('DOMContentLoaded', () => {
+            const lightbox = GLightbox({
+                selector: '.glightbox',
+                touchNavigation: false,
+                loop: false,
+                zoomable: false,
+                draggable: false,
+                dragToleranceX: 40,
+                dragToleranceY: 40,
+                width: 'auto',
+                height: 'auto',
+            });
+            
+            // Re-initialize lightbox after HTMX content updates
+            document.body.addEventListener('htmx:afterSwap', () => {
+                lightbox.reload();
+            });
+        });
+    </script>
     
     <!-- Legacy Application script if needed, check compatibility -->
     <!-- <script src="{{ STATIC_URL }}js/application.js"></script> -->

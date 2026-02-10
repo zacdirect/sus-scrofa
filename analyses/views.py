@@ -705,7 +705,42 @@ def image(request, id):
 
     data = file.read()
     response = HttpResponse(data, content_type=file.content_type)
-    response["Content-Disposition"] = "attachment; filename=%s" % id
+    
+    import mimetypes
+    
+    # Try to find original filename from Analysis if image is linked to one
+    analysis_obj = Analysis.objects.filter(image_id=id).first()
+    if not analysis_obj:
+        # Check if it's a thumbnail
+        analysis_obj = Analysis.objects.filter(thumb_id=id).first()
+        
+    if analysis_obj:
+        filename = analysis_obj.file_name
+        
+        # Try to use the filename from the report metadata if available, as it might be more accurate
+        try:
+             # This property gets the report from Mongo
+             report = analysis_obj.report
+             if report and 'file_name' in report and report['file_name']:
+                 filename = report['file_name']
+        except Exception:
+             pass
+        # Check if filename has extension, if not append it
+        name_ext = os.path.splitext(filename)[1]
+        if not name_ext:
+            ext = mimetypes.guess_extension(file.content_type) or ""
+            filename = f"{filename}{ext}"
+
+        # If showing thumbnail, maybe prepend 'thumb_'? Let's just use original name for now or append _thumb if needed.
+        if analysis_obj.thumb_id == id:
+             base, ext = os.path.splitext(filename)
+             filename = f"{base}_thumb{ext}"
+    else:
+        ext = mimetypes.guess_extension(file.content_type) or ""
+        filename = f"{id}{ext}"
+    
+    disposition = "attachment" if request.GET.get("download") else "inline"
+    response["Content-Disposition"] = '%s; filename="%s"' % (disposition, filename)
     response["Content-Length"] = len(data)
     return response
 
@@ -772,14 +807,14 @@ def search(request, page_name):
         @param s: input string
         @return: sanitized string
         """
-        return re.match("^[\w\.]+$", s) is not None
+        return re.match(r"^[\w\.]+$", s) is not None
 
     def validate_num(num):
         """Sanitize number.
         @param num: input string
         @return: sanitized string
         """
-        return re.match("^[\d\-\.]+$", num) is not None
+        return re.match(r"^[\d\-\.]+$", num) is not None
 
     def validate_pos(num):
         """Sanitize a longitude or latitude.
