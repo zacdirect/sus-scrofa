@@ -307,8 +307,8 @@ def new_url(request, case_id):
         if form.is_valid():
             # Download file.
             try:
-                url = urllib2.urlopen(request.POST.get("url"), timeout=5)
-            except urllib2.URLError as e:
+                url = urllib.request.urlopen(request.POST.get("url"), timeout=5)
+            except urllib.error.URLError as e:
                 if hasattr(e, "reason"):
                     return render(request, "error.html",
                         {"error": "We failed to reach a server, reason: %s" % e.reason})
@@ -335,7 +335,7 @@ def new_url(request, case_id):
             task = Analysis()
             task.owner = request.user
             task.case = case
-            task.file_name = os.path.basename(urlparse.urlparse(request.POST.get("url")).path)
+            task.file_name = os.path.basename(urllib.parse.urlparse(request.POST.get("url")).path)
             task.image_id = save_file(file_path=url_file, content_type=content_type)
             task.thumb_id = create_thumb(url_file)
             task.save()
@@ -889,7 +889,7 @@ def search(request, page_name):
 
         # Preserve query parameters across paging.
         queries_without_page = request.GET.copy()
-        if queries_without_page.has_key("page"):
+        if "page" in queries_without_page:
             del queries_without_page["page"]
 
         return render(request, "analyses/images/search_results.html",

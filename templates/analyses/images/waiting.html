@@ -1,46 +1,51 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="span11">
-    <div class="content content-large">
-        <div class="content-header">
-            <h2><i class="icon-briefcase"> </i> Cases</h2>
-        </div>
-        <div class="content-breadcrumb">
-            <ul class="breadcrumb">
-                <li>
-                    <a href="/"><i class="icon-home"> </i> Dashboard</a><span class="divider">&rsaquo;</span>
-                </li>
-                <li>
-                    <a href="{% url "list_cases" %}"><i class="icon-briefcase"> </i> Cases</a>
-                    <span class="divider">&rsaquo;</span>
-                </li>
-                <li>
-                    <a href="{% url "show_case" analysis.case.id "list" %}"><i class="icon-book"> </i>
-                        {{ analysis.case.name }}
-                    </a>
-                    <span class="divider">&rsaquo;</span>
-                </li>
-                <li class="active">
-                    Wait...
-                </li>
-            </ul>
-        </div>
-        <div class="content-body">
-            <script type="text/javascript">
-                setTimeout("location.reload(true);", 2000);
-            </script>
-            <div>
-                <h3>Processing {{ analysis.file_name }}</h3>
+<div class="row mb-4 animate__animated animate__fadeIn">
+    <div class="col-12">
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">
+                <i class="fa-solid fa-briefcase text-secondary me-2"></i> Processing Analysis
+            </h1>
+            <div class="btn-toolbar mb-2 mb-md-0">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="/" class="text-decoration-none"><i class="fa-solid fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url "list_cases" %}" class="text-decoration-none"><i class="fa-solid fa-briefcase"></i> Cases</a></li>
+                        <li class="breadcrumb-item"><a href="{% url "show_case" analysis.case.id "list" %}" class="text-decoration-none"><i class="fa-solid fa-book"></i> {{ analysis.case.name }}</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Processing...</li>
+                    </ol>
+                </nav>
             </div>
-            <div>
-                <div class="alert alert-info">
-                    <h4>Chipmunks working...</h4>
-                    <p>
-                        Your analysis task is waiting to be processed. This page will refresh every second, you will be automatically redirect to analysis when ready.
-                    </p>
-                    <div class="progress progress-info progress-striped active">
-                        <div class="bar" style="width: 100%;"></div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+                <script type="text/javascript">
+                    setTimeout("location.reload(true);", 2000);
+                </script>
+                <div class="text-center py-5">
+                    <h3 class="mb-4">
+                        <i class="fa-solid fa-spinner fa-spin text-primary me-2"></i>
+                        Processing {{ analysis.file_name }}
+                    </h3>
+                    <div class="alert alert-info mx-auto" style="max-width: 600px;">
+                        <h4 class="alert-heading">
+                            <i class="fa-solid fa-gears me-2"></i>
+                            Analysis in Progress
+                        </h4>
+                        <p class="mb-3">
+                            Your analysis task is waiting to be processed. This page will refresh every 2 seconds, and you will be automatically redirected when the analysis is ready.
+                        </p>
+                        <div class="progress" style="height: 25px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar" style="width: 100%;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
+                                Processing...
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -53,9 +53,9 @@
                     </div>
                 </div>
             </div>
-
+            
             <script type="text/javascript">
-            $(function () {
+            document.addEventListener('DOMContentLoaded', function() {
                 $('#container').highcharts({
                     chart: {
                         plotBackgroundColor: null,
@@ -108,6 +108,17 @@
                         ]
                     }]
                 });
+
+                // Fixed: Reflow chart when tab is shown to correct initial 0 width
+                var tabEl = document.getElementById('v-pills-sig-tab');
+                if (tabEl) {
+                    tabEl.addEventListener('shown.bs.tab', function (event) {
+                         var chart = $('#container').highcharts();
+                         if (chart) {
+                             chart.reflow();
+                         }
+                    });
+                }
             });
             </script>
 

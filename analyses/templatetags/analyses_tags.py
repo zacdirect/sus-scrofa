@@ -33,11 +33,11 @@ def mongo_id(value):
     """
     # Retrieve _id value
     if type(value) == type({}):
-        if value.has_key("_id"):
+        if "_id" in value:
             value = value["_id"]
    
     # Return value
-    return unicode(value)
+    return str(value)
 
 @register.filter
 def classname(obj):
@@ -85,7 +85,7 @@ def to_date(date):
     """
     if isinstance(date, datetime.date):
         return date
-    elif isinstance(date, str) or isinstance(date, unicode):
+    elif isinstance(date, str):
         return parser.parse(date)
     else:
         return date
@@ -110,7 +110,7 @@ def to_base64(image_id):
     @return: base64 blob
     """
     image_obj = get_file(image_id)
-    image_encoded = base64.encodestring(image_obj.read())
+    image_encoded = base64.encodebytes(image_obj.read()).decode('ascii')
     return "data:%s;base64,%s" % (image_obj.content_type, image_encoded)
 
 @register.filter

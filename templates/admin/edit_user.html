@@ -1,71 +1,164 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="span11">
-    <div class="content content-large">
-        <div class="content-header">
-            <h2><i class="icon-edit"> </i> Edit profile</h2>
-        </div>
-        <div class="content-breadcrumb">
-            <ul class="breadcrumb">
-                <li>
-                    <a href="/"><i class="icon-home"> </i> Dashboard</a><span class="divider">&rsaquo;</span>
-                </li>
-                <li>
-                    <a href="{% url "admin_list_users" %}"><i class="icon-lock"> </i> Administration</a>
-                        <span class="divider">&rsaquo;</span>
-                </li>
-                <li class="active">
-                    Edit
-                </li>
-            </ul>
-        </div>
-        <div class="content-body">
-            <form action="{% url "admin_edit_user" user.id %}" method="POST">{% csrf_token %}
-                <div class="control-group">
-                    <div class="controls">
-                        <div class="fieldWrapper">
-                            <label for="id_username">Username: (
-                                <span class="helptext">
-                                    <small><em>Required. 30 characters or fewer. Letters, digits and @/./+/-/_ only</em></small>
-                                </span> )
-                            </label>
-                            {{ form.username }}<span class="help-inline">{{ form.username.errors }}</span>
-                        </div>
-                        <div class="fieldWrapper">
-                            <label for="id_email">Email:</label>
-                            {{ form.email }}<span class="help-inline">{{ form.email.errors }}</span>
-                        </div>
-                        <div class="fieldWrapper">
-                            <label for="id_last_name">Last name:</label>
-                            {{ form.last_name }}<span class="help-inline">{{ form.last_name.errors }}</span>
-                        </div>
-                        <div class="fieldWrapper">
-                            <label for="id_first_name">First name:</label>
-                            {{ form.first_name }}<span class="help-inline">{{ form.first_name.errors }}</span>
-                        </div>
-                        <div class="fieldWrapper">
-                            <label for="id_is_active">{{ form.is_active }} Active<span class="help-inline">{{ form.is_active.errors }}</span>
-                            <span class="helptext">- Designates whether this user should be treated as active. Unselect this instead of deleting accounts.</span></label>
-                        </div>
-                        <div class="fieldWrapper">
-                            <label for="id_is_superuser">{{ form.is_superuser }} Superuser<span class="help-inline">{{ form.is_superuser.errors }}</span>
-                            <span class="helptext">- Designates that this user has all permissions without explicitly assigning them.</span></label>
-                        </div>
-                        <div class="fieldWrapper">
-                            <label for="id_is_staff">{{ form.is_staff }} Staff<span class="help-inline">{{ form.is_staff.errors }}</span>
-                            <span class="helptext">- Designates whether the user can log into this admin site.</span></label>
-                        </div>
-                        <div class="form-actions">
-                            <button id="btn_submit" type="submit" class="btn btn-large btn-success">
-                                Save
-                            </button>
-                            <a href="{% url "admin_show_user" user.id %}" class="btn btn-large"> Back </a>
-                        </div>
-                    </div>
-                </div>
-            </form>
+<div class="row mb-4 animate__animated animate__fadeIn">
+    <div class="col-12">
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">
+                <i class="fa-solid fa-user-pen text-secondary me-2"></i> Edit User Profile
+            </h1>
+            <div class="btn-toolbar mb-2 mb-md-0">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="/" class="text-decoration-none"><i class="fa-solid fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url "admin_list_users" %}" class="text-decoration-none"><i class="fa-solid fa-user-lock"></i> Administration</a></li>
+                        <li class="breadcrumb-item"><a href="{% url "admin_show_user" user.id %}" class="text-decoration-none">{{ user.username }}</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Edit</li>
+                    </ol>
+                </nav>
+            </div>
         </div>
     </div>
 </div>
+
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-bottom">
+                <h5 class="mb-0">
+                    <i class="fa-solid fa-user-gear text-primary me-2"></i>
+                    User Details
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <form action="{% url "admin_edit_user" user.id %}" method="POST">{% csrf_token %}
+                    
+                    <!-- Username -->
+                    <div class="mb-3">
+                        <label for="id_username" class="form-label fw-bold">Username</label>
+                        {{ form.username }}
+                        <div class="form-text">
+                            <i class="fa-solid fa-circle-info me-1"></i>
+                            Required. 30 characters or fewer. Letters, digits and @/./+/-/_ only
+                        </div>
+                        {% if form.username.errors %}
+                            <div class="invalid-feedback d-block">{{ form.username.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Email -->
+                    <div class="mb-3">
+                        <label for="id_email" class="form-label fw-bold">Email</label>
+                        {{ form.email }}
+                        {% if form.email.errors %}
+                            <div class="invalid-feedback d-block">{{ form.email.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- First Name -->
+                    <div class="mb-3">
+                        <label for="id_first_name" class="form-label fw-bold">First Name</label>
+                        {{ form.first_name }}
+                        {% if form.first_name.errors %}
+                            <div class="invalid-feedback d-block">{{ form.first_name.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Last Name -->
+                    <div class="mb-3">
+                        <label for="id_last_name" class="form-label fw-bold">Last Name</label>
+                        {{ form.last_name }}
+                        {% if form.last_name.errors %}
+                            <div class="invalid-feedback d-block">{{ form.last_name.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <hr class="my-4">
+
+                    <!-- Permissions Section -->
+                    <h6 class="mb-3 text-muted">
+                        <i class="fa-solid fa-shield-halved me-2"></i>
+                        Permissions
+                    </h6>
+
+                    <!-- Active -->
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            {{ form.is_active }}
+                            <label class="form-check-label" for="id_is_active">
+                                <strong>Active</strong>
+                            </label>
+                        </div>
+                        <div class="form-text ms-4">
+                            Designates whether this user should be treated as active. Unselect this instead of deleting accounts.
+                        </div>
+                        {% if form.is_active.errors %}
+                            <div class="invalid-feedback d-block">{{ form.is_active.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Superuser -->
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            {{ form.is_superuser }}
+                            <label class="form-check-label" for="id_is_superuser">
+                                <strong>Superuser</strong>
+                            </label>
+                        </div>
+                        <div class="form-text ms-4">
+                            Designates that this user has all permissions without explicitly assigning them.
+                        </div>
+                        {% if form.is_superuser.errors %}
+                            <div class="invalid-feedback d-block">{{ form.is_superuser.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Staff -->
+                    <div class="mb-4">
+                        <div class="form-check form-switch">
+                            {{ form.is_staff }}
+                            <label class="form-check-label" for="id_is_staff">
+                                <strong>Staff</strong>
+                            </label>
+                        </div>
+                        <div class="form-text ms-4">
+                            Designates whether the user can log into this admin site.
+                        </div>
+                        {% if form.is_staff.errors %}
+                            <div class="invalid-feedback d-block">{{ form.is_staff.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="d-flex gap-2 justify-content-end pt-3 border-top">
+                        <a href="{% url "admin_show_user" user.id %}" class="btn btn-secondary">
+                            <i class="fa-solid fa-arrow-left me-1"></i> Cancel
+                        </a>
+                        <button id="btn_submit" type="submit" class="btn btn-success">
+                            <i class="fa-solid fa-floppy-disk me-1"></i> Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Ensure form controls have proper Bootstrap styling */
+#id_username,
+#id_email,
+#id_first_name,
+#id_last_name {
+    width: 100%;
+}
+
+.form-check-input {
+    cursor: pointer;
+}
+
+.form-check-label {
+    cursor: pointer;
+}
+</style>
 {% endblock %}
