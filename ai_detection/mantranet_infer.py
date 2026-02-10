@@ -136,7 +136,10 @@ def analyze_mask(mask):
 
 def create_mask_visualization(mask):
     """
-    Create a heatmap visualization of the forgery mask.
+    Create a grayscale visualization of the forgery mask.
+    
+    Uses simple grayscale where black=pristine, white=manipulated.
+    This matches the original ManTraNet paper visualization style.
     
     Args:
         mask: 2D numpy array with values in [0, 1]
@@ -145,21 +148,17 @@ def create_mask_visualization(mask):
         PNG image bytes
     """
     import numpy as np
-    import matplotlib
-    matplotlib.use('Agg')  # Non-interactive backend
-    from matplotlib import cm
     from PIL import Image
     
-    # Apply 'hot' colormap: black -> red -> yellow -> white
-    colormap = cm.get_cmap('hot')
-    colored_mask = colormap(mask)
+    # Convert [0, 1] mask directly to grayscale [0, 255]
+    # Higher values (closer to 1) = more likely manipulated = brighter/whiter
+    # Lower values (closer to 0) = pristine = darker/blacker
+    grayscale = (mask * 255).astype(np.uint8)
     
-    # Convert to uint8 RGB
-    rgb_mask = (colored_mask[:, :, :3] * 255).astype(np.uint8)
+    # Create PIL Image from grayscale array
+    img = Image.fromarray(grayscale, mode='L')
     
     # Save to bytes
-    img = Image.fromarray(rgb_mask)
-    
     buffer = BytesIO()
     img.save(buffer, format='PNG')
     return buffer.getvalue()
