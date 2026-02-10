@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4 animate__animated animate__fadeIn">
+    <div class="col-12">
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">
+                <i class="fa-solid fa-tags text-secondary me-2"></i> Tags 
+                <small class="text-muted fs-6">Browse images by tag across all cases</small>
+            </h1>
+            <div class="btn-toolbar mb-2 mb-md-0">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="/" class="text-decoration-none"><i class="fa-solid fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Tags</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                {% if tags %}
+                    <div class="alert alert-info mb-4">
+                        <i class="fa-solid fa-info-circle me-2"></i>
+                        <strong>Cross-Case Tag View:</strong> Click a tag to see all images with that tag across all your cases.
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col" style="width: 50%;">
+                                        <i class="fa-solid fa-tag me-1"></i> Tag
+                                    </th>
+                                    <th scope="col" class="text-center" style="width: 15%;">
+                                        <i class="fa-solid fa-image me-1"></i> Images
+                                    </th>
+                                    <th scope="col" style="width: 20%;">
+                                        <i class="fa-solid fa-users me-1"></i> Used By
+                                    </th>
+                                    <th scope="col" style="width: 15%;">
+                                        <i class="fa-solid fa-calendar me-1"></i> First Used
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for tag in tags %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'show_tag' tag.text %}" class="text-decoration-none">
+                                            <span class="badge bg-primary fs-6 py-2 px-3">
+                                                <i class="fa-solid fa-tag me-1"></i> {{ tag.text }}
+                                            </span>
+                                        </a>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-secondary rounded-pill">{{ tag.count }}</span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {% for owner in tag.owners %}
+                                                <i class="fa-solid fa-user me-1"></i>{{ owner }}{% if not forloop.last %}, {% endif %}
+                                            {% endfor %}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ tag.created_at|date:"M d, Y" }}</small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-4">
+                        <div class="alert alert-light">
+                            <i class="fa-solid fa-chart-simple me-2"></i>
+                            <strong>Statistics:</strong> {{ tags|length }} unique tag{{ tags|length|pluralize }} across all your images
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning text-center py-5">
+                        <i class="fa-solid fa-triangle-exclamation fa-3x mb-3 d-block mx-auto" style="width: 60px;"></i>
+                        <h4>No Tags Found</h4>
+                        <p class="mb-0">No images have been tagged yet. Add tags to your images to organize them across cases.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -25,6 +25,7 @@ from django.utils.encoding import force_str
 from django.core.files import File
 from django.core.files.temp import NamedTemporaryFile
 from django.contrib import messages
+from django.template import loader
 
 import analyses.forms as forms
 from analyses.models import Case, Analysis, Favorite, Comment, Tag
@@ -34,10 +35,10 @@ from users.models import Profile
 from sus_scrofa.common import log_activity, check_allowed_content
 
 try:
-    import pdfkit
-    HAVE_PDFKIT = True
+    from weasyprint import HTML
+    HAVE_PDF_SUPPORT = True
 except ImportError:
-    HAVE_PDFKIT = False
+    HAVE_PDF_SUPPORT = False
 
 # Mongo connection - Lazy load when needed
 # db = mongo_connect()
@@ -832,13 +833,53 @@ def search(request, page_name):
         # Only superuser can see all cases.
         if not request.user.is_superuser:
             available_cases = available_cases.filter(Q(owner=request.user) | Q(users=request.user))
+        
+        # Get all available tags
+        if request.user.is_superuser:
+            available_tags = Tag.objects.all()
+        else:
+            available_tags = Tag.objects.filter(
+                Q(analysis__owner=request.user) | 
+                Q(analysis__case__users=request.user) |
+                Q(analysis__case__owner=request.user)
+            ).distinct()
+        
+        # Get unique tag texts
+        tag_texts = sorted(set(tag.text for tag in available_tags))
 
         return render(request, "analyses/images/search.html",
-                                  {"available_cases": available_cases, "error": error})
+                                  {"available_cases": available_cases, "available_tags": tag_texts, "error": error})
     # Set sidebar active tab.
     request.session["sidebar_active"] = "side-search"
 
     if page_name != "form":
+        # Start with all analyses, potentially filtered by tag first
+        django_filtered_ids = None
+        
+        # Tag filter (Django-side filter)
+        if request.GET.get("tag"):
+            tag_text = request.GET.get("tag")
+            tag_analyses = Analysis.objects.filter(
+                tag__text=tag_text,
+                state="C"
+            )
+            
+            # Apply security filter
+            if not request.user.is_superuser:
+                tag_analyses = tag_analyses.filter(
+                    Q(owner=request.user) | 
+                    Q(case__users=request.user) |
+                    Q(case__owner=request.user)
+                )
+            
+            # Get the analysis_ids to filter MongoDB results
+            django_filtered_ids = [str(a.analysis_id) for a in tag_analyses]
+            
+            # If no analyses with this tag, return empty immediately
+            if not django_filtered_ids:
+                return render(request, "analyses/images/search_results.html",
+                              {"images": [], "pagename": page_name, "get_params": request.GET.copy()})
+        
         query = []
 
         # Name filter.
@@ -887,14 +928,32 @@ def search(request, page_name):
                 query = {"$or": query}
             elif request.GET.get("optionsRadios")=="and":
                 query = {"$and": query}
+        elif len(query) == 0:
+            # Empty query - will match all documents (or be filtered by tag/map constraints)
+            query = {}
 
         # Speed up map rendering if map is requested.
         # NOTE: the "and not" part is to avoid complex $and query on GEO index.
         if page_name == "map" and not (request.GET.get("lat") or request.GET.get("long") or request.GET.get("dist")):
-            query = {"$and": [query, {"metadata.gps.pos": {"$exists": True}}]}
+            if query:
+                query = {"$and": [query, {"metadata.gps.pos": {"$exists": True}}]}
+            else:
+                query = {"metadata.gps.pos": {"$exists": True}}
 
         # Run query.
         try:
+            # If we have tag-filtered IDs, add them to the query
+            if django_filtered_ids is not None:
+                # Convert string IDs to ObjectId for MongoDB
+                oid_list = [ObjectId(oid_str) for oid_str in django_filtered_ids]
+                
+                if query:
+                    # If there are other filters, combine with $and
+                    query = {"$and": [{"_id": {"$in": oid_list}}, query]}
+                else:
+                    # Only tag filter
+                    query = {"_id": {"$in": oid_list}}
+            
             mongo_results = get_db().analyses.find(query)
         except TypeError:
             return search_form("Empty search.")
@@ -1089,6 +1148,83 @@ def delete_tag(request, id):
 
 @require_safe
 @login_required
+def list_tags(request):
+    """List all tags with usage statistics."""
+    # Get all tags accessible to the user
+    if request.user.is_superuser:
+        tags = Tag.objects.all()
+    else:
+        # Only show tags on analyses the user can access
+        tags = Tag.objects.filter(
+            Q(analysis__owner=request.user) | 
+            Q(analysis__case__users=request.user) |
+            Q(analysis__case__owner=request.user)
+        ).distinct()
+    
+    # Annotate with image count
+    tags = tags.annotate(image_count=Count('analysis', distinct=True))
+    
+    # Group by tag text to get unique tags with total usage
+    tag_stats = {}
+    for tag in tags:
+        if tag.text not in tag_stats:
+            tag_stats[tag.text] = {
+                'text': tag.text,
+                'count': 0,
+                'created_at': tag.created_at,
+                'owners': set()
+            }
+        tag_stats[tag.text]['count'] += tag.image_count
+        tag_stats[tag.text]['owners'].add(tag.owner.username)
+        # Keep the earliest created_at
+        if tag.created_at < tag_stats[tag.text]['created_at']:
+            tag_stats[tag.text]['created_at'] = tag.created_at
+    
+    # Convert to sorted list
+    tags_list = sorted(tag_stats.values(), key=lambda x: x['count'], reverse=True)
+    
+    # Set sidebar active tab
+    request.session["sidebar_active"] = "side-tags"
+    
+    return render(request, "analyses/tags/index.html",
+                  {"tags": tags_list})
+
+@require_safe
+@login_required
+def show_tag(request, tag_text):
+    """Show all images with a specific tag across all cases."""
+    # Decode URL-encoded tag text
+    tag_text = urllib.parse.unquote(tag_text)
+    
+    # Get all analyses with this tag that the user can access
+    analyses = Analysis.objects.filter(
+        tag__text=tag_text,
+        state="C"
+    )
+    
+    # Apply security filter
+    if not request.user.is_superuser:
+        analyses = analyses.filter(
+            Q(owner=request.user) | 
+            Q(case__users=request.user) |
+            Q(case__owner=request.user)
+        )
+    
+    # Order by most recent first
+    analyses = analyses.order_by('-created_at').distinct()
+    
+    # Pagination
+    page = request.GET.get("page")
+    analyses = _paginate(analyses, page, 20)
+    
+    # Set sidebar active tab
+    request.session["sidebar_active"] = "side-tags"
+    
+    return render(request, "analyses/tags/show.html",
+                  {"images": analyses, "tag_text": tag_text})
+
+@require_safe
+@login_required
 def hex_dump(request, analysis_id):
     """Shows image hex dump."""
     analysis = get_object_or_404(Analysis, pk=analysis_id)
@@ -1127,22 +1263,25 @@ def static_report(request, analysis_id, report_type):
                     return render(request, "analyses/report/static_report.html",
                                               {"anal": anal, "analysis": analysis})
                 elif report_type == "pdf":
-                    if HAVE_PDFKIT:
-                        # Render HTML.
-                        t = loader.get_template("analyses/report/static_report.html")
-                        c = Context({"anal": anal, "analysis": analysis})
-                        rendered = t.render(c)
-                        # Convert to PDF.
-                        # False as second args means "return a string".
-                        pdf = pdfkit.from_string(rendered, False)
-                        # Create the HttpResponse object with the appropriate PDF headers.
-                        response = HttpResponse(content_type="application/pdf")
-                        response["Content-Disposition"] = 'attachment; filename="SusScrofa_report_%s.pdf"' % analysis_id
-                        response.write(pdf)
-                        return response
+                    if HAVE_PDF_SUPPORT:
+                        try:
+                            # Render HTML template
+                            t = loader.get_template("analyses/report/static_report.html")
+                            rendered = t.render({"anal": anal, "analysis": analysis}, request)
+                            
+                            # Convert to PDF using WeasyPrint
+                            pdf_bytes = HTML(string=rendered, base_url=request.build_absolute_uri()).write_pdf()
+                            
+                            # Create the HttpResponse object with the appropriate PDF headers
+                            response = HttpResponse(pdf_bytes, content_type="application/pdf")
+                            response["Content-Disposition"] = 'attachment; filename="SusScrofa_report_%s.pdf"' % analysis_id
+                            return response
+                        except Exception as e:
+                            return render(request, "error.html",
+                                          {"error": f"PDF generation failed: {str(e)}"})
                     else:
                         return render(request, "error.html",
-                                          {"error": "Cannot render PDF, missing pdfkit. Please install it."})
+                                          {"error": "Cannot render PDF. Please install weasyprint: pip install weasyprint"})
             else:
                 return render(request, "error.html",
                                           {"error": "Analysis not present in mongo database"})

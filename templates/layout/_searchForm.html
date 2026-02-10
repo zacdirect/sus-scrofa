@@ -94,6 +94,23 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="row mb-3">
+                    <label for="tag" class="col-sm-3 col-form-label">Tag</label>
+                    <div class="col-sm-9">
+                        <div class="input-group">
+                            <select class="form-select" name="tag" id="tag">
+                                <option value="">Any tag</option>
+                                {% for tag in available_tags %}
+                                    <option value="{{ tag }}">{{ tag }}</option>
+                                {% endfor %}
+                            </select>
+                            <span class="input-group-text bg-light" data-bs-toggle="popover" data-bs-trigger="hover" data-bs-placement="top" title="Search by tag" data-bs-content="Filter images with this tag across all cases.">
+                                <i class="fa-solid fa-info-circle text-info"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
                 
                 {% if in_case_id %}
                     <input type="hidden" value="{{ case.id }}" name="in_case" id="in_case">
@@ -153,6 +170,23 @@
                             </span>
                         </div>
                         <div class="form-text">Enter decimal coordinates and distance in meters.</div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <label for="tag_loc" class="col-sm-3 col-form-label">Tag</label>
+                    <div class="col-sm-9">
+                        <div class="input-group">
+                            <select class="form-select" name="tag" id="tag_loc">
+                                <option value="">Any tag</option>
+                                {% for tag in available_tags %}
+                                    <option value="{{ tag }}">{{ tag }}</option>
+                                {% endfor %}
+                            </select>
+                            <span class="input-group-text bg-light" data-bs-toggle="popover" data-bs-trigger="hover" data-bs-placement="top" title="Search by tag" data-bs-content="Filter images with this tag.">
+                                <i class="fa-solid fa-info-circle text-info"></i>
+                            </span>
+                        </div>
                     </div>
                 </div>
                 
