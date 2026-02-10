@@ -5,9 +5,9 @@
         <div class="card h-100 shadow-sm">
             <div class="card-img-top text-center p-3 bg-light" style="min-height: 200px; display: flex; align-items: center; justify-content: center;">
                 {% if preview.original_file %}
-                    <a class="fancybox d-block" href="{% url "image" preview.original_file %}">
+                    <a class="fancybox d-block glightbox" href="{% url "image" preview.original_file %}" data-gallery="preview-gallery" data-type="image">
                 {% else %}
-                    <a class="fancybox d-block" href="{% url "image" preview.file %}">
+                    <a class="fancybox d-block glightbox" href="{% url "image" preview.file %}" data-gallery="preview-gallery" data-type="image">
                 {% endif %}
                 
                 {% if embed %}

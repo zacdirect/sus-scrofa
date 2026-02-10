@@ -35,7 +35,7 @@
                      <button type="button" data-url="{% url "analyses.views.favorite" image.id %}" data-id="{{ image.id }}" class="favorite btn btn-sm btn-outline-warning w-100 mx-1 star{{image.id}}" title="Set as favorite"><i class="fa-regular fa-star"></i></button>
                 {% endif %}
                 
-                <a href="{% url "analyses.views.image" image.image_id %}" class="fancybox btn btn-sm btn-outline-info w-100 ms-1" title="View image: {{ image.file_name }}"><i class="fa-solid fa-expand"></i></a>
+                <a href="{% url "analyses.views.image" image.image_id %}" class="fancybox btn btn-sm btn-outline-info w-100 ms-1 glightbox" data-gallery="similarity-gallery" data-type="image" title="View image: {{ image.file_name }}"><i class="fa-solid fa-expand"></i></a>
             {% endif %}
         </div>
     </div>

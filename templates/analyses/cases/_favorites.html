@@ -18,7 +18,7 @@
                         <td>{{ image.created_at }}</td>
                         <td>
                             <div class="btn-group btn-group-sm">
-                                <a class="btn btn-outline-secondary" title="Show preview" href="{% url "image" image.image_id %}" target="_blank">
+                                <a class="btn btn-outline-secondary glightbox" title="Show preview" href="{% url "image" image.image_id %}" target="_blank">
                                     <i class="fa-solid fa-image"></i>
                                 </a>
                                 <a class="btn btn-outline-secondary" title="Show analysis" href="{% url "show_analysis" image.id %}">

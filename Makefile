@@ -448,7 +448,7 @@ photoholmes-setup:
 	$(PIP) install --index-url $$INDEX_URL torch torchvision; \
 	echo ""; \
 	echo "$(YELLOW)Step 2: Installing additional dependencies...$(NC)"; \
-	$(PIP) install "jpegio>=0.4.0" torchmetrics torch_kmeans; \
+	$(PIP) install "jpegio>=0.2.8" torchmetrics torch_kmeans; \
 	echo ""; \
 	echo "$(YELLOW)Step 3: Installing photoholmes from GitHub...$(NC)"; \
 	echo "Since torch is already installed, pip won't re-download different version."; \

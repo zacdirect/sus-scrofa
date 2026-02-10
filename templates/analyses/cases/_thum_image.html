@@ -5,7 +5,7 @@
     <div class="col-sm-6 col-md-4 col-lg-3">
         <div class="card h-100 shadow-sm">
             {% if image.thumb_id %}
-                <a href="{% url "image" image.image_id %}" target="_blank">
+                <a class="glightbox" href="{% url "image" image.image_id %}" data-gallery="gallery" data-type="image" target="_blank">
                     <img src="{% url "image" image.thumb_id %}" class="card-img-top" alt="{{ image.file_name }}" style="height: 200px; object-fit: cover;">
                 </a>
                 <div class="card-body p-2">
@@ -43,7 +43,7 @@
                         <button class="btn btn-sm btn-outline-warning favorite star{{image.id}}" data-url="{% url "favorite" image.id %}" title="Set as favorite"><i class="fa-solid fa-star"></i></button>
                     {% endif %}
                     
-                    <a href="{% url "image" image.image_id %}" class="btn btn-sm btn-outline-secondary" target="_blank" title="View image"><i class="fa-solid fa-image"></i></a>
+                    <a href="{% url "image" image.image_id %}" class="btn btn-sm btn-outline-secondary" target="_blank" title="Download image"><i class="fa-solid fa-download"></i></a>
                 </div>
             {% else %}
                 <div class="d-flex align-items-center justify-content-center bg-light" style="height: 200px;">
@@ -54,7 +54,7 @@
                 </div>
                 <div class="card-footer bg-white border-top-0 d-flex justify-content-between">
                     <a href="{% url "show_analysis" image.id %}" class="btn btn-sm btn-outline-primary" title="Show report"><i class="fa-solid fa-file-lines"></i></a>
-                    <a href="{% url "image" image.image_id %}" class="btn btn-sm btn-outline-secondary" target="_blank" title="View image"><i class="fa-solid fa-image"></i></a>
+                    <a href="{% url "image" image.image_id %}" class="btn btn-sm btn-outline-secondary" target="_blank" title="Download image"><i class="fa-solid fa-download"></i></a>
                 </div>
             {% endif %}
         </div>
