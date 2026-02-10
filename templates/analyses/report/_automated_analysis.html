@@ -274,6 +274,65 @@
     </div>
 </div>
 {% endif %}
+
+<!-- ================ SECTION 3b: AUDITOR FINDINGS ================ -->
+{% if analysis.report.confidence.auditor_findings %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <span><i class="fa-solid fa-gavel me-2"></i> Compliance Audit Findings</span>
+                <div class="small text-muted">
+                    <span class="badge bg-success">Positive</span> = Supports Authenticity |
+                    <span class="badge bg-danger">Negative</span> = Raises Concerns
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped align-middle small mb-2">
+                        <thead>
+                            <tr>
+                                <th style="width: 12%;">Severity</th>
+                                <th style="width: 25%;">Category</th>
+                                <th style="width: 10%;">Impact</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for finding in analysis.report.confidence.auditor_findings %}
+                            <tr>
+                                <td>
+                                    {% if finding.level == 'HIGH' %}
+                                        <span class="badge bg-dark">HIGH</span>
+                                    {% elif finding.level == 'MEDIUM' %}
+                                        <span class="badge bg-secondary">MEDIUM</span>
+                                    {% else %}
+                                        <span class="badge bg-light text-dark">LOW</span>
+                                    {% endif %}
+                                </td>
+                                <td><strong>{{ finding.category }}</strong></td>
+                                <td>
+                                    {% if finding.is_positive %}
+                                        <span class="badge bg-success">Positive</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Negative</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ finding.description }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-muted small mb-0 mt-2">
+                    <strong>Impact:</strong> HIGH = ±50 points, MEDIUM = ±15 points, LOW = ±5 points. 
+                    Baseline score is 50/100.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 {% endif %}{# end confidence #}
 
 <!-- ================ SECTION 4: METHOD DETAILS ================ -->

@@ -58,6 +58,12 @@ The ComplianceAuditor uses these point values:
 
 Positive findings add to the authenticity score (max 100), negative findings subtract (min 0).
 
+**Note on Convergent Evidence:** The auditor has an aspirational feature
+for detecting when multiple independent detectors agree (convergent evidence).
+This is currently disabled to avoid double-counting penalties. When properly
+implemented, it would add additional weight when 3+ independent negative (or
+positive) findings from different categories converge.
+
 ## Example Implementation
 
 ```python

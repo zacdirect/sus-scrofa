@@ -107,6 +107,10 @@ could still fool metadata and ELA while getting caught by ML models.
 A single metadata flag won't trigger a skip either — we need
 convergent evidence from at least two independent checks.
 
+**Note:** The auditor's "convergent evidence" feature (which would add
+additional penalty when multiple findings agree) is currently disabled
+as an aspirational feature, as it risks double-counting evidence.
+
 If the checkpoint fails (exception), we **always continue** to AI/ML.
 
 ---

@@ -27,6 +27,7 @@ class SPAIDetector(BaseDetector):
     def __init__(self):
         super().__init__()
         self._spai = None
+        self._ai_detection_dir = None
         self._weights_path = None
     
     def get_order(self) -> int:
@@ -34,34 +35,21 @@ class SPAIDetector(BaseDetector):
         return 100
     
     def check_deps(self) -> bool:
-        """Check if SPAI dependencies and weights are available."""
+        """Check if SPAI environment is available."""
+        # Check for ai_detection directory and venv
         try:
-            # Check for weights file
             ai_det_dir = Path(__file__).parent.parent
-            weights_path = ai_det_dir / 'weights' / 'spai.pth'
+            venv_python = ai_det_dir / '.venv' / 'bin' / 'python'
             
-            if not weights_path.exists():
-                logger.warning(f"SPAI model weights not found at {weights_path} — run: make ai-setup")
+            if not venv_python.exists():
+                logger.warning("SPAI venv not found - run: make ai-setup")
                 return False
             
-            # Try importing SPAI dependencies
-            import torch
-            import torchvision
-            
-            # Add SPAI module to path if not already there
-            spai_dir = ai_det_dir / 'spai'
-            if str(spai_dir) not in sys.path:
-                sys.path.insert(0, str(spai_dir))
-            
-            self._weights_path = weights_path
+            self._ai_detection_dir = ai_det_dir
             return True
             
-        except ImportError as e:
-            logger.warning(f"SPAI dependencies not available: {e}")
-            logger.info("Run: make ai-setup to install AI detection dependencies")
-            return False
         except Exception as e:
-            logger.error(f"Error checking SPAI dependencies: {e}") 
+            logger.error(f"Error checking SPAI dependencies: {e}")
             return False
     
     def detect(self, image_path: str, context=None) -> DetectionResult:
@@ -85,16 +73,41 @@ class SPAIDetector(BaseDetector):
             )
         
         try:
-            # Lazy import SPAI (only when needed)
-            if self._spai is None:
-                from spai.inference import SPAIDetector as SPAI
-                self._spai = SPAI(str(self._weights_path))
+            # Import SPAI from isolated environment
+            # Note: This runs in the main process but SPAI is in its own venv
+            # We use subprocess approach from the plugin
+            import subprocess
+            import json
             
-            # Run inference
-            result = self._spai.predict(image_path)
+            venv_python = self._ai_detection_dir / '.venv' / 'bin' / 'python'
+            infer_script = self._ai_detection_dir / 'spai_infer.py'
+            weights_path = self._ai_detection_dir / 'weights' / 'spai.pth'
             
-            if not result.get('success', False):
-                error_msg = result.get('error', 'Unknown error')
+            # No timeout - let model finish inference once loaded
+            # CPU: ~60s model load + ~30-60s inference = ~90-120s total
+            # GPU: ~3-5s total
+            logger.info("Starting SPAI inference (may take 1-2 minutes on CPU)...")
+            result = subprocess.run(
+                [str(venv_python), str(infer_script), str(weights_path), image_path],
+                capture_output=True,
+                text=True,
+                cwd=str(self._ai_detection_dir)
+            )
+            
+            if result.returncode != 0:
+                return DetectionResult(
+                    method=DetectionMethod.ML_MODEL,
+                    is_ai_generated=None,
+                    confidence=ConfidenceLevel.NONE,
+                    score=0.0,
+                    evidence=f"SPAI inference failed: {result.stderr[:200]}"
+                )
+            
+            # Parse JSON result
+            inference_result = json.loads(result.stdout)
+            
+            if not inference_result.get('success', False):
+                error_msg = inference_result.get('error', 'Unknown error')
                 return DetectionResult(
                     method=DetectionMethod.ML_MODEL,
                     is_ai_generated=None,
@@ -102,11 +115,17 @@ class SPAIDetector(BaseDetector):
                     score=0.0,
                     evidence=f"SPAI error: {error_msg}"
                 )
-            
             # Extract results
-            probability = result['score']
-            logit = result['logit']
+            probability = inference_result['score']
+            logit = inference_result['logit']
+            timing = inference_result.get('timing', {})
             
+            if timing:
+                logger.info(f"SPAI completed: load={timing.get('load_time')}s, "
+                          f"inference={timing.get('inference_time')}s, "
+                          f"total={timing.get('total_time')}s")
+            
+            # Map probability to confidence level
             # Map probability to confidence level
             # Note: SPAI tends to produce very low probabilities for AI images
             # in our tests, so we use logit for better discrimination
@@ -128,9 +147,8 @@ class SPAIDetector(BaseDetector):
                 score=float(probability),
                 evidence=f"SPAI spectral analysis: {probability*100:.4f}% AI probability (logit: {logit:.2f})",
                 metadata={
-                    'model': 'SPAI',
                     'logit': logit,
-                    'probability': probability
+                    'timing': timing
                 }
             )
             

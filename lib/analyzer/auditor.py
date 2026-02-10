@@ -211,7 +211,9 @@ def audit(results: dict) -> dict:
     findings.extend(_collect_plugin_findings(results))
 
     # === BIG PICTURE (cross-detector convergence) ===
-    findings.extend(_check_convergent_evidence(findings, results))
+    # TODO: Aspirational - convergent evidence needs better implementation
+    # to avoid double-counting. Currently disabled.
+    # findings.extend(_check_convergent_evidence(findings, results))
 
     # === CALCULATE SCORES ===
     authenticity_score = _calculate_authenticity_score(findings)
@@ -238,6 +240,15 @@ def audit(results: dict) -> dict:
             'medium_pos': sum(1 for f in pos if f.level == Finding.MEDIUM),
             'low_pos': sum(1 for f in pos if f.level == Finding.LOW),
         },
+        'findings': [
+            {
+                'level': f.level,
+                'category': f.category,
+                'description': f.description,
+                'is_positive': f.is_positive,
+            }
+            for f in findings
+        ],
     }
 
 
@@ -619,6 +630,10 @@ def _check_opencv_findings(opencv_data: dict) -> List[Finding]:
 # ─────────────────────────────────────────────────────────────────
 # Big picture — cross-detector convergent evidence
 # ─────────────────────────────────────────────────────────────────
+# ASPIRATIONAL: This feature is currently disabled. The risk is
+# "double-counting" where we penalize for both individual findings
+# AND for those same findings agreeing. Needs refinement to add
+# value without duplicating penalties.
 
 def _collect_plugin_findings(results: dict) -> List[Finding]:
     """
@@ -664,7 +679,9 @@ def _collect_plugin_findings(results: dict) -> List[Finding]:
 
 def _check_convergent_evidence(findings: List[Finding],
                                results: dict) -> List[Finding]:
-    """Promote severity when multiple independent detectors agree.
+    """[DISABLED] Promote severity when multiple independent detectors agree.
+
+    ASPIRATIONAL: Currently disabled pending better implementation.
 
     This is the "better together" idea: any single signal might be
     noise, but when several independent detectors all point the same

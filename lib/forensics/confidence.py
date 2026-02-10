@@ -118,6 +118,19 @@ def calculate_manipulation_confidence(results):
             'type': 'audit'
         })
 
+        # Extract individual auditor findings for dedicated display
+        auditor_findings = []
+        for finding in audit_data.get('findings', []):
+            # Include MEDIUM and HIGH findings for visibility
+            if finding['level'] in ('MEDIUM', 'HIGH'):
+                auditor_findings.append({
+                    'level': finding['level'],
+                    'category': finding['category'],
+                    'description': finding['description'],
+                    'is_positive': finding['is_positive'],
+                })
+        confidence['auditor_findings'] = auditor_findings
+
         # Collect supporting indicators for display (not scoring)
         _collect_supporting_indicators(results, confidence)
         return confidence
