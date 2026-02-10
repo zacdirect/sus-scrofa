@@ -1,4 +1,4 @@
-.PHONY: help start stop status logs clean mongodb web processor dev run setup install check-deps venv reset-db fresh ai-setup ai-verify ai-clean photoholmes-setup photoholmes-verify photoholmes-clean research-setup research-verify research-clean detect-system
+.PHONY: help start stop status logs clean mongodb web processor dev run setup install check-deps venv reset-db fresh ai-setup ai-verify ai-clean photoholmes-setup photoholmes-verify photoholmes-clean mantranet-setup mantranet-verify mantranet-clean research-setup research-verify research-clean detect-system
 
 # Colors for output
 RED := \033[0;31m
@@ -42,6 +42,11 @@ help:
 	@echo "  make photoholmes-setup    - Install photoholmes + torch (CPU) + jpegio"
 	@echo "  make photoholmes-verify   - Verify photoholmes installation"
 	@echo "  make photoholmes-clean    - Remove photoholmes from environment"
+	@echo ""
+	@echo "$(YELLOW)ManTraNet Forgery Localization (Optional):$(NC)"
+	@echo "  make mantranet-setup      - Install ManTraNet + TensorFlow 1.14 (isolated venv)"
+	@echo "  make mantranet-verify     - Verify ManTraNet installation"
+	@echo "  make mantranet-clean      - Remove ManTraNet environment"
 	@echo ""
 	@echo "$(YELLOW)Research Content Analysis (Optional):$(NC)"
 	@echo "  make research-setup      - Install torch + download pretrained models"
@@ -170,7 +175,10 @@ setup: check-deps venv
 	@echo "$(YELLOW)3. Photoholmes Forgery Detection...$(NC)"
 	@$(MAKE) photoholmes-setup || echo "$(YELLOW)⚠ Photoholmes setup failed (optional)$(NC)"
 	@echo ""
-	@echo "$(YELLOW)4. OpenCV Manipulation Detection Service...$(NC)"
+	@echo "$(YELLOW)4. ManTraNet Forgery Localization...$(NC)"
+	@$(MAKE) mantranet-setup || echo "$(YELLOW)⚠ ManTraNet setup failed (optional)$(NC)"
+	@echo ""
+	@echo "$(YELLOW)5. OpenCV Manipulation Detection Service...$(NC)"
 	@$(MAKE) opencv-build || echo "$(YELLOW)⚠ OpenCV build failed (optional)$(NC)"
 	@$(MAKE) opencv-start || echo "$(YELLOW)⚠ OpenCV start failed (optional)$(NC)"
 	@echo ""
@@ -190,13 +198,15 @@ setup: check-deps venv
 	@echo ""
 	@echo "$(GREEN)Installed Features:$(NC)"
 	@echo "  ✓ Core forensic analysis"
-	@echo "  ✓ AI Detection (SPAI + SDXL)"
-	@echo "  ✓ Research Content Analysis (object/person detection)"
-	@echo "  ✓ Photoholmes Forgery Detection"
+	@echo "  ✓ ManTraNet Forgery Localization"
 	@echo "  ✓ OpenCV Manipulation Detection"
 	@echo "  ✓ MongoDB database"
 	@echo ""
 	@echo "$(YELLOW)Verify installations (optional):$(NC)"
+	@echo "  make ai-verify"
+	@echo "  make research-verify"
+	@echo "  make photoholmes-verify"
+	@echo "  make mantranetstallations (optional):$(NC)"
 	@echo "  make ai-verify"
 	@echo "  make research-verify"
 	@echo "  make photoholmes-verify"
@@ -478,6 +488,68 @@ photoholmes-clean:
 	$(PIP) uninstall -y photoholmes 2>/dev/null || true
 	@echo "$(GREEN)✓ Photoholmes removed$(NC)"
 	@echo "$(YELLOW)Note: torch/torchvision left installed (may be used by other modules)$(NC)"
+
+# ManTraNet Forgery Localization
+mantranet-setup: venv
+	@echo "$(GREEN)Setting up ManTraNet forgery localization...$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Step 1: Creating directory structure...$(NC)"
+	@mkdir -p models/weights/mantranet ai_detection/mantranet/src
+	@echo "$(GREEN)✓ Directories created$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Step 2: Downloading model architecture files...$(NC)"
+	@if [ ! -f "ai_detection/mantranet/src/modern_mantranet.py" ]; then \
+		echo "$(RED)✗ Model architecture missing - this should not happen!$(NC)" && exit 1; \
+	else \
+		echo "$(GREEN)✓ Model architecture present (modern TensorFlow 2.20/Keras 3.x implementation)$(NC)"; \
+	fi
+	@echo ""
+	@echo "$(YELLOW)Step 3: Installing TensorFlow into main venv...$(NC)"
+	@INDEX_URL=$$($(SYSTEM_PYTHON) scripts/detect_system.py --index-url); \
+	$(PIP) install --quiet --extra-index-url "$$INDEX_URL" "tensorflow>=2.10.0" && \
+	echo "$(GREEN)✓ TensorFlow installed$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Step 4: Installing additional dependencies...$(NC)"
+	@$(PIP) install --quiet "scipy>=1.4.0" "matplotlib>=3.0.0" && \
+		echo "$(GREEN)✓ Dependencies installed$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Step 5: Downloading pretrained Keras model (~170MB)...$(NC)"
+	@if [ ! -f "models/weights/mantranet/ManTraNet_Ptrain4.h5" ]; then \
+		wget -q --show-progress -O models/weights/mantranet/ManTraNet_Ptrain4.h5 \
+			https://raw.githubusercontent.com/ISICV/ManTraNet/master/pretrained_weights/ManTraNet_Ptrain4.h5 && \
+		echo "$(GREEN)✓ Model downloaded$(NC)"; \
+	else \
+		echo "$(GREEN)✓ Model already exists ($(shell du -h models/weights/mantranet/ManTraNet_Ptrain4.h5 2>/dev/null | cut -f1))$(NC)"; \
+	fi
+	@echo ""
+	@echo "$(GREEN)========================================$(NC)"
+	@echo "$(GREEN)✓ ManTraNet ready!$(NC)"
+	@echo "$(GREEN)========================================$(NC)"
+	@echo ""
+	@echo "Setup created:"
+	@echo "  • Model weights: models/weights/mantranet/ManTraNet_Ptrain4.h5"
+	@echo "  • Architecture: ai_detection/mantranet/src/modern_mantranet.py (TensorFlow 2.20/Keras 3.x)"
+	@echo "  • Python $(shell python --version 2>&1 | cut -d' ' -f2) + TensorFlow $(shell python -c 'import tensorflow as tf; print(tf.__version__)' 2>/dev/null || echo 'N/A')"
+	@echo ""
+	@echo "Verify installation:"
+	@echo "  make mantranet-verify"
+
+mantranet-verify:
+	@echo "$(GREEN)Verifying ManTraNet installation...$(NC)"
+	@if [ -f "models/weights/mantranet/ManTraNet_Ptrain4.h5" ]; then \
+		echo "$(GREEN)✓ Model file exists ($(shell du -h models/weights/mantranet/ManTraNet_Ptrain4.h5 2>/dev/null | cut -f1))$(NC)"; \
+	else \
+		echo "$(RED)✗ Model file not found$(NC)" && exit 1; \
+	fi
+	@$(PYTHON) -c "import tensorflow as tf; print('$(GREEN)✓ TensorFlow ' + tf.__version__ + '$(NC)')" 2>/dev/null || echo "$(RED)✗ TensorFlow not installed$(NC)"
+	@$(PYTHON) -c "import scipy, matplotlib; print('$(GREEN)✓ Dependencies OK$(NC)')" 2>/dev/null || echo "$(RED)✗ Dependencies missing$(NC)"
+	@echo "$(GREEN)✓ ManTraNet is ready$(NC)"
+
+mantranet-clean:
+	@echo "$(YELLOW)Removing ManTraNet model...$(NC)"
+	@rm -rf models/weights/mantranet
+	@echo "$(GREEN)✓ ManTraNet model removed$(NC)"
+	@echo "$(YELLOW)Note: TensorFlow left installed (may be used by other modules)$(NC)"
 
 # Research Content Analysis (Phase 1c)
 research-setup: venv

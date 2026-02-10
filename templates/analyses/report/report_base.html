@@ -187,6 +187,11 @@
                         <a class="nav-link {% if active_tab == 'frequency' %}active{% endif %}" href="{% url 'show_frequency' analysis.id %}">Frequency</a>
                     </li>
                     {% endif %}
+                    {% if analysis.report.mantranet %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_tab == 'forgery' %}active{% endif %}" href="{% url 'show_forgery' analysis.id %}">Forgery Localization</a>
+                    </li>
+                    {% endif %}
                     {% if analysis.report.signatures and analysis.report.signatures|length > 0 %}
                     <li class="nav-item">
                         <a class="nav-link {% if active_tab == 'signatures' %}active{% endif %}" href="{% url 'show_signatures' analysis.id %}">Signatures</a>

@@ -1,4 +1,4 @@
-Sus Scrofa is a fork of a long dormant project [Ghira](https://github.com/ghirensics/ghira).
+Sus Scrofa is a fork of a long dormant project [Ghiro](https://github.com/ghirensics/ghiro).
 
 It is being modernized and moved from its strictly forensic analysis roots to something more generally purposed for determining what's sus about images or a collection of images.
 
