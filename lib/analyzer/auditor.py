@@ -666,6 +666,7 @@ def _collect_plugin_findings(results: dict) -> List[Finding]:
     
     # Known plugin names that might have audit_findings
     plugin_names = [
+        'ai_detection',  # ManTraNet and other AI detectors
         'photoholmes',
         'ela',
         'noise_analysis',
@@ -805,7 +806,7 @@ def _calculate_manipulation_probability(findings: List[Finding]) -> float:
     for f in findings:
         if f.category in ('Forensic Manipulation', 'Forensic Noise',
                           'Forensic Clean', 'JPEG Artifacts',
-                          'Convergent Evidence'):
+                          'Convergent Evidence', 'forgery_localization'):
             pts = POINTS[f.level]
             if f.is_positive:
                 manip_pos_pts += pts
@@ -835,6 +836,7 @@ def _collect_detector_types(findings: List[Finding]) -> List[str]:
         'Forensic Noise': 'forensic_analysis',
         'JPEG Artifacts': 'forensic_analysis',
         'Convergent Evidence': 'convergent_evidence',
+        'forgery_localization': 'forgery_localization',  # ManTraNet
     }
 
     detected = []

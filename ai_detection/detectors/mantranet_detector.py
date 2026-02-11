@@ -15,7 +15,7 @@ Paper: "ManTra-Net: Manipulation Tracing Network for Detection and Localization
         of Image Forgeries With Anomalous Features" (CVPR 2019)
         https://arxiv.org/abs/1812.08045
 
-Model: Modern TensorFlow 2.20/Keras 3.x implementation, weights from official pretrained model
+Model: PyTorch implementation with pretrained weights
 """
 
 import json
@@ -62,49 +62,51 @@ class ManTraNetDetector(BaseDetector):
         return 80
     
     def check_deps(self) -> bool:
-        """Check if ManTraNet model and architecture files exist."""
+        """Check if ManTraNet PyTorch model and dependencies exist."""
         try:
-            # Model in project root models/weights/
-            model_path = Path(__file__).parent.parent.parent / "models" / "weights" / "mantranet" / "ManTraNet_Ptrain4.h5"
-            # Architecture in ai_detection/mantranet/src/
-            arch_path = Path(__file__).parent.parent / "mantranet" / "src" / "modelCore.py"
-            
+            # PyTorch model weights
+            model_path = Path(__file__).parent.parent.parent / "models" / "weights" / "mantranet" / "MantraNetv4.pt"
+
             if not model_path.exists():
                 logger.warning(
                     "ManTraNet model not found at %s — run: make mantranet-setup",
                     model_path
                 )
                 return False
-            
-            if not arch_path.exists():
+
+            # Check PyTorch
+            import torch
+
+            # Check for model code
+            model_code = Path(__file__).parent.parent / "mantranet" / "mantranet.py"
+            if not model_code.exists():
                 logger.warning(
-                    "ManTraNet architecture not found at %s — run: make mantranet-setup",
-                    arch_path
+                    "ManTraNet model code not found at %s — run: make mantranet-setup",
+                    model_code
                 )
                 return False
-            
-            # Check TensorFlow and Keras
-            import tensorflow as tf
-            import keras
-            
+
             self._model_path = model_path
             return True
-            
+
+        except ImportError as e:
+            logger.error("PyTorch not installed: %s — run: make mantranet-setup", e)
+            return False
         except Exception as e:
             logger.error("Error checking ManTraNet dependencies: %s", e)
             return False
     
     def detect(self, image_path: str, context=None) -> DetectionResult:
         """
-        Detect and localize image manipulations using ManTraNet.
-        
-        Runs inference via subprocess to isolate TensorFlow 1.14 environment.
+        Detect and localize image manipulations using ManTraNet (PyTorch).
+
+        Runs inference via subprocess using PyTorch implementation.
         Analyzes the output mask to generate audit findings and a detection result.
-        
+
         Args:
             image_path: Path to image file
             context: Optional ResultStore for accessing metadata and saving mask
-            
+
         Returns:
             DetectionResult with manipulation evidence and confidence
         """
@@ -116,21 +118,19 @@ class ManTraNetDetector(BaseDetector):
                 score=0.0,
                 evidence="ManTraNet not available — run: make mantranet-setup"
             )
-        
+
         try:
-            # Run inference directly (TensorFlow 2.x with compat mode)
-            infer_script = Path(__file__).parent.parent / "mantranet_infer.py"
+            # Run PyTorch inference
+            infer_script = Path(__file__).parent.parent / "mantranet_infer_pytorch.py"
             model_path = self._model_path
-            
+
             # Use sys.executable to run in current environment
-            # Suppress stderr to hide TensorFlow warnings
             import sys
             result = subprocess.run(
                 [sys.executable, str(infer_script), str(model_path), str(image_path)],
                 capture_output=True,
                 text=True,
-                timeout=120,  # 2 minutes max
-                env={**os.environ, 'TF_CPP_MIN_LOG_LEVEL': '3', 'CUDA_VISIBLE_DEVICES': ''}
+                timeout=300  # 5 minutes max (model load + large image inference)
             )
             
             if result.returncode != 0:
@@ -161,25 +161,30 @@ class ManTraNetDetector(BaseDetector):
             region_count = analysis.get("region_count", 0)
             max_confidence = analysis.get("max_confidence", 0.0)
             
-            # Save mask to GridFS if context provided
+            # Save mask and overlay to GridFS if context provided
             mask_id = None
-            if "mask_bytes" in output:
-                if context:
-                    try:
-                        from lib.db import save_file
-                        import base64
-                        
+            overlay_id = None
+            if context:
+                try:
+                    from lib.db import save_file
+                    import base64
+
+                    # Save binary mask (black/white for clarity)
+                    if "mask_bytes" in output:
                         mask_data = base64.b64decode(output["mask_bytes"])
-                        
-                        # Use save_file() like other plugins (ELA, etc) - returns UUID not ObjectId
                         mask_id = save_file(mask_data, content_type="image/png")
-                        logger.info("Saved ManTraNet mask to GridFS: %s", mask_id)
-                    except Exception as e:
-                        logger.error("Failed to save mask to GridFS: %s", e)
-                else:
-                    logger.debug("No context provided, mask not saved to GridFS")
+                        logger.info("Saved ManTraNet binary mask to GridFS: %s", mask_id)
+
+                    # Save overlay (original image with red highlights)
+                    if "overlay_bytes" in output:
+                        overlay_data = base64.b64decode(output["overlay_bytes"])
+                        overlay_id = save_file(overlay_data, content_type="image/png")
+                        logger.info("Saved ManTraNet overlay to GridFS: %s", overlay_id)
+
+                except Exception as e:
+                    logger.error("Failed to save masks to GridFS: %s", e)
             else:
-                logger.warning("No mask_bytes in ManTraNet output")
+                logger.debug("No context provided, masks not saved to GridFS")
             
             # Generate audit findings
             audit_findings = self._create_audit_findings(analysis)
@@ -202,7 +207,8 @@ class ManTraNetDetector(BaseDetector):
                 "region_count": region_count,
                 "max_confidence": max_confidence,
                 "inference_time_s": output.get("timing", {}).get("total_time", 0),
-                "mask_id": mask_id,  # UUID from save_file()
+                "mask_id": mask_id,  # UUID - binary black/white mask
+                "overlay_id": overlay_id,  # UUID - original with red highlights
                 "audit_findings": audit_findings  # Store for auditor extraction
             }
             
@@ -222,7 +228,7 @@ class ManTraNetDetector(BaseDetector):
                 is_ai_generated=None,
                 confidence=ConfidenceLevel.NONE,
                 score=0.0,
-                evidence="ManTraNet inference timed out (>2 minutes)"
+                evidence="ManTraNet inference timed out (>5 minutes)"
             )
         except Exception as e:
             logger.error("ManTraNet detection error: %s", e)
@@ -248,16 +254,17 @@ class ManTraNetDetector(BaseDetector):
     def _create_audit_findings(self, analysis: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
         Generate audit findings from mask analysis.
-        
-        Findings are scored by the auditor based on manipulation percentage:
-        - HIGH: >20% manipulated (serious forgery)
-        - MEDIUM: 5-20% manipulated (moderate editing)
-        - LOW: 1-5% manipulated (minor touch-ups)
-        - POSITIVE: <0.5% manipulated (likely pristine)
-        
+
+        Risk levels are primarily driven by confidence, following the pattern:
+        - HIGH: High-confidence forgery detection (max_conf > 0.7) with meaningful manipulation
+        - MEDIUM: Medium-confidence forgery (0.4 < max_conf <= 0.7) OR high % but low confidence
+        - LOW: Low-confidence forgery (max_conf <= 0.4) OR very minor manipulation
+        - POSITIVE MEDIUM: Confidently passes (<1% manipulation with high confidence)
+        - POSITIVE LOW: Passes but with low confidence
+
         Args:
             analysis: Dict with manipulated_percentage, region_count, max_confidence
-            
+
         Returns:
             List of audit findings for auditor consumption
         """
@@ -265,54 +272,73 @@ class ManTraNetDetector(BaseDetector):
         manipulated_pct = analysis.get("manipulated_percentage", 0.0)
         region_count = analysis.get("region_count", 0)
         max_conf = analysis.get("max_confidence", 0.0)
-        
-        if manipulated_pct > 20.0 and max_conf > 0.7:
-            # HIGH: Serious forgery detected
-            findings.append({
-                "level": "HIGH",
-                "category": "forgery_localization",
-                "description": (
-                    f"Extensive manipulation detected: {manipulated_pct:.1f}% of image "
-                    f"shows forgery signatures across {region_count} region(s)"
-                ),
-                "is_positive": False,
-                "confidence": float(max_conf)
-            })
-        elif manipulated_pct > 5.0:
-            # MEDIUM: Moderate manipulation
-            findings.append({
-                "level": "MEDIUM",
-                "category": "forgery_localization",
-                "description": (
-                    f"Moderate manipulation detected: {manipulated_pct:.1f}% of image "
-                    f"shows editing in {region_count} region(s)"
-                ),
-                "is_positive": False,
-                "confidence": float(max_conf)
-            })
-        elif manipulated_pct > 1.0:
-            # LOW: Minor manipulation
-            findings.append({
-                "level": "LOW",
-                "category": "forgery_localization",
-                "description": (
-                    f"Minor manipulation detected: {manipulated_pct:.1f}% of image "
-                    f"shows possible editing"
-                ),
-                "is_positive": False,
-                "confidence": float(max_conf)
-            })
-        elif manipulated_pct < 0.5:
-            # POSITIVE: Likely pristine
-            findings.append({
-                "level": "MEDIUM",  # Use MEDIUM for positive findings (+15 points)
-                "category": "forgery_localization",
-                "description": (
-                    "No significant manipulation detected: image appears pristine "
-                    f"({manipulated_pct:.1f}% noise threshold)"
-                ),
-                "is_positive": True,
-                "confidence": 1.0 - float(max_conf) if max_conf < 0.5 else 0.9
-            })
-        
+
+        # NEGATIVE FINDINGS (manipulation detected)
+        if manipulated_pct > 1.0:
+            # Confidence is the primary driver for risk level
+            if max_conf > 0.7:
+                # HIGH: Confident forgery detection
+                findings.append({
+                    "level": "HIGH",
+                    "category": "forgery_localization",
+                    "description": (
+                        f"High-confidence manipulation detected: {manipulated_pct:.1f}% of image "
+                        f"shows forgery (confidence: {max_conf:.2f}, {region_count} region(s))"
+                    ),
+                    "is_positive": False,
+                    "confidence": float(max_conf)
+                })
+            elif max_conf > 0.4:
+                # MEDIUM: Moderate confidence
+                findings.append({
+                    "level": "MEDIUM",
+                    "category": "forgery_localization",
+                    "description": (
+                        f"Moderate-confidence manipulation: {manipulated_pct:.1f}% of image "
+                        f"shows possible editing (confidence: {max_conf:.2f}, {region_count} region(s))"
+                    ),
+                    "is_positive": False,
+                    "confidence": float(max_conf)
+                })
+            else:
+                # LOW: Low confidence forgery
+                findings.append({
+                    "level": "LOW",
+                    "category": "forgery_localization",
+                    "description": (
+                        f"Low-confidence manipulation signal: {manipulated_pct:.1f}% possible editing "
+                        f"(confidence: {max_conf:.2f})"
+                    ),
+                    "is_positive": False,
+                    "confidence": float(max_conf)
+                })
+
+        # POSITIVE FINDINGS (passes check)
+        elif manipulated_pct < 1.0:
+            if max_conf < 0.3:
+                # MEDIUM: Confidently pristine (low max_conf = confident it's NOT forged)
+                findings.append({
+                    "level": "MEDIUM",  # +15 points
+                    "category": "forgery_localization",
+                    "description": (
+                        f"No significant manipulation detected: image appears pristine "
+                        f"({manipulated_pct:.1f}% below threshold, confidence: {1.0 - max_conf:.2f})"
+                    ),
+                    "is_positive": True,
+                    "confidence": 1.0 - float(max_conf)
+                })
+            elif max_conf < 0.5:
+                # LOW: Passes but not highly confident
+                findings.append({
+                    "level": "LOW",  # +5 points
+                    "category": "forgery_localization",
+                    "description": (
+                        f"Low manipulation detected: {manipulated_pct:.1f}% "
+                        f"(below threshold but moderate confidence: {1.0 - max_conf:.2f})"
+                    ),
+                    "is_positive": True,
+                    "confidence": 1.0 - float(max_conf)
+                })
+            # If max_conf >= 0.5, we're uncertain - skip positive finding
+
         return findings
