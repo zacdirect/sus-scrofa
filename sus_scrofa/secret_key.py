@@ -1,1 +1,0 @@
-SECRET_KEY = ")moisyyuo#^is&taf(-g22@j=_3$%aij0^)h2&036rip-^n%o@"
