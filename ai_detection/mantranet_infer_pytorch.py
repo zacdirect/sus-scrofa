@@ -86,28 +86,43 @@ def preprocess_image(image_path: Path, max_size: int = 2048):
     return im_tensor, original
 
 
-def analyze_mask(mask: np.ndarray, threshold: float = 0.2):
+def analyze_mask(mask: np.ndarray, threshold: float = 0.2, min_region_size: int = 100):
     """
     Analyze forgery mask to extract statistics.
 
     Args:
         mask: 2D numpy array with values 0-1
         threshold: Confidence threshold for forgery detection
+        min_region_size: Minimum region size in pixels to consider (filters noise)
 
     Returns:
         Dict with analysis results
     """
+    from scipy import ndimage
+
     # Binary mask at threshold
     binary_mask = (mask > threshold).astype(np.uint8)
 
-    # Calculate manipulated percentage
-    total_pixels = mask.size
-    manipulated_pixels = np.sum(binary_mask)
-    manipulated_pct = (manipulated_pixels / total_pixels) * 100.0
-
     # Find connected regions
-    from scipy import ndimage
     labeled, num_regions = ndimage.label(binary_mask)
+
+    # Filter out small regions (likely noise from JPEG compression, sensor artifacts)
+    filtered_mask = binary_mask.copy()
+    if min_region_size > 0:
+        for region_id in range(1, num_regions + 1):
+            region = (labeled == region_id)
+            region_size = np.sum(region)
+            if region_size < min_region_size:
+                # Remove small noisy regions
+                filtered_mask[region] = 0
+
+        # Recalculate regions after filtering
+        labeled, num_regions = ndimage.label(filtered_mask)
+
+    # Calculate manipulated percentage using filtered mask
+    total_pixels = mask.size
+    manipulated_pixels = np.sum(filtered_mask)
+    manipulated_pct = (manipulated_pixels / total_pixels) * 100.0
 
     # Max confidence in mask
     max_confidence = float(np.max(mask))
@@ -115,7 +130,8 @@ def analyze_mask(mask: np.ndarray, threshold: float = 0.2):
     return {
         "manipulated_percentage": float(manipulated_pct),
         "region_count": int(num_regions),
-        "max_confidence": max_confidence
+        "max_confidence": max_confidence,
+        "filtered_mask": filtered_mask  # Return for visualization
     }
 
 
@@ -212,16 +228,42 @@ def run_inference(model_path: Path, image_path: Path):
 
         # Convert output to numpy (H, W)
         mask = output[0, 0].cpu().numpy()
+        print(f"Mask shape: {mask.shape}, Original shape: {original.shape}", file=sys.stderr)
 
-        # Analyze mask
-        analysis = analyze_mask(mask)
+        # Ensure mask and original have matching dimensions
+        if mask.shape[:2] != original.shape[:2]:
+            print(f"WARNING: Shape mismatch! Resizing mask to match original", file=sys.stderr)
+            from scipy import ndimage
+            zoom_factors = (original.shape[0] / mask.shape[0],
+                          original.shape[1] / mask.shape[1])
+            mask = ndimage.zoom(mask, zoom_factors, order=1)
+
+        # Analyze mask with higher threshold to reduce false positives
+        # threshold=0.4: Require 40% confidence to flag manipulation (reduces sensor noise)
+        # min_region_size=200: Require 200px coherent regions (filters JPEG artifacts)
+        print("Analyzing mask...", file=sys.stderr)
+        analysis = analyze_mask(mask, threshold=0.4, min_region_size=200)
+        print(f"Analysis complete: {analysis['manipulated_percentage']:.2f}% manipulated", file=sys.stderr)
+
+        # Get filtered binary mask (removes small noisy regions)
+        # Extract it before it goes into JSON serialization
+        filtered_mask_binary = analysis.pop('filtered_mask', None)
+        if filtered_mask_binary is None:
+            filtered_mask_binary = (mask > 0.4).astype(np.uint8)
+
+        # Create mask visualization: Apply filtering to original confidence values
+        # This preserves the confidence information while removing small noise regions
+        filtered_mask_float = mask * filtered_mask_binary.astype(float)
+        print(f"Filtered mask shape: {filtered_mask_float.shape}", file=sys.stderr)
 
         # Convert mask to PNG bytes (binary black/white for clarity)
-        mask_bytes = mask_to_png_bytes(mask, threshold=0.2, binary=True)
+        print("Creating mask PNG...", file=sys.stderr)
+        mask_bytes = mask_to_png_bytes(filtered_mask_float, threshold=0.01, binary=True)
         mask_b64 = base64.b64encode(mask_bytes).decode('utf-8')
 
         # Also create overlay version (mask on original image)
-        overlay_bytes = create_overlay(original, mask, threshold=0.2)
+        print("Creating overlay...", file=sys.stderr)
+        overlay_bytes = create_overlay(original, filtered_mask_float, threshold=0.01)
         overlay_b64 = base64.b64encode(overlay_bytes).decode('utf-8')
 
         total_time = time.time() - start_time
@@ -237,9 +279,13 @@ def run_inference(model_path: Path, image_path: Path):
         }
 
     except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"ERROR: {error_trace}", file=sys.stderr)
         return {
             "success": False,
             "error": str(e),
+            "traceback": error_trace,
             "timing": {
                 "total_time": time.time() - start_time
             }

@@ -46,9 +46,9 @@ Thumbs.db
 .pydevproject
 .idea
 
-# Ghiro custom files #
+# Sus Scrofa custom files #
 ######################
-ghiro/secret_key.py
+sus_scrofa/secret_key.py
 log/*
 reports/*
 

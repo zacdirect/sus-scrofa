@@ -72,12 +72,16 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <h6>Original Image</h6>
-                                <img src="{% url "image" analysis.image_id %}" class="img-fluid border rounded" alt="Original image">
+                                <a href="{% url "image" analysis.image_id %}" class="d-block glightbox" data-type="image">
+                                    <img src="{% url "image" analysis.image_id %}" class="img-fluid border rounded" alt="Original image">
+                                </a>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <h6>Forgery Heatmap</h6>
                                 {% if mantranet.mask_id %}
-                                    <img src="{% url "image" mantranet.mask_id %}" class="img-fluid border rounded" alt="Forgery mask">
+                                    <a href="{% url "image" mantranet.mask_id %}" class="d-block glightbox" data-type="image">
+                                        <img src="{% url "image" mantranet.mask_id %}" class="img-fluid border rounded" alt="Forgery mask">
+                                    </a>
                                     <p class="text-muted small mt-2">
                                         <i class="fa-solid fa-palette me-1"></i>
                                         Bright/white regions indicate detected manipulation. Darker areas appear pristine.

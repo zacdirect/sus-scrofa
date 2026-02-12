@@ -65,11 +65,13 @@
             transition: background-color 0.3s ease, color 0.3s ease; 
         }
 
-        /* GLightbox fixes */
-        .glightbox-clean .gslide-media img {
-            max-height: 90vh !important;
-            max-width: 90vw !important;
-            object-fit: contain;
+        /* GLightbox - Override only what's needed for proper image display */
+        .gslide-image img {
+            max-height: 97vh !important;
+            max-width: 97vw !important;
+            width: auto !important;
+            height: auto !important;
+            object-fit: contain !important;
         }
     </style>
     
@@ -152,16 +154,12 @@
         document.addEventListener('DOMContentLoaded', () => {
             const lightbox = GLightbox({
                 selector: '.glightbox',
-                touchNavigation: false,
+                touchNavigation: true,
                 loop: false,
-                zoomable: false,
-                draggable: false,
-                dragToleranceX: 40,
-                dragToleranceY: 40,
-                width: 'auto',
-                height: 'auto',
+                zoomable: true,
+                draggable: true,
             });
-            
+
             // Re-initialize lightbox after HTMX content updates
             document.body.addEventListener('htmx:afterSwap', () => {
                 lightbox.reload();
