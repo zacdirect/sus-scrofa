@@ -564,6 +564,17 @@ def show_frequency(request, analysis_id):
 
 @require_safe
 @login_required
+def show_forgery(request, analysis_id):
+    """Shows ManTraNet forgery localization report."""
+    context, error_response = _get_completed_analysis(request, analysis_id)
+    if error_response:
+        return error_response
+    
+    context['active_tab'] = 'forgery'
+    return render(request, "analyses/report/forgery.html", context)
+
+@require_safe
+@login_required
 def show_signatures(request, analysis_id):
     """Shows signatures report."""
     context, error_response = _get_completed_analysis(request, analysis_id)

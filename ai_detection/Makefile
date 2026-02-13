@@ -10,9 +10,10 @@ NC := \033[0m
 # Paths
 VENV_DIR := .venv
 VENV := $(VENV_DIR)/bin
-# Allow PYTHON to be overridden from parent Makefile (for shared venv)
+# Allow PYTHON/PIP/GDOWN to be overridden from parent Makefile (for shared venv)
 PYTHON ?= $(VENV)/python
 PIP ?= $(VENV)/pip
+GDOWN ?= $(VENV)/gdown
 SYSTEM_PYTHON := python3
 
 # Weights
@@ -117,20 +118,67 @@ weights:
 		fi; \
 	fi
 	@if [ ! -f $(WEIGHTS_FILE) ]; then \
-		echo "$(YELLOW)SPAI model weights need to be downloaded manually$(NC)"; \
-		echo "$(RED)Automated download from Google Drive is not reliable$(NC)"; \
-		echo ""; \
-		echo "$(YELLOW)Please download manually:$(NC)"; \
-		echo "  1. Visit: https://drive.google.com/file/d/1vvXmZqs6TVJdj8iF1oJ4L_fcgdQrp_YI/view"; \
-		echo "  2. Click 'Download' and confirm the virus scan warning"; \
-		echo "  3. Save as: $(WEIGHTS_FILE)"; \
-		echo "  4. Expected size: ~892MB"; \
-		echo ""; \
-		echo "$(YELLOW)Or use gdown if you have it installed:$(NC)"; \
-		echo "  pip install gdown"; \
-		echo "  gdown 1vvXmZqs6TVJdj8iF1oJ4L_fcgdQrp_YI -O $(WEIGHTS_FILE)"; \
-		echo ""; \
-		exit 1; \
+		echo "$(YELLOW)SPAI model weights not found. Attempting automatic download...$(NC)"; \
+		echo "$(YELLOW)Installing gdown for Google Drive downloads...$(NC)"; \
+		$(PIP) install --quiet gdown || (echo "$(RED)✗ Failed to install gdown$(NC)" && exit 1); \
+		echo "$(YELLOW)Downloading SPAI weights (~892MB, this may take several minutes)...$(NC)"; \
+		if $(PYTHON) -m gdown --fuzzy 1vvXmZqs6TVJdj8iF1oJ4L_fcgdQrp_YI -O $(WEIGHTS_FILE) 2>&1 | grep -v "Retrieving folder"; then \
+			if [ -f $(WEIGHTS_FILE) ]; then \
+				SIZE=$$(stat -c%s "$(WEIGHTS_FILE)" 2>/dev/null || stat -f%z "$(WEIGHTS_FILE)" 2>/dev/null); \
+				if [ $$SIZE -gt 100000000 ]; then \
+					echo "$(GREEN)✓ SPAI weights downloaded successfully ($$SIZE bytes)$(NC)"; \
+				else \
+					echo "$(RED)✗ Download failed - file too small ($$SIZE bytes)$(NC)"; \
+					rm -f $(WEIGHTS_FILE); \
+					echo ""; \
+					echo "$(RED)========================================$(NC)"; \
+					echo "$(RED)AUTOMATIC DOWNLOAD FAILED$(NC)"; \
+					echo "$(RED)========================================$(NC)"; \
+					echo ""; \
+					echo "$(YELLOW)Please download manually:$(NC)"; \
+					echo "  1. Visit: https://drive.google.com/file/d/1vvXmZqs6TVJdj8iF1oJ4L_fcgdQrp_YI/view"; \
+					echo "  2. Click 'Download' and confirm the virus scan warning"; \
+					echo "  3. Save as: $(WEIGHTS_FILE)"; \
+					echo "  4. Expected size: ~892MB"; \
+					echo ""; \
+					echo "Then re-run: make ai-setup"; \
+					echo ""; \
+					exit 1; \
+				fi; \
+			else \
+				echo "$(RED)✗ gdown failed to create the weights file$(NC)"; \
+				echo ""; \
+				echo "$(RED)========================================$(NC)"; \
+				echo "$(RED)AUTOMATIC DOWNLOAD FAILED$(NC)"; \
+				echo "$(RED)========================================$(NC)"; \
+				echo ""; \
+				echo "$(YELLOW)Please download manually:$(NC)"; \
+				echo "  1. Visit: https://drive.google.com/file/d/1vvXmZqs6TVJdj8iF1oJ4L_fcgdQrp_YI/view"; \
+				echo "  2. Click 'Download' and confirm the virus scan warning"; \
+				echo "  3. Save as: $(WEIGHTS_FILE)"; \
+				echo "  4. Expected size: ~892MB"; \
+				echo ""; \
+				echo "Then re-run: make ai-setup"; \
+				echo ""; \
+				exit 1; \
+			fi; \
+		else \
+			echo "$(RED)✗ gdown command failed$(NC)"; \
+			echo ""; \
+			echo "$(RED)========================================$(NC)"; \
+			echo "$(RED)AUTOMATIC DOWNLOAD FAILED$(NC)"; \
+			echo "$(RED)========================================$(NC)"; \
+			echo ""; \
+			echo "$(YELLOW)Please download manually:$(NC)"; \
+			echo "  1. Visit: https://drive.google.com/file/d/1vvXmZqs6TVJdj8iF1oJ4L_fcgdQrp_YI/view"; \
+			echo "  2. Click 'Download' and confirm the virus scan warning"; \
+			echo "  3. Save as: $(WEIGHTS_FILE)"; \
+			echo "  4. Expected size: ~892MB"; \
+			echo ""; \
+			echo "Then re-run: make ai-setup"; \
+			echo ""; \
+			exit 1; \
+		fi; \
 	fi
 
 # ============================================================================

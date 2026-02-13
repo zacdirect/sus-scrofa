@@ -124,7 +124,7 @@
                                 </button>
                                 <ul class="dropdown-menu">
                                     <li><a class="dropdown-item" href="{% url "export_json" analysis.id %}"><i class="fa-solid fa-file-code me-2"></i> JSON report</a></li>
-                                    <li><a class="dropdown-item glightbox" href="{% url "image" analysis.image_id %}"><i class="fa-solid fa-image me-2"></i> Original Image</a></li>
+                                    <li><a class="dropdown-item glightbox" href="{% url "image" analysis.image_id %}" data-type="image"><i class="fa-solid fa-image me-2"></i> Original Image</a></li>
                                 </ul>
                             </div>
                         </div>
@@ -185,6 +185,11 @@
                     {% if analysis.report.frequency_analysis %}
                     <li class="nav-item">
                         <a class="nav-link {% if active_tab == 'frequency' %}active{% endif %}" href="{% url 'show_frequency' analysis.id %}">Frequency</a>
+                    </li>
+                    {% endif %}
+                    {% if analysis.report.mantranet %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_tab == 'forgery' %}active{% endif %}" href="{% url 'show_forgery' analysis.id %}">Forgery Localization</a>
                     </li>
                     {% endif %}
                     {% if analysis.report.signatures and analysis.report.signatures|length > 0 %}

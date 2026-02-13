@@ -8,5 +8,6 @@ using multiple complementary detection methods.
 from .metadata import MetadataDetector
 from .base import BaseDetector, DetectionResult, ResultStore
 from .sdxl_detector import SDXLDetector
+from .mantranet_detector import ManTraNetDetector
 
-__all__ = ['MetadataDetector', 'BaseDetector', 'DetectionResult', 'ResultStore', 'SDXLDetector']
+__all__ = ['MetadataDetector', 'BaseDetector', 'DetectionResult', 'ResultStore', 'SDXLDetector', 'ManTraNetDetector']

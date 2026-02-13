@@ -1,4 +1,4 @@
-.PHONY: help start stop status logs clean mongodb web processor dev run setup install check-deps venv reset-db fresh ai-setup ai-verify ai-clean photoholmes-setup photoholmes-verify photoholmes-clean research-setup research-verify research-clean detect-system
+.PHONY: help start stop status logs clean mongodb web processor dev run setup install check-deps venv reset-db fresh ai-setup ai-verify ai-clean photoholmes-setup photoholmes-verify photoholmes-clean mantranet-setup mantranet-verify mantranet-clean research-setup research-verify research-clean detect-system
 
 # Colors for output
 RED := \033[0;31m
@@ -22,14 +22,14 @@ help:
 	@echo ""
 	@echo "$(YELLOW)Quick Start:$(NC)"
 	@echo "  make setup       - Complete setup with ALL features (RECOMMENDED)"
-	@echo "                     Includes: venv, core deps, AI detection (SPAI/SDXL),"
-	@echo "                               research models, photoholmes, MongoDB, migrations"
+	@echo "                     Includes: core deps, AI/ML, MongoDB, migrations"
 	@echo ""
 	@echo "$(YELLOW)Manual Setup (Advanced):$(NC)"
-	@echo "  make install     - Install core Python dependencies only (minimal)"
+	@echo "  make install     - Install/update Python dependencies only"
 	@echo "  make venv        - Create Python virtual environment"
 	@echo "  make check-deps  - Check system dependencies"
 	@echo "  make mongodb     - Start MongoDB container (Podman)"
+	@echo "  make migrate     - Run database migrations"
 	@echo "  make fresh       - Fresh start (reset DBs, recreate everything)"
 	@echo "  make detect-system - Detect GPU/CUDA availability for AI/ML"
 	@echo ""
@@ -42,6 +42,11 @@ help:
 	@echo "  make photoholmes-setup    - Install photoholmes + torch (CPU) + jpegio"
 	@echo "  make photoholmes-verify   - Verify photoholmes installation"
 	@echo "  make photoholmes-clean    - Remove photoholmes from environment"
+	@echo ""
+	@echo "$(YELLOW)ManTraNet Forgery Localization (Optional):$(NC)"
+	@echo "  make mantranet-setup      - Install ManTraNet + TensorFlow 1.14 (isolated venv)"
+	@echo "  make mantranet-verify     - Verify ManTraNet installation"
+	@echo "  make mantranet-clean      - Remove ManTraNet environment"
 	@echo ""
 	@echo "$(YELLOW)Research Content Analysis (Optional):$(NC)"
 	@echo "  make research-setup      - Install torch + download pretrained models"
@@ -84,15 +89,10 @@ check-deps:
 	@which podman > /dev/null 2>&1 && echo "$(GREEN)✓ Podman found$(NC)" || echo "$(YELLOW)⚠ Podman not found (needed for MongoDB)$(NC)"
 	@echo ""
 	@echo "$(YELLOW)Build Tools:$(NC)"
-	@which gcc > /dev/null 2>&1 && echo "$(GREEN)✓ GCC found$(NC)" || echo "$(RED)✗ GCC not found (needed for PyGObject)$(NC)"
-	@which pkg-config > /dev/null 2>&1 && echo "$(GREEN)✓ pkg-config found$(NC)" || echo "$(RED)✗ pkg-config not found$(NC)"
+	@which gcc > /dev/null 2>&1 && echo "$(GREEN)✓ GCC found$(NC)" || echo "$(YELLOW)⚠ GCC not found (needed for some Python packages like numpy)$(NC)"
 	@echo ""
 	@echo "$(YELLOW)System Libraries:$(NC)"
-	@pkg-config --exists cairo && echo "$(GREEN)✓ Cairo found$(NC)" || echo "$(RED)✗ Cairo not found (install libcairo2-dev)$(NC)"
-	@pkg-config --exists girepository-2.0 && echo "$(GREEN)✓ GIRepository-2.0 found$(NC)" || echo "$(RED)✗ GIRepository-2.0 not found (install libgirepository-2.0-dev)$(NC)"
-	@dpkg -l | grep -q libexempi8 && echo "$(GREEN)✓ Exempi found (XMP metadata)$(NC)" || echo "$(YELLOW)⚠ Exempi not found (install libexempi8 for XMP support)$(NC)"
-	@echo ""
-	@dpkg -l | grep -q python3.13-dev && echo "$(GREEN)✓ Python dev headers found$(NC)" || echo "$(RED)✗ Python dev headers not found (install python3.13-dev)$(NC)"
+	@dpkg -l | grep -q libexempi8 && echo "$(GREEN)✓ Exempi found (XMP metadata)$(NC)" || echo "$(YELLOW)⚠ Exempi not found (optional: install libexempi8 for XMP support)$(NC)"
 
 detect-system:
 	@echo "$(GREEN)Detecting GPU/CUDA configuration for AI/ML...$(NC)"
@@ -125,10 +125,6 @@ install: venv
 	@$(VENV)/python -c "from libxmp import XMPFiles; print('  ✓ python-xmp-toolkit (XMP metadata)')" 2>/dev/null || \
 		(echo "$(YELLOW)  ⚠ python-xmp-toolkit not found (XMP support unavailable)$(NC)")
 	@echo ""
-	@echo "$(YELLOW)Installing PyGObject (for system integration)...$(NC)"
-	@$(VENV)/pip install PyGObject || (echo "$(RED)PyGObject installation failed. Make sure you have:$(NC)" && \
-		echo "  sudo apt-get install build-essential libcairo2-dev libgirepository-2.0-dev pkg-config python3.13-dev" && exit 1)
-	@echo ""
 	@echo "$(YELLOW)Verifying scientific computing libraries...$(NC)"
 	@$(VENV)/python -c "import numpy, scipy, cv2, skimage; print('  ✓ NumPy, SciPy, OpenCV, scikit-image')" 2>/dev/null || \
 		(echo "$(RED)  ✗ Scientific libraries not found. Run 'make install' again.$(NC)" && exit 1)
@@ -149,39 +145,31 @@ install: venv
 	@echo "  3. Create superuser: make superuser"
 	@echo "  4. Start services:   make run"
 
-setup: check-deps venv
-	@echo "$(GREEN)========================================$(NC)"
-	@echo "$(GREEN)Complete Sus Scrofa Setup$(NC)"
-	@echo "$(GREEN)========================================$(NC)"
-	@echo ""
-	@echo "$(YELLOW)Phase 1: Installing core dependencies...$(NC)"
-	@$(MAKE) install
+setup: check-deps venv install mongodb
 	@echo ""
 	@echo "$(GREEN)========================================$(NC)"
-	@echo "$(GREEN)Phase 2: Setting up AI/ML features$(NC)"
+	@echo "$(GREEN)Installing ALL AI/ML Features$(NC)"
 	@echo "$(GREEN)========================================$(NC)"
 	@echo ""
-	@echo "$(YELLOW)1. AI Detection (SPAI + SDXL)...$(NC)"
-	@$(MAKE) ai-setup || echo "$(YELLOW)⚠ AI detection setup failed (optional)$(NC)"
-	@echo ""
-	@echo "$(YELLOW)2. Research Content Analysis...$(NC)"
-	@$(MAKE) research-setup || echo "$(YELLOW)⚠ Research setup failed (optional)$(NC)"
-	@echo ""
-	@echo "$(YELLOW)3. Photoholmes Forgery Detection...$(NC)"
+	@$(MAKE) mantranet-setup || echo "$(YELLOW)⚠ ManTraNet setup failed (optional)$(NC)"
 	@$(MAKE) photoholmes-setup || echo "$(YELLOW)⚠ Photoholmes setup failed (optional)$(NC)"
-	@echo ""
-	@echo "$(YELLOW)4. OpenCV Manipulation Detection Service...$(NC)"
-	@$(MAKE) opencv-build || echo "$(YELLOW)⚠ OpenCV build failed (optional)$(NC)"
-	@$(MAKE) opencv-start || echo "$(YELLOW)⚠ OpenCV start failed (optional)$(NC)"
+	@if ! $(MAKE) ai-setup 2>&1; then \
+		echo ""; \
+		echo "$(YELLOW)========================================$(NC)"; \
+		echo "$(YELLOW)⚠ AI Detection Setup Failed$(NC)"; \
+		echo "$(YELLOW)========================================$(NC)"; \
+		echo "This is an optional feature. Continuing with setup..."; \
+		echo "To install later, run: make ai-setup"; \
+		echo "$(YELLOW)========================================$(NC)"; \
+		echo ""; \
+	fi
+	@$(MAKE) research-setup || echo "$(YELLOW)⚠ Research setup failed (optional)$(NC)"
+	@$(MAKE) opencv-build && $(MAKE) opencv-start || echo "$(YELLOW)⚠ OpenCV setup failed (optional)$(NC)"
 	@echo ""
 	@echo "$(GREEN)========================================$(NC)"
-	@echo "$(GREEN)Phase 3: Database Setup$(NC)"
+	@echo "$(GREEN)Database Setup$(NC)"
 	@echo "$(GREEN)========================================$(NC)"
 	@echo ""
-	@echo "$(YELLOW)Starting MongoDB...$(NC)"
-	@$(MAKE) mongodb
-	@echo ""
-	@echo "$(YELLOW)Running database migrations...$(NC)"
 	@$(MAKE) migrate
 	@echo ""
 	@echo "$(GREEN)========================================$(NC)"
@@ -190,24 +178,21 @@ setup: check-deps venv
 	@echo ""
 	@echo "$(GREEN)Installed Features:$(NC)"
 	@echo "  ✓ Core forensic analysis"
-	@echo "  ✓ AI Detection (SPAI + SDXL)"
-	@echo "  ✓ Research Content Analysis (object/person detection)"
-	@echo "  ✓ Photoholmes Forgery Detection"
-	@echo "  ✓ OpenCV Manipulation Detection"
+	@echo "  ✓ ManTraNet forgery detection (PyTorch)"
+	@echo "  ✓ Photoholmes forgery detection"
+	@echo "  ✓ OpenCV manipulation detection"
 	@echo "  ✓ MongoDB database"
 	@echo ""
-	@echo "$(YELLOW)Verify installations (optional):$(NC)"
-	@echo "  make ai-verify"
-	@echo "  make research-verify"
-	@echo "  make photoholmes-verify"
+	@echo "$(YELLOW)Optional Feature (Manual Setup Required):$(NC)"
+	@echo "  ⚠ AI Detection (SDXL + SPAI) - Requires manual download"
+	@echo "    The SPAI model (~892MB) must be downloaded from Google Drive"
+	@echo "    See: ai_detection/README.md for instructions"
+	@echo "    Or run: make ai-setup (and follow the prompts)"
 	@echo ""
 	@echo "$(YELLOW)Next Steps:$(NC)"
-	@echo "  1. Create superuser: make superuser"
-	@echo "  2. Start services:   make run"
-	@echo "  3. Access web UI:    http://localhost:8000"
-	@echo ""
-	@echo "$(YELLOW)Then start the application:$(NC)"
-	@echo "  make run"
+	@echo "  1. make superuser  # Create admin account"
+	@echo "  2. make run        # Start the application"
+	@echo "  3. Open http://localhost:8000"
 	@echo ""
 
 
@@ -402,9 +387,9 @@ ai-setup: venv
 	@echo "$(YELLOW)Downloading AI detection models...$(NC)"
 	@echo "  This may take a few minutes on first run..."
 	@echo ""
-	@cd ai_detection && PYTHON=../$(PYTHON) $(MAKE) weights models || \
+	@cd ai_detection && PYTHON=../$(PYTHON) PIP=../$(PIP) $(MAKE) weights models || \
 		(echo "$(RED)✗ Model download failed$(NC)" && \
-		 echo "$(YELLOW)You can retry with: cd ai_detection && make models$(NC)" && \
+		 echo "$(YELLOW)You can retry with: cd ai_detection && PYTHON=../$(PYTHON) PIP=../$(PIP) make models$(NC)" && \
 		 exit 1)
 	@echo ""
 	@echo "$(GREEN)========================================$(NC)"
@@ -478,6 +463,79 @@ photoholmes-clean:
 	$(PIP) uninstall -y photoholmes 2>/dev/null || true
 	@echo "$(GREEN)✓ Photoholmes removed$(NC)"
 	@echo "$(YELLOW)Note: torch/torchvision left installed (may be used by other modules)$(NC)"
+
+# ManTraNet Forgery Localization (PyTorch)
+mantranet-setup: venv
+	@echo "$(GREEN)Setting up ManTraNet forgery localization (PyTorch)...$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Step 1: Creating directory structure...$(NC)"
+	@mkdir -p models/weights/mantranet
+	@echo "$(GREEN)✓ Directories created$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Step 2: Checking PyTorch installation...$(NC)"
+	@if $(PYTHON) -c "import torch" 2>/dev/null; then \
+		echo "$(GREEN)✓ PyTorch already installed$(NC)"; \
+	else \
+		echo "$(YELLOW)Installing PyTorch...$(NC)"; \
+		INDEX_URL=$$($(SYSTEM_PYTHON) scripts/detect_system.py --index-url); \
+		$(PIP) install --extra-index-url "$$INDEX_URL" torch torchvision; \
+		echo "$(GREEN)✓ PyTorch installed$(NC)"; \
+	fi
+	@echo ""
+	@echo "$(YELLOW)Step 3: Installing additional dependencies...$(NC)"
+	@$(PIP) install --quiet "scipy>=1.4.0" "matplotlib>=3.0.0" && \
+		echo "$(GREEN)✓ Dependencies installed$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Step 4: Checking model code...$(NC)"
+	@if [ -f "ai_detection/mantranet/mantranet.py" ]; then \
+		echo "$(GREEN)✓ Model code present (PyTorch implementation)$(NC)"; \
+	else \
+		echo "$(RED)✗ Model code missing at ai_detection/mantranet/mantranet.py$(NC)" && exit 1; \
+	fi
+	@echo ""
+	@echo "$(YELLOW)Step 5: Downloading pretrained PyTorch weights (~15MB)...$(NC)"
+	@if [ ! -f "models/weights/mantranet/MantraNetv4.pt" ]; then \
+		wget -q --show-progress -O models/weights/mantranet/MantraNetv4.pt \
+			https://github.com/RonyAbecidan/ManTraNet-pytorch/raw/main/MantraNet/MantraNetv4.pt && \
+		echo "$(GREEN)✓ Model downloaded$(NC)"; \
+	else \
+		echo "$(GREEN)✓ Model already exists ($(shell du -h models/weights/mantranet/MantraNetv4.pt 2>/dev/null | cut -f1))$(NC)"; \
+	fi
+	@echo ""
+	@echo "$(GREEN)========================================$(NC)"
+	@echo "$(GREEN)✓ ManTraNet ready!$(NC)"
+	@echo "$(GREEN)========================================$(NC)"
+	@echo ""
+	@echo "Setup summary:"
+	@echo "  • Framework: PyTorch (aligns with photoholmes)"
+	@echo "  • Model weights: models/weights/mantranet/MantraNetv4.pt"
+	@echo "  • Model code: ai_detection/mantranet/mantranet.py"
+	@echo "  • Inference: ai_detection/mantranet_infer_pytorch.py"
+	@echo ""
+	@echo "Verify installation:"
+	@echo "  make mantranet-verify"
+
+mantranet-verify:
+	@echo "$(GREEN)Verifying ManTraNet installation...$(NC)"
+	@if [ -f "models/weights/mantranet/MantraNetv4.pt" ]; then \
+		echo "$(GREEN)✓ Model file exists ($(shell du -h models/weights/mantranet/MantraNetv4.pt 2>/dev/null | cut -f1))$(NC)"; \
+	else \
+		echo "$(RED)✗ Model file not found$(NC)" && exit 1; \
+	fi
+	@if [ -f "ai_detection/mantranet/mantranet.py" ]; then \
+		echo "$(GREEN)✓ Model code exists$(NC)"; \
+	else \
+		echo "$(RED)✗ Model code not found$(NC)" && exit 1; \
+	fi
+	@$(PYTHON) -c "import torch; print('$(GREEN)✓ PyTorch ' + torch.__version__ + ' (CUDA: ' + str(torch.cuda.is_available()) + ')$(NC)')" 2>/dev/null || echo "$(RED)✗ PyTorch not installed$(NC)"
+	@$(PYTHON) -c "import scipy, matplotlib; print('$(GREEN)✓ Dependencies OK$(NC)')" 2>/dev/null || echo "$(RED)✗ Dependencies missing$(NC)"
+	@echo "$(GREEN)✓ ManTraNet is ready$(NC)"
+
+mantranet-clean:
+	@echo "$(YELLOW)Removing ManTraNet model...$(NC)"
+	@rm -rf models/weights/mantranet
+	@echo "$(GREEN)✓ ManTraNet model removed$(NC)"
+	@echo "$(YELLOW)Note: PyTorch left installed (may be used by photoholmes/research modules)$(NC)"
 
 # Research Content Analysis (Phase 1c)
 research-setup: venv

@@ -7,7 +7,10 @@ This directory contains AI detection model weights and related files.
 ```
 models/
 ├── weights/          # Pre-trained model weights (gitignored)
-│   └── spai.pth     # SPAI model checkpoint (~100MB)
+│   ├── spai.pth     # SPAI model checkpoint (~100MB)
+│   └── mantranet/   # ManTraNet forgery localization
+│       └── matnet1.pb  # TensorFlow 1.x frozen graph (~100MB)
+│                       # Runs via TensorFlow 2.x compatibility
 └── README.md        # This file
 ```
 

@@ -19,6 +19,7 @@ from .base import BaseDetector, DetectionResult, ConfidenceLevel, ResultStore
 from .metadata import MetadataDetector
 from .spai_detector import SPAIDetector
 from .sdxl_detector import SDXLDetector
+from .mantranet_detector import ManTraNetDetector
 
 
 logger = logging.getLogger(__name__)
@@ -53,6 +54,7 @@ class MultiLayerDetector:
         if enable_ml:
             self._register_detector(SDXLDetector())
             self._register_detector(SPAIDetector())
+            self._register_detector(ManTraNetDetector())  # Slowest, runs last
 
         logger.info(f"Orchestrator initialized with {len(self.detectors)} detectors")
 
@@ -141,6 +143,9 @@ class MultiLayerDetector:
     def _build_result(store: ResultStore) -> Dict:
         """Package raw detector results for storage in the results dict."""
         layers = []
+        all_audit_findings = []  # Collect audit findings from all detectors
+        mantranet_data = None  # Extract ManTraNet visualization data if present
+        
         for entry in store.get_all():
             layer = {
                 'method': entry.method.value,
@@ -155,13 +160,41 @@ class MultiLayerDetector:
                     'AI' if entry.is_ai_generated
                     else 'Real' if entry.is_ai_generated is False
                     else 'Unknown')
+            
+            # Extract audit_findings from metadata if present
+            if entry.metadata and 'audit_findings' in entry.metadata:
+                findings = entry.metadata['audit_findings']
+                if isinstance(findings, list):
+                    all_audit_findings.extend(findings)
+            
+            # Extract ManTraNet visualization data if present
+            if entry.metadata and 'manipulated_percentage' in entry.metadata:
+                # This is ManTraNet data - extract for UI visualization
+                mantranet_data = {
+                    'manipulated_percentage': entry.metadata.get('manipulated_percentage', 0),
+                    'region_count': entry.metadata.get('region_count', 0),
+                    'max_confidence': entry.metadata.get('max_confidence', 0),
+                    'inference_time_s': entry.metadata.get('inference_time_s', 0),
+                    'mask_id': entry.metadata.get('mask_id'),
+                }
+            
             layers.append(layer)
 
-        return {
+        result = {
             'detection_layers': layers,
             'methods_run': store.names(),
             'enabled': True,
         }
+        
+        # Add audit_findings if any detectors provided them
+        if all_audit_findings:
+            result['audit_findings'] = all_audit_findings
+        
+        # Add ManTraNet data if available
+        if mantranet_data:
+            result['mantranet'] = mantranet_data
+
+        return result
 
     @staticmethod
     def _error_result(error_msg: str) -> Dict:

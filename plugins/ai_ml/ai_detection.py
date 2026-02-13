@@ -132,6 +132,11 @@ class AIDetection(BaseAnalyzerModule):
 
             if "error" in detection_result:
                 results["ai_detection"]["error"] = detection_result["error"]
+            
+            # Extract ManTraNet visualization data if available
+            if "mantranet" in detection_result:
+                results["mantranet"] = detection_result["mantranet"]
+                logger.info(f"[Task {task.id}]: ManTraNet detected {detection_result['mantranet'].get('manipulated_percentage', 0)}% manipulation")
 
             methods = detection_result.get("methods_run", [])
             logger.info(f"[Task {task.id}]: AI detection complete — {len(methods)} method(s) ran: {', '.join(methods)}")

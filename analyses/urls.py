@@ -28,6 +28,7 @@ urlpatterns = [
     re_path(r"^show/(?P<analysis_id>[\d]+)/ela/$", views.show_ela, name="show_ela"),
     re_path(r"^show/(?P<analysis_id>[\d]+)/noise/$", views.show_noise, name="show_noise"),
     re_path(r"^show/(?P<analysis_id>[\d]+)/frequency/$", views.show_frequency, name="show_frequency"),
+    re_path(r"^show/(?P<analysis_id>[\d]+)/forgery/$", views.show_forgery, name="show_forgery"),
     re_path(r"^show/(?P<analysis_id>[\d]+)/signatures/$", views.show_signatures, name="show_signatures"),
     re_path(r"^show/(?P<analysis_id>[\d]+)/research/$", views.show_research, name="show_research"),
     re_path(r"^show/(?P<analysis_id>[\d]+)/research/annotation/$", views.research_annotation, name="research_annotation"),

@@ -1,0 +1,110 @@
+{% extends "analyses/report/report_base.html" %}
+
+{% block report_content %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fa-solid fa-crosshairs me-2"></i>
+                        Forgery Localization (ManTraNet)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if analysis.report.mantranet %}
+                        <div class="alert alert-info">
+                            <i class="fa-solid fa-info-circle me-2"></i>
+                            <strong>About ManTraNet:</strong> This visualization shows detected manipulation regions using deep learning.
+                            Bright/white areas indicate potential forgery (clone tool, splicing, copy-move, etc).
+                        </div>
+
+                        {% with mantranet=analysis.report.mantranet %}
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <h6>Analysis Summary</h6>
+                                <table class="table table-sm table-bordered">
+                                    <tr>
+                                        <th>Manipulated Area</th>
+                                        <td>
+                                            <span class="badge {% if mantranet.manipulated_percentage > 20 %}bg-danger{% elif mantranet.manipulated_percentage > 5 %}bg-warning{% elif mantranet.manipulated_percentage > 1 %}bg-info{% else %}bg-success{% endif %}">
+                                                {{ mantranet.manipulated_percentage }}%
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Detected Regions</th>
+                                        <td>{{ mantranet.region_count }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Max Confidence</th>
+                                        <td>{{ mantranet.max_confidence|floatformat:3 }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Inference Time</th>
+                                        <td>{{ mantranet.inference_time_s|floatformat:2 }}s</td>
+                                    </tr>
+                                </table>
+
+                                {% if mantranet.manipulated_percentage > 20 %}
+                                    <div class="alert alert-danger">
+                                        <i class="fa-solid fa-exclamation-triangle me-2"></i>
+                                        <strong>High Manipulation Detected:</strong> Extensive forgery signatures found in the image.
+                                    </div>
+                                {% elif mantranet.manipulated_percentage > 5 %}
+                                    <div class="alert alert-warning">
+                                        <i class="fa-solid fa-exclamation-circle me-2"></i>
+                                        <strong>Moderate Manipulation:</strong> Significant editing detected in multiple regions.
+                                    </div>
+                                {% elif mantranet.manipulated_percentage > 1 %}
+                                    <div class="alert alert-info">
+                                        <i class="fa-solid fa-info-circle me-2"></i>
+                                        <strong>Minor Manipulation:</strong> Small areas show possible editing.
+                                    </div>
+                                {% else %}
+                                    <div class="alert alert-success">
+                                        <i class="fa-solid fa-check-circle me-2"></i>
+                                        <strong>Likely Pristine:</strong> No significant manipulation detected.
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <h6>Original Image</h6>
+                                <a href="{% url "image" analysis.image_id %}" class="d-block glightbox" data-type="image">
+                                    <img src="{% url "image" analysis.image_id %}" class="img-fluid border rounded" alt="Original image">
+                                </a>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <h6>Forgery Heatmap</h6>
+                                {% if mantranet.mask_id %}
+                                    <a href="{% url "image" mantranet.mask_id %}" class="d-block glightbox" data-type="image">
+                                        <img src="{% url "image" mantranet.mask_id %}" class="img-fluid border rounded" alt="Forgery mask">
+                                    </a>
+                                    <p class="text-muted small mt-2">
+                                        <i class="fa-solid fa-palette me-1"></i>
+                                        Bright/white regions indicate detected manipulation. Darker areas appear pristine.
+                                    </p>
+                                {% else %}
+                                    <div class="alert alert-warning">
+                                        <i class="fa-solid fa-exclamation-triangle me-2"></i>
+                                        Forgery mask not available
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endwith %}
+
+                    {% else %}
+                        <div class="alert alert-secondary">
+                            <i class="fa-solid fa-circle-info me-2"></i>
+                            ManTraNet forgery localization was not run for this image.
+                            <br><small class="text-muted">To enable, run: <code>make mantranet-setup</code></small>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
